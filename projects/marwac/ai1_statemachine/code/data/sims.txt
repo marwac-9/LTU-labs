@@ -1,0 +1,9 @@
+/name and default values
+/name, startLocation, homeLocation, jobName, jobLocation, money, loneliness, hunger, thirst, fatigue, hatred, 
+/red, green, blue, width, height 
+John 		Home		Home	Builder		1000 10 10 20 10 0 255	155	0 		26 26
+Bob 		Work		Home	Forester	1000 10 10 20 10 0 155	50	250 	35 35	
+Teresa 		Pub			Home	Farmer		1000 10 10 20 10 0 0	0	255 	26 26
+Kate 		Restaurant	Home	Miner		1000 10 10 20 10 0 0	0	0 		16 16
+Jason 		Gun-Shop	Home	Nurse		1000 10 10 20 10 0 255	0	255 	26 26
+Tom 		Work3		Home	Miner2		1000 10 10 20 10 0 55	155	55 		26 26

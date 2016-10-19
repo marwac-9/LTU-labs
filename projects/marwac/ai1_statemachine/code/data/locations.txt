@@ -1,0 +1,9 @@
+/name, positionX, positionY, red, green, blue, width, height 
+Home			-100 -100 	0	255	0	40 40
+Work			-100 100	0	255	255	40 80
+Work2			-50 100		0	255	200	40 80
+Work3			0 100		0	255	200	40 80
+Gun-Shop		120 -70 	255	0	0	60 60
+Warehouse		0 0 		125	125	0	40 40
+Pub				170 20 		155	155	55	60 40
+Restaurant		100 100 	55	55	155	40 40
