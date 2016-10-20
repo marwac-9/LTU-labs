@@ -1,8 +1,0 @@
-/name, location, workingFrom, workHours, payment
-Builder		 Work	8 8 200
-Forester	 Work2	12 8 200
-Farmer		 Work	8 8 200
-Miner		 Work2	10 8 200
-Miner2		 Work3	10 8 200
-Nurse		 Work	8 8 200
-Seller		 Work	8 8 200

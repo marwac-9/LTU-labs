@@ -1,4 +1,0 @@
-g++ -o server ServerInfoStruct.h GameInfo.h PlayerInfo.h Protocol.h Server.h Server.cpp ServerSocket.h ServerSocket.cpp Connection.h Connection.cpp main.cpp -pthread
-
-g++ -o server_noRC4 ServerInfoStruct.h GameInfo.h PlayerInfo.h Protocol.h Server.h Server_noRC4.cpp ServerSocket.h ServerSocket.cpp Connection.h Connection.cpp main.cpp -pthread
-
