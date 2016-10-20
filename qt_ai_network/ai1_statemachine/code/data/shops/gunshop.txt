@@ -1,0 +1,5 @@
+/name, value
+n Gun-Shop
+i AK-47 10
+i M16 20
+i Bazooka 12

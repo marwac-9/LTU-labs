@@ -1,0 +1,5 @@
+/name, value
+n Warehouse
+i Shovel	10
+i Axe 		20
+i Hammer 	12
