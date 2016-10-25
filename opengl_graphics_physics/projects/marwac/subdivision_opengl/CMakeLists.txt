@@ -23,11 +23,6 @@ FILE(GLOB HEAD "code/Drawables/*.h")
 LIST(APPEND SRCDRAWABLES ${SRC} ${HEAD})
 SOURCE_GROUP("SubdivisionOpenGL\\Drawables" FILES ${SRCDRAWABLES})
 
-FILE(GLOB SRC "code/HalfEdgeMesh/*.cpp")
-FILE(GLOB HEAD "code/HalfEdgeMesh/*.h")
-LIST(APPEND SRCSHALFEDGEMESH ${SRC} ${HEAD})
-SOURCE_GROUP("SubdivisionOpenGL\\HalfEdgeMesh" FILES ${SRCSHALFEDGEMESH})
-
 FILE(GLOB SRC "code/Resources/Shaders/*.glsl")
 LIST(APPEND SRCSSHADERS ${SRC} )
 SOURCE_GROUP("SubdivisionOpenGL\\Shaders" FILES ${SRCSSHADERS})
@@ -39,7 +34,7 @@ SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/bin")
 
 ADD_EXECUTABLE(subdivision_opengl ${ALLSRCS})
 SET_TARGET_PROPERTIES(subdivision_opengl PROPERTIES FOLDER "LABS")
-TARGET_LINK_LIBRARIES(subdivision_opengl mymathlib stb poolparty vector core render)
+TARGET_LINK_LIBRARIES(subdivision_opengl mymathlib stb halfedgemesh core render)
 ADD_DEPENDENCIES(subdivision_opengl core render)
 
 

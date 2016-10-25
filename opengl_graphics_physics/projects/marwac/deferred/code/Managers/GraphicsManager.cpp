@@ -4,7 +4,6 @@
 #include "ShaderManager.h"
 #include "OBJ.h"
 #include "Mesh.h"
-#include "HalfEdgeMesh.h"
 #include "Texture2D.h"
 #include "Material.h"
 #include "Object.h"

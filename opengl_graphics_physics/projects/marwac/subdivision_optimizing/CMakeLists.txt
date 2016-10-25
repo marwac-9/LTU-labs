@@ -17,7 +17,7 @@ SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/bin")
 
 ADD_EXECUTABLE(subdivision_optimized ${files_subdivision_optimized})
 SET_TARGET_PROPERTIES(subdivision_optimized PROPERTIES FOLDER "LABS")
-TARGET_LINK_LIBRARIES(subdivision_optimized mymathlib poolparty vector core render)
+TARGET_LINK_LIBRARIES(subdivision_optimized mymathlib halfedgemesh core render)
 ADD_DEPENDENCIES(subdivision_optimized core render)
 
 #ADD_DEPENDENCIES(subdivision engine core render)

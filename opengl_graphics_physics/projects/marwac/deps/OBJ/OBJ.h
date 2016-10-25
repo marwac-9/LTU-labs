@@ -2,7 +2,6 @@
 #include <vector>
 #include <map>
 #include "MyMathLib.h"
-#include "BoundingBox.h"
 
 class OBJ
 {
@@ -31,8 +30,6 @@ public:
 	
 	mwm::Vector3 dimensions;
 	mwm::Vector3 center_of_mass;
-	mwm::Vector3 CalcMaxValuesInWorld(const mwm::Matrix4& modelMatrix, const mwm::Vector3& position) const;
-	MinMax CalcValuesInWorld(const mwm::Matrix4& modelMatrix, const mwm::Vector3& position) const;
 
 	void CalculateDimensions();
 private:

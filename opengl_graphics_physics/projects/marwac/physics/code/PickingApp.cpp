@@ -15,7 +15,6 @@
 #include "Material.h"
 #include "Mesh.h"
 #include "OBJ.h"
-#include "HalfEdgeMesh.h"
 #include <fstream>
 #include "Scene.h"
 #include "ShaderManager.h"

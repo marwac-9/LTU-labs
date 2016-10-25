@@ -1,5 +1,6 @@
 #define _CRT_SECURE_NO_DEPRECATE
 #include "OBJ.h"
+#include <algorithm>
 
 using namespace mwm;
 
@@ -44,6 +45,8 @@ void OBJ::indexVBO(
 			VertexToOutIndex[packed] = newindex;
 		}
 	}
+	
+	CalculateDimensions();
 }
 
 bool OBJ::getSimilarVertexIndex_fast(
@@ -157,4 +160,40 @@ bool OBJ::LoadOBJ(
 	printf("Finished loading OBJ");
 	fclose(file);
 	return true;
+}
+
+void OBJ::CalculateDimensions()
+{
+	Vector3 minValues;
+	Vector3 maxValues;
+	
+	minValues = indexed_vertices[0];
+	maxValues = indexed_vertices[0];
+	for(size_t i = 0; i < indexed_vertices.size(); ++i)
+	{
+		Vector3 currentVertex = indexed_vertices[i];
+		maxValues[0] = std::max(maxValues[0],currentVertex[0]);
+		minValues[0] = std::min(minValues[0],currentVertex[0]);
+		maxValues[1] = std::max(maxValues[1],currentVertex[1]);
+		minValues[1] = std::min(minValues[1],currentVertex[1]);
+		maxValues[2] = std::max(maxValues[2],currentVertex[2]);
+		minValues[2] = std::min(minValues[2],currentVertex[2]);		
+	}
+	
+	dimensions.vect[0] = maxValues[0]-minValues[0];
+	dimensions.vect[1] = maxValues[1]-minValues[1];
+	dimensions.vect[2] = maxValues[2]-minValues[2];
+	
+	this->center_of_mass = minValues + this->dimensions/2.f;
+
+}
+
+Vector3 OBJ::GetDimensions()
+{
+	return this->dimensions;
+}
+
+Vector3 OBJ::CenterOfMass()
+{
+	return this->center_of_mass;
 }
