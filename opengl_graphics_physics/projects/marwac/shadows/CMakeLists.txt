@@ -34,8 +34,8 @@ SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/bin")
 
 ADD_EXECUTABLE(shadows ${ALLSRCS})
 SET_TARGET_PROPERTIES(shadows PROPERTIES FOLDER "LABS")
-TARGET_LINK_LIBRARIES(shadows mymathlib mesh obj stb core render)
-ADD_DEPENDENCIES(shadows mymathlib stb core render)
+TARGET_LINK_LIBRARIES(shadows mesh obj stb core render)
+#ADD_DEPENDENCIES(shadows core render)
 
 
 #ADD_DEPENDENCIES(subdivision engine core render)
