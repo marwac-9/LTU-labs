@@ -763,35 +763,6 @@ inline void PhysicsManager::FilterContactsAgainstReferenceFace(vector<Vector3> &
 	}
 }
 
-
-inline void PhysicsManager::FilterContactsAgainstReferenceFace2(vector<Vector3> &contacts, const Vector3& frontPlaneN, float front_offsett, const Vector3& leftPlaneN, float left_offsett, const Vector3& rightPlaneN, float right_offsett, const Vector3& topPlaneN, float top_offsett, const Vector3& bottomPlaneN, float bottom_offsett, unordered_set<Contact*> &contact_points_out, float penetration, Object* one, Object* two)
-{
-	//this step is supposed to test against the reference plane all the contact points and we keep only the points inside or at the cube
-	//this is to clean up contacts 
-	for (size_t i = 0; i < contacts.size(); i++)
-	{
-		float epsi = 0.0001f;
-		float contactPen = contacts[i].dotAKAscalar(frontPlaneN) - (front_offsett + epsi);
-		if (contactPen <= 0 &&
-			contacts[i].dotAKAscalar(leftPlaneN) - (left_offsett + epsi) <= 0 &&
-			contacts[i].dotAKAscalar(rightPlaneN) - (right_offsett + epsi) <= 0 &&
-			contacts[i].dotAKAscalar(topPlaneN) - (top_offsett + epsi) <= 0 &&
-			contacts[i].dotAKAscalar(bottomPlaneN) - (bottom_offsett + epsi) <= 0
-			)
-		{
-			//keep point
-			Contact* contact = new Contact();
-			contact->contactPoint = contacts[i];
-			contact->penetration = -1 * contactPen; //penetration per contact
-			//contact->penetration = penetration; //mtv penetration
-			contact->contactNormal = frontPlaneN;
-			contact->one = one;
-			contact->two = two;
-			contact_points_out.insert(contact);
-		}
-	}
-}
-
 inline void PhysicsManager::FlipMTVTest(Vector3 &mtv, const Vector3 & toCentre)
 {
 	// We know which axis the collision is on (i.e. best),

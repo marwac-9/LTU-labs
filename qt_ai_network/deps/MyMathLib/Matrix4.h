@@ -57,8 +57,7 @@ public:
 	static Matrix4 rotateY(const double &angle); //!< function returning rotation matrix with specified rotation angle along Y axis
 	static Matrix4 rotateZ(const double &angle); //!< function returning rotation matrix with specified rotation angle along Z axis
 	static Matrix4 rotateAngle(const Vector3& thisVector, const double &angle); //!< function returning rotation matrix with specified rotation angle along specified axis(vector)
-	static Matrix4 rotateAngleT(const Vector3& thisVector, const double &angle); //!< function returning rotation matrix with specified rotation angle along specified axis(vector)
-
+	
 	static Matrix4 nolookAt(Vector3 eye, Vector3 target, Vector3 up); //!< lookAt matrix not optimized
 	static Matrix4 lookAt(Vector3 eye, Vector3 target, Vector3 up); //!< lookAt matrix optimized
 	static Matrix4 FPScam(Vector3 eye, const double &pitch, const double &yaw); //!< fps camera matrix

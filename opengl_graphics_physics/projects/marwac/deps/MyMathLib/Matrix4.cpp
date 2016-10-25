@@ -298,43 +298,6 @@ Matrix4 Matrix4::rotateAngle(const Vector3& thisVector, const double &angle)
 	return rotationMatrix;
 }
 
-
-Matrix4 Matrix4::rotateAngleT(const Vector3& thisVector, const double &angle)
-{
-	double sAngle = -angle;
-	double PI = 3.14159265;
-	double cosAng = cos(sAngle * PI / 180.0);
-	double sinAng = sin(sAngle * PI / 180.0);
-	double T = 1 - cosAng;
-	Vector3 normalizedVector = thisVector.normalizeSSE();
-	float x = normalizedVector.vect[0];
-	float y = normalizedVector.vect[1];
-	float z = normalizedVector.vect[2];
-	Matrix4 rotationMatrix;
-	//row1
-	rotationMatrix._matrix[0][0] = cosAng + (x*x) * T;
-	rotationMatrix._matrix[1][0] = x*y * T - z * sinAng;
-	rotationMatrix._matrix[2][0] = x*z * T + y * sinAng;
-	//rotationMatrix._matrix[3][0] = 0.0;
-	//row2
-	rotationMatrix._matrix[0][1] = y*x * T + z * sinAng;
-	rotationMatrix._matrix[1][1] = cosAng + y*y * T;
-	rotationMatrix._matrix[2][1] = y*z * T - x * sinAng;
-	//rotationMatrix._matrix[3][1] = 0.0;
-	//row3
-	rotationMatrix._matrix[0][2] = z*x * T - y * sinAng;
-	rotationMatrix._matrix[1][2] = z*y * T + x * sinAng;
-	rotationMatrix._matrix[2][2] = cosAng + z*z * T;
-	//rotationMatrix._matrix[3][2] = 0.0;
-	//row4
-	//rotationMatrix._matrix[0][3] = 0.0;
-	//rotationMatrix._matrix[1][3] = 0.0;
-	//rotationMatrix._matrix[2][3] = 0.0;
-	rotationMatrix._matrix[3][3] = 1.0;
-	return rotationMatrix;
-}
-
-
 /*! \fn returns translation matrix with specified translation values*/
 Matrix4 Matrix4::translate(const double &x, const double &y, const double &z)
 {

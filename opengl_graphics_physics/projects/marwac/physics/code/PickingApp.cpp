@@ -113,11 +113,6 @@ namespace Picking
 		boundingBox = &DebugDraw::Instance()->boundingBox;
 		
 		LoadScene1();
-		Quaternion q1(45,Vector3(0.f,1.f,0.f));
-		Quaternion q2(45,Vector3(0.f,1.f,0.f));
-		Quaternion q3 = q2*q1;
-		Vector3 v1(1.f, 0.f, 0.f);
-		v1 = q3.ConvertToMatrix3()*v1;
 
 		float timeStep = 0.016f + timeModifier;
 		float dtInv = 1.f / timeStep;

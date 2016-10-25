@@ -92,8 +92,7 @@ private:
 	void FlipMTVTest(mwm::Vector3 &mtv, const mwm::Vector3 &toCentre);
 
 	void FilterContactsAgainstReferenceFace(std::vector<mwm::Vector3> &contacts, const mwm::Vector3& refNormal, float pos_offsett, std::unordered_set<Contact*> &contact_points_out, float penetration, Object* one, Object* two);
-	void FilterContactsAgainstReferenceFace2(std::vector<mwm::Vector3> &contacts, const mwm::Vector3& frontPlaneN, float front_offsett, const mwm::Vector3& leftPlaneN, float left_offsett, const mwm::Vector3& rightPlaneN, float right_offsett, const mwm::Vector3& topPlaneN, float top_offsett, const mwm::Vector3& bottomPlaneN, float bottom_offsett, std::unordered_set<Contact*> &contact_points_out, float penetration, Object* one, Object* two);
-
+	
 	void ClaculateIncidentAxis(mwm::Vector3& incident_axis, const mwm::Matrix3 &two, mwm::Vector3 smallestAxis);
 
 	void CreateSidePlanesOffsetsAndNormals(const mwm::Vector3& onePosition, int typeOfCollision, mwm::Vector3 &normal1, const mwm::Matrix3 &one, mwm::Vector3 &normal2, float &neg_offset1, mwm::Vector3 oneHalfSize, float &pos_offset1, float &neg_offset2, float &pos_offset2);
