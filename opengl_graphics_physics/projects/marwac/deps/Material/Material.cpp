@@ -1,5 +1,7 @@
 #include "Material.h"
 
+using namespace mwm;
+
 Material::Material()
 {
 	ambientIntensity = 0.15f;
@@ -8,13 +10,13 @@ Material::Material()
 	specular.vect[1] = 0.3f;
 	specular.vect[2] = 0.3f;
 
-	diffuseIntensity = 1.0f;
+	diffuseIntensity = 1.f;
 
-	color.vect[0] = 0.0f;
-	color.vect[1] = 0.0f;
-	color.vect[2] = 0.0f;
+	color.vect[0] = 0.f;
+	color.vect[1] = 0.f;
+	color.vect[2] = 0.f;
 
-	shininess = 5.0f;
+	shininess = 10.0f;
 }
 
 Material::~Material()
@@ -47,4 +49,9 @@ void Material::SetColor(float r, float g, float b)
 	this->color.vect[0] = r;
 	this->color.vect[1] = g;
 	this->color.vect[2] = b;
+}
+
+void Material::SetShininess(float s)
+{
+	this->shininess = s;
 }

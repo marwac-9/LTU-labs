@@ -26,6 +26,6 @@ public:
 	static GLuint LoadShaders(const char * vertex_file_path, const char * fragment_file_path);
 	static unsigned int CreateTexture(int width, int height, bool isDepth, unsigned char* data);
 	static void LoadAllAssets();
-
+	static Texture2D* LoadTexture(char* path, const GLuint programID);
 private:
 };

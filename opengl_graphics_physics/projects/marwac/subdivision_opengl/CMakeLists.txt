@@ -34,7 +34,7 @@ SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/bin")
 
 ADD_EXECUTABLE(subdivision_opengl ${ALLSRCS})
 SET_TARGET_PROPERTIES(subdivision_opengl PROPERTIES FOLDER "LABS")
-TARGET_LINK_LIBRARIES(subdivision_opengl stb halfedgemesh core render)
+TARGET_LINK_LIBRARIES(subdivision_opengl material stb halfedgemesh core render)
 #ADD_DEPENDENCIES(subdivision_opengl core render)
 
 

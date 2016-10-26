@@ -47,17 +47,18 @@ void Object::draw(const Matrix4& Projection, const Matrix4& View)
 	PickingObjectIndexHandle = glGetUniformLocation(currentShaderID, "gObjectIndexVec4");
 	ObjectWorldPosHandle = glGetUniformLocation(currentShaderID, "gObjectPosVec3");
 	TextureSamplerHandle = glGetUniformLocation(currentShaderID, "myTextureSampler");
-	
+	GLuint shininess = glGetUniformLocation(currentShaderID, "shininess");
 
     glUniformMatrix4fv(MatrixHandle, 1, GL_FALSE, &MVP[0][0]);
     glUniformMatrix4fv(ModelMatrixHandle, 1, GL_FALSE, &ModelMatrix[0][0]);
     glUniformMatrix4fv(ViewMatrixHandle, 1, GL_FALSE, &ViewMatrix[0][0]);
 	glUniformMatrix4fv(DepthBiasMatrixHandle, 1, GL_FALSE, &depthBiasMVP[0][0]);
 
-    glUniform3fv(MaterialAmbientValueHandle, 1, &this->mat->ambient.vect[0]);
-    glUniform3fv(MaterialSpecularValueHandle, 1, &this->mat->specular.vect[0]);
-    glUniform3fv(MaterialDiffuseIntensityValueHandle, 1, &this->mat->diffuse.vect[0]);
-    glUniform3fv(MaterialColorValueHandle, 1, &this->mat->color.vect[0]);
+	glUniform1f(MaterialAmbientValueHandle, this->mat->ambientIntensity);
+	glUniform3fv(MaterialSpecularValueHandle, 1, &this->mat->specular.vect[0]);
+	glUniform1f(MaterialDiffuseIntensityValueHandle, this->mat->diffuseIntensity);
+	glUniform1f(shininess, this->mat->shininess);
+	glUniform3fv(MaterialColorValueHandle, 1, &this->mat->color.vect[0]);
 
     int r = (this->ID & 0x000000FF) >>  0;
     int g = (this->ID & 0x0000FF00) >>  8;

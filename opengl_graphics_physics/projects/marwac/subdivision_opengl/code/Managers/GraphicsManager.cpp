@@ -160,8 +160,7 @@ bool GraphicsManager::LoadTextures(const char * path, GLuint programID)
 			break; // EOF = End Of File. Quit the loop.
 		}
 
-		Texture2D* texture2D = new Texture2D();
-		texture2D->LoadTexture(texturePath, programID);
+		Texture2D* texture2D = LoadTexture(texturePath, programID);
 		texture2D->meshID = meshID;
 		GraphicsStorage::textures.push_back(texture2D);
 	}
@@ -588,4 +587,16 @@ unsigned char * GraphicsManager::LoadPng(const char* path, int* x, int* y, int* 
 {
 	printf("Reading image %s\n", path);
 	return stbi_load(path, x, y, numOfElements, forcedNumOfEle);
+}
+
+Texture2D* GraphicsManager::LoadTexture(char* path, const GLuint programID)
+{
+	Texture2D* tex = new Texture2D();
+	// Load the texture
+	tex->TextureID = LoadDDS(path);
+
+	// Get a handle for our "myTextureSampler" uniform
+	tex->TextureHandle = glGetUniformLocation(programID, "myTextureSampler");
+
+	return tex;
 }

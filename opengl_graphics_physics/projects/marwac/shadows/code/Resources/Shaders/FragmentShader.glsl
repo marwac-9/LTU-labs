@@ -16,8 +16,9 @@ uniform sampler2D myTextureSampler;
 uniform sampler2D shadowMapSampler;
 uniform mat4 MV;
 uniform vec3 LightPosition_worldspace;
-uniform vec3 MaterialDiffuseIntensityValue;   
-uniform vec3 MaterialAmbientValue;
+uniform float shininess;
+uniform float MaterialDiffuseIntensityValue;
+uniform float MaterialAmbientIntensityValue;
 uniform vec3 MaterialSpecularValue;
 uniform vec3 MaterialColorValue;
 
@@ -64,8 +65,8 @@ void main(){
 	float LightPower = 1.f;
 	
 	// Material properties
-	vec3 MaterialDiffuseColor = texture2D( myTextureSampler, UV ).rgb + MaterialColorValue;
-	vec3 MaterialAmbientColor = MaterialAmbientValue * MaterialDiffuseColor;
+	vec3 MaterialDiffuseColor = texture2D(myTextureSampler, UV).rgb + MaterialColorValue;
+	vec3 MaterialAmbientColor = MaterialAmbientIntensityValue * MaterialDiffuseColor;
 	vec3 MaterialSpecularColor = MaterialSpecularValue;
 
 	// Distance to the light
@@ -105,11 +106,11 @@ void main(){
 	//color with directional only
 	color = 
 		// Ambient : simulates indirect lighting
-		MaterialAmbientColor * MaterialDiffuseIntensityValue+
+		MaterialAmbientColor * MaterialDiffuseIntensityValue +
 		// Diffuse : "color" of the object
 		visibility * MaterialDiffuseColor * LightColor * LightPower * cosTheta * MaterialDiffuseIntensityValue +
 		// Specular : reflective highlight, like a mirror
-		visibility * MaterialSpecularColor * LightColor * LightPower * pow(cosAlpha, 5);
+		visibility * MaterialSpecularColor * LightColor * LightPower * pow(cosAlpha, shininess);
 		
 	//color with pointlight and directional
 	//color = 
