@@ -102,11 +102,15 @@ void DebugDraw::DrawLine(const Vector3& normal, const Vector3& position, float w
 	}
 	if (tetha != 0)
 	{
-		float  deg = (tetha * 180) / 3.14159f;
+		float  deg = (tetha * 180.f) / 3.14159f;
 		model = Matrix4::rotateAngle(axis, deg)*model;
 	}
 	
-	line.Draw(model, *View, *Projection, width);
+	GLuint prevShader = ShaderManager::Instance()->GetCurrentShaderID();
+	GLuint wireframeShader = ShaderManager::Instance()->shaderIDs["wireframe"];
+	ShaderManager::Instance()->SetCurrentShader(wireframeShader);
+	line.Draw(model, *View, *Projection, wireframeShader, width);
+	ShaderManager::Instance()->SetCurrentShader(prevShader);
 }
 
 
@@ -121,17 +125,19 @@ void DebugDraw::DrawNormal(const Vector3& normal, const Vector3& position, float
 	}
 	if (tetha != 0)
 	{
-		float  deg = (tetha * 180) / 3.14159f;
+		float  deg = (tetha * 180.f) / 3.14159f;
 		model = Matrix4::rotateAngle(axis, deg)*model;
 	}
-
-	line.Draw(model, *View, *Projection, width);
-	point.Draw(model, *View, *Projection);
+	GLuint prevShader = ShaderManager::Instance()->GetCurrentShaderID();
+	GLuint wireframeShader = ShaderManager::Instance()->shaderIDs["wireframe"];
+	ShaderManager::Instance()->SetCurrentShader(wireframeShader);
+	line.Draw(model, *View, *Projection, wireframeShader, width);
+	point.Draw(model, *View, *Projection, wireframeShader);
+	ShaderManager::Instance()->SetCurrentShader(prevShader);
 }
 
 void DebugDraw::DrawPlane(const Vector3& normal, const Vector3& position, const Vector3& halfExtent)
 {
-	
 	Matrix4 model = Matrix4::translate(position);
 	Vector3 axis = Vector3(0.f,0.f,1.f).crossProd(normal);
 	float tetha = acos(normal.z);
@@ -141,11 +147,16 @@ void DebugDraw::DrawPlane(const Vector3& normal, const Vector3& position, const 
 	}
 	if (tetha != 0)
 	{
-		float  deg = (tetha * 180) / 3.14159f;
+		float  deg = (tetha * 180.f) / 3.14159f;
 		model = Matrix4::rotateAngle(axis, deg)*model;
 	}
 	model = Matrix4::scale(halfExtent) * model;
-	plane.Draw(model, *View, *Projection);
+
+	GLuint prevShader = ShaderManager::Instance()->GetCurrentShaderID();
+	GLuint wireframeShader = ShaderManager::Instance()->shaderIDs["wireframe"];
+	ShaderManager::Instance()->SetCurrentShader(wireframeShader);
+	plane.Draw(model, *View, *Projection, wireframeShader);
+	ShaderManager::Instance()->SetCurrentShader(prevShader);
 }
 
 
@@ -160,24 +171,33 @@ void DebugDraw::DrawPlaneN(const Vector3& normal, const Vector3& position, const
 	}
 	if (tetha != 0)
 	{
-		float  deg = (tetha * 180) / 3.14159f;
+		float  deg = (tetha * 180.f) / 3.14159f;
 		model = Matrix4::rotateAngle(axis, deg)*model;
 	}
 	model = Matrix4::scale(halfExtent) * model;
-	plane.Draw(model, *View, *Projection);
-	line.Draw(model, *View, *Projection);
-	point.Draw(model, *View, *Projection);
+
+	GLuint prevShader = ShaderManager::Instance()->GetCurrentShaderID();
+	GLuint wireframeShader = ShaderManager::Instance()->shaderIDs["wireframe"];
+	ShaderManager::Instance()->SetCurrentShader(wireframeShader);
+	plane.Draw(model, *View, *Projection, wireframeShader);
+	line.Draw(model, *View, *Projection, wireframeShader);
+	point.Draw(model, *View, *Projection, wireframeShader);
+	ShaderManager::Instance()->SetCurrentShader(prevShader);
 }
 
 
 void DebugDraw::DrawPoint(const Vector3& position, float size)
 {
-	point.Draw(Matrix4::translate(position), *View, *Projection, size);
+	GLuint prevShader = ShaderManager::Instance()->GetCurrentShaderID();
+	GLuint wireframeShader = ShaderManager::Instance()->shaderIDs["wireframe"];
+	ShaderManager::Instance()->SetCurrentShader(wireframeShader);
+	point.Draw(Matrix4::translate(position), *View, *Projection, wireframeShader, size);
+	ShaderManager::Instance()->SetCurrentShader(prevShader);
 }
 
 void DebugDraw::DrawCrossHair(int windowWidth, int windowHeight, const Vector3& color)
 {
-	float scale = 20;
+	float scale = 20.f;
 	float offset = scale / 2.f;
 	float x = windowWidth / 2.f;
 	float y = windowHeight / 2.f;
@@ -192,8 +212,13 @@ void DebugDraw::DrawCrossHair(int windowWidth, int windowHeight, const Vector3& 
 	Matrix4 view = Matrix4::identityMatrix();
 	Matrix4 proj = Matrix4::orthographicTopToBottom(-1.f, 2000.f, 0.f, (float)windowWidth, (float)windowHeight, 0.f);
 	line.mat->color = color;
-	line.Draw(model1, view, proj, 2.f);
-	line.Draw(model2, view, proj, 2.f);
+
+	GLuint prevShader = ShaderManager::Instance()->GetCurrentShaderID();
+	GLuint wireframeShader = ShaderManager::Instance()->shaderIDs["wireframe"];
+	ShaderManager::Instance()->SetCurrentShader(wireframeShader);
+	line.Draw(model1, view, proj, wireframeShader, 2.f);
+	line.Draw(model2, view, proj, wireframeShader, 2.f);
+	ShaderManager::Instance()->SetCurrentShader(prevShader);
 }
 
 void DebugDraw::DrawShadowMap(int width, int height)

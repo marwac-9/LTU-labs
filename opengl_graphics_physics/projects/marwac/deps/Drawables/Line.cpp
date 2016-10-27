@@ -1,8 +1,9 @@
 #include "Line.h"
 #include "Mesh.h"
-#include "ShaderManager.h"
 #include "Material.h"
 #include <algorithm>
+#include <GL/glew.h>
+
 using namespace mwm;
 Line::Line(){
 
@@ -46,14 +47,14 @@ void Line::SetUpBuffers()
 	glBindVertexArray(0);
 }
 
-void Line::Draw(const Matrix4& Model, const Matrix4& View, const Matrix4& Projection, float width)
+void Line::Draw(const Matrix4& Model, const Matrix4& View, const Matrix4& Projection, const GLuint shader, float width)
 {
 	Matrix4F MVP = (Model*View*Projection).toFloat();
-	GLuint prevShader = ShaderManager::Instance()->GetCurrentShaderID();
-	GLuint wireframeShader = ShaderManager::Instance()->shaderIDs["wireframe"];
-	glUseProgram(wireframeShader);
-	MatrixHandle = glGetUniformLocation(wireframeShader, "MVP");
-	MaterialColorValueHandle = glGetUniformLocation(wireframeShader, "MaterialColorValue");
+	//GLuint prevShader = ShaderManager::Instance()->GetCurrentShaderID();
+	//GLuint wireframeShader = ShaderManager::Instance()->shaderIDs["wireframe"];
+	//glUseProgram(wireframeShader);
+	MatrixHandle = glGetUniformLocation(shader, "MVP");
+	MaterialColorValueHandle = glGetUniformLocation(shader, "MaterialColorValue");
 
 	glUniformMatrix4fv(MatrixHandle, 1, GL_FALSE, &MVP[0][0]);
 	glUniform3fv(MaterialColorValueHandle, 1, &this->mat->color.vect[0]);
@@ -64,5 +65,5 @@ void Line::Draw(const Matrix4& Model, const Matrix4& View, const Matrix4& Projec
 	// Draw the lines !
 	glDrawElements(GL_LINES, 2, GL_UNSIGNED_SHORT, 0);
 	glLineWidth(1.f);
-	glUseProgram(prevShader);
+	//glUseProgram(prevShader);
 }

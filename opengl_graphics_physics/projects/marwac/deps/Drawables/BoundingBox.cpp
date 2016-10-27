@@ -2,6 +2,8 @@
 #include "Mesh.h"
 #include "Material.h"
 #include <algorithm>
+#include <GL/glew.h>
+
 using namespace mwm;
 
 BoundingBox::BoundingBox(){

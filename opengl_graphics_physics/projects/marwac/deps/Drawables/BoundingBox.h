@@ -1,6 +1,6 @@
 #pragma once
 #include "MyMathLib.h"
-#include <GL/glew.h>
+
 class Mesh;
 class Material;
 
@@ -11,7 +11,7 @@ public:
 	
 	BoundingBox();
 	void SetUpBuffers();
-	void Draw(const mwm::Matrix4& Model, const mwm::Matrix4& View, const mwm::Matrix4& Projection, GLuint wireframeShader);
+	void Draw(const mwm::Matrix4& Model, const mwm::Matrix4& View, const mwm::Matrix4& Projection, unsigned int wireframeShader);
 	mwm::MinMax CalcValuesInWorld(const mwm::Matrix3& modelMatrix, const mwm::Vector3& position) const;
 	//Vector3 min = Vector3(-0.5, -0.5, -0.5);
 	//Vector3 max = Vector3(0.5, 0.5, 0.5);
@@ -20,9 +20,9 @@ public:
 	Mesh* mesh;
 	Material* mat;
 	
-	static const GLushort elements[24];
+	static const unsigned short elements[24];
 	static const mwm::Vector3 vertices[8];
 
-	GLuint MatrixHandle;
-	GLuint MaterialColorValueHandle;
+	unsigned int MatrixHandle;
+	unsigned int MaterialColorValueHandle;
 };
