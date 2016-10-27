@@ -131,7 +131,6 @@ void Object::draw(const Matrix4& Projection, const Matrix4& View)
 
 	MatrixHandle = glGetUniformLocation(currentShaderID, "MVP");
 	ViewMatrixHandle = glGetUniformLocation(currentShaderID, "V");
-	ModelMatrixHandle = glGetUniformLocation(currentShaderID, "M");
 	DepthBiasMatrixHandle = glGetUniformLocation(currentShaderID, "DepthBiasMVP");
 	
 
@@ -143,7 +142,6 @@ void Object::draw(const Matrix4& Projection, const Matrix4& View)
 	TextureSamplerHandle = glGetUniformLocation(currentShaderID, "myTextureSampler");
 
     glUniformMatrix4fv(MatrixHandle, 1, GL_FALSE, &MVP[0][0]);
-    glUniformMatrix4fv(ModelMatrixHandle, 1, GL_FALSE, &ModelMatrix[0][0]);
     glUniformMatrix4fv(ViewMatrixHandle, 1, GL_FALSE, &ViewMatrix[0][0]);
 	glUniformMatrix4fv(DepthBiasMatrixHandle, 1, GL_FALSE, &depthBiasMVP[0][0]);
 

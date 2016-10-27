@@ -22,9 +22,6 @@ void FBOManager::UpdateTextureBuffers(int windowWidth, int windowHeight)
 	glBindTexture(GL_TEXTURE_2D, pickingTextureHandle);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, windowWidth, windowHeight, 0, GL_RGB, GL_FLOAT, NULL);
 
-	glBindTexture(GL_TEXTURE_2D, worldPosTextureHandle);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, windowWidth, windowHeight, 0, GL_RGB, GL_FLOAT, NULL);
-
 	//glBindTexture(GL_TEXTURE_2D, shadowMapHandle);
 	//glTexImage2D(GL_TEXTURE_2D, 0, GL_RG32F, windowWidth, windowHeight, 0, GL_RG, GL_FLOAT, NULL);
 
@@ -89,11 +86,6 @@ void FBOManager::SetUpDeferredFrameBuffer(int windowWidth, int windowHeight)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, normalBufferHandle, 0);
 
-	glGenTextures(1, &depthTextureHandle);
-	glBindTexture(GL_TEXTURE_2D, depthTextureHandle);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH32F_STENCIL8, windowWidth, windowHeight, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
-	glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, depthTextureHandle, 0);
-
 	glGenTextures(1, &diffIntAmbIntShinBufferHandle);
 	glBindTexture(GL_TEXTURE_2D, diffIntAmbIntShinBufferHandle);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, windowWidth, windowHeight, 0, GL_RGB, GL_FLOAT, NULL);
@@ -125,6 +117,11 @@ void FBOManager::SetUpDeferredFrameBuffer(int windowWidth, int windowHeight)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT6, GL_TEXTURE_2D, specularColorBufferHandle, 0);
+
+	glGenTextures(1, &depthTextureHandle);
+	glBindTexture(GL_TEXTURE_2D, depthTextureHandle);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH32F_STENCIL8, windowWidth, windowHeight, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+	glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, depthTextureHandle, 0);
 	
 	// Disable reading to avoid problems with older GPUs
 	//can't read unless you specify it later
@@ -158,11 +155,6 @@ void FBOManager::SetUpFrameBuffer(int windowWidth, int windowHeight)
 	glBindTexture(GL_TEXTURE_2D, pickingTextureHandle);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, windowWidth, windowHeight, 0, GL_RGB, GL_FLOAT, NULL);
 	glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, pickingTextureHandle, 0);
-
-	glGenTextures(1, &worldPosTextureHandle);
-	glBindTexture(GL_TEXTURE_2D, worldPosTextureHandle);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, windowWidth, windowHeight, 0, GL_RGB, GL_FLOAT, NULL);
-	glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, worldPosTextureHandle, 0);
 
 	glGenTextures(1, &shadowMapHandle);
 	glBindTexture(GL_TEXTURE_2D, shadowMapHandle);
@@ -318,8 +310,8 @@ void FBOManager::ReadPixelID(unsigned int x, unsigned int y, unsigned char* data
 
 void FBOManager::ReadWorldPos(unsigned int x, unsigned int y, float* data)
 {
-	BindFrameBuffer(read);
-	glReadBuffer(GL_COLOR_ATTACHMENT1);
+	BindGeometryBuffer(read);
+	glReadBuffer(GL_COLOR_ATTACHMENT0);
 	glReadPixels(x, y, 1, 1, GL_RGB, GL_FLOAT, data);
 	glReadBuffer(GL_NONE);
 	UnbindFrameBuffer(read);

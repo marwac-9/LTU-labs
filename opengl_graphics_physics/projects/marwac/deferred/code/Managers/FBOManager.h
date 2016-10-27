@@ -24,7 +24,6 @@ public:
 	GLuint blurFrameBufferHandle;
 	GLuint frameBufferHandle; //frame buffer handle
 	GLuint pickingTextureHandle; //picking texture for frame buffer
-	GLuint worldPosTextureHandle;
 	GLuint depthTextureHandle; //depth for frame buffer 
 	GLuint shadowMapHandle;
 	GLuint shadowMapBlurdHandle;

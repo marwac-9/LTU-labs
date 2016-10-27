@@ -184,7 +184,7 @@ namespace Picking
 			PhysicsManager::Instance()->SortAndSweep();
 			PhysicsManager::Instance()->NarrowTestSAT(dtInv);
 			
-			//IntegrateAndUpdateBoxes(timeStep);
+			IntegrateAndUpdateBoxes(timeStep);
 			
 			//IntegrateLights(timeStep);
 			
@@ -198,7 +198,7 @@ namespace Picking
 			DrawLightPass(ProjectionMatrix, ViewMatrix, currentCamera->GetPosition2());
 
 			BlitToScreenPass();
-
+			/*
 			if (debug)
 			{
 				glDepthMask(GL_TRUE);
@@ -207,7 +207,7 @@ namespace Picking
 				DrawDebug(ProjectionMatrix, ViewMatrix); //draw debug
 				FBOManager::Instance()->UnbindFrameBuffer(read);
 			}
-
+			*/
 			DebugDraw::Instance()->DrawCrossHair(windowWidth, windowHeight);
 			//DebugDraw::Instance()->DrawShadowMap(windowWidth, windowHeight);
 			DebugDraw::Instance()->DrawGeometryMaps(windowWidth, windowHeight);
@@ -470,8 +470,8 @@ namespace Picking
     {
 		
 		FBOManager::Instance()->BindFrameBuffer(draw);
-		GLenum DrawBuffers[] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
-		glDrawBuffers(2, DrawBuffers);
+		GLenum DrawBuffers[] = {GL_COLOR_ATTACHMENT0};
+		glDrawBuffers(1, DrawBuffers);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		ShaderManager::Instance()->SetCurrentShader(ShaderManager::Instance()->shaderIDs["picking"]);
 		Draw(Projection, View);
@@ -578,14 +578,45 @@ namespace Picking
 
 	void PickingApp::DrawGeometry(const Matrix4& ProjectionMatrix, const Matrix4& ViewMatrix)
 	{
-		objectsRendered = 0;
-		for (auto& obj : Scene::Instance()->objectsToRender)
+		if (debug)
 		{
-			if (FrustumManager::Instance()->isBoundingSphereInView(obj.second->GetPosition(), obj.second->radius)) {
-				obj.second->drawGeometry(ProjectionMatrix, ViewMatrix);
-				objectsRendered++;
+			GLuint wireframeShader = ShaderManager::Instance()->shaderIDs["wireframe"];
+			GLuint geometryShader = ShaderManager::Instance()->shaderIDs["geometry"];
+			for (auto& obj : PhysicsManager::Instance()->satOverlaps)
+			{
+				obj.ent1->aabb.color = Vector3(1.f, 0.f, 0.f);
+				obj.ent2->aabb.color = Vector3(1.f, 0.f, 0.f);
+			}
+
+			objectsRendered = 0;
+			for (auto& obj : Scene::Instance()->objectsToRender)
+			{
+				if (FrustumManager::Instance()->isBoundingSphereInView(obj.second->GetPosition(), obj.second->radius)) {
+
+					ShaderManager::Instance()->SetCurrentShader(geometryShader);
+					obj.second->drawGeometry(ProjectionMatrix, ViewMatrix);
+
+					ShaderManager::Instance()->SetCurrentShader(wireframeShader);
+					boundingBox->mat->SetColor(obj.second->obb.color);
+					boundingBox->Draw(Matrix4::scale(obj.second->GetMeshDimensions())*obj.second->node.TopDownTransform, ViewMatrix, ProjectionMatrix, wireframeShader);
+					boundingBox->mat->SetColor(obj.second->aabb.color);
+					boundingBox->Draw(obj.second->aabb.model, ViewMatrix, ProjectionMatrix, wireframeShader);
+
+					objectsRendered++;
+				}
 			}
 		}
+		else
+		{
+			objectsRendered = 0;
+			for (auto& obj : Scene::Instance()->objectsToRender)
+			{
+				if (FrustumManager::Instance()->isBoundingSphereInView(obj.second->GetPosition(), obj.second->radius)) {
+					obj.second->drawGeometry(ProjectionMatrix, ViewMatrix);
+					objectsRendered++;
+				}
+			}
+		}		
 	}
 
 	void

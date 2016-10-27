@@ -2,9 +2,11 @@
 
 uniform vec3 MaterialColorValue;
 
-out vec3 color;
+layout(location = 1) out vec3 DiffuseOut;
+layout(location = 3) out vec3 diffIntAmbIntShineOut;
 
 void main()
 {
-    color = MaterialColorValue;
+	DiffuseOut = MaterialColorValue;
+	diffIntAmbIntShineOut = vec3(1.f, 1.f, 1.f);
 } 
