@@ -47,7 +47,6 @@ void Object::draw(
 	MaterialColorValueHandle = glGetUniformLocation(currentShaderID, "MaterialColorValue");
 	GLuint shininess = glGetUniformLocation(currentShaderID, "shininess");
 	PickingObjectIndexHandle = glGetUniformLocation(currentShaderID, "gObjectIndexVec4");
-	ObjectWorldPosHandle = glGetUniformLocation(currentShaderID, "gObjectPosVec3");
 	TextureHandle = glGetUniformLocation(currentShaderID, "myTextureSampler");
 
     glUniformMatrix4fv(MatrixHandle, 1, GL_FALSE, &MVP[0][0]);

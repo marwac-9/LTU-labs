@@ -99,7 +99,6 @@ private:
 	GLuint MaterialColorValueHandle;
 	GLuint PickingObjectIndexHandle;
 	GLuint TextureHandle;
-	GLuint ObjectWorldPosHandle;
 	
 	float motion = 1.f; //make sure it does not sleep directly at start of simulation
 	bool canSleep = true;

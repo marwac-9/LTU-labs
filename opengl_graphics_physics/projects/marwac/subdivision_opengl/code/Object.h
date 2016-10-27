@@ -102,7 +102,6 @@ private:
 	GLuint MaterialShininessValue;
 	GLuint PickingObjectIndexHandle;
 	GLuint TextureSamplerHandle;
-	GLuint ObjectWorldPosHandle;
 	GLuint DepthMVPMatrixHandle;
 	GLuint DepthBiasMatrixHandle;
 	float motion = 1.f; //make sure it does not sleep directly at start of simulation

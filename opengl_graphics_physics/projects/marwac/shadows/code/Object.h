@@ -100,7 +100,6 @@ private:
 	GLuint MaterialColorValueHandle;
 	GLuint PickingObjectIndexHandle;
 	GLuint TextureSamplerHandle;
-	GLuint ObjectWorldPosHandle;
 	GLuint DepthMVPMatrixHandle;
 	GLuint DepthBiasMatrixHandle;
 

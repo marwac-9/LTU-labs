@@ -140,7 +140,6 @@ void Object::draw(const Matrix4& Projection, const Matrix4& View)
 	MaterialDiffuseIntensityValueHandle = glGetUniformLocation(currentShaderID, "MaterialDiffuseIntensityValue");
 	MaterialColorHandle = glGetUniformLocation(currentShaderID, "MaterialColorValue");
 	PickingObjectIndexHandle = glGetUniformLocation(currentShaderID, "gObjectIndexVec4");
-	ObjectWorldPosHandle = glGetUniformLocation(currentShaderID, "gObjectPosVec3");
 	TextureSamplerHandle = glGetUniformLocation(currentShaderID, "myTextureSampler");
 
 	glUniformMatrix4fv(MatrixHandle, 1, GL_FALSE, &MVP[0][0]);
