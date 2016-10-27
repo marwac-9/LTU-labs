@@ -34,7 +34,7 @@ SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/bin")
 
 ADD_EXECUTABLE(deferred ${ALLSRCS})
 SET_TARGET_PROPERTIES(deferred PROPERTIES FOLDER "LABS")
-TARGET_LINK_LIBRARIES(deferred mesh obj material node drawables stb core render)
+TARGET_LINK_LIBRARIES(deferred mesh obj material node drawables camera stb core render)
 #ADD_DEPENDENCIES(deferred core render)
 
 

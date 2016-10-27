@@ -22,6 +22,9 @@
 #include "DebugDraw.h"
 #include "PhysicsManager.h"
 #include "FBOManager.h"
+#include "Camera.h"
+#include "Frustum.h"
+
 using namespace mwm;
 using namespace Display;
 namespace Picking
@@ -57,11 +60,18 @@ namespace Picking
             KeyCallback(key,scancode,action,mode);
         });
 
-        // window resize callback
-        this->window->SetWindowSizeFunction([this](int width, int height)
-        {
+		window->SetMouseMoveFunction([this](double mouseX, double mouseY)
+		{
+			MouseCallback(mouseX, mouseY);
+		});
+
+		// window resize callback
+		this->window->SetWindowSizeFunction([this](int width, int height)
+		{
 			this->windowWidth = width;
 			this->windowHeight = height;
+			this->windowMidX = windowWidth / 2.0f;
+			this->windowMidY = windowHeight / 2.0f;
             this->window->SetSize(this->windowWidth, this->windowHeight);
             float aspect = (float)this->windowWidth / (float)this->windowHeight;
             this->ProjectionMatrix = Matrix4::OpenGLPersp(45.f, aspect, 0.1f, 100.f);
@@ -121,10 +131,8 @@ namespace Picking
 		window->SetCursorPos(windowWidth/2.f, windowHeight/2.f+100); 
 		window->SetCursorMode(GLFW_CURSOR_DISABLED);
 
-		cam.SetInitPos(Vector3(0.f, -3.f, 10.f));
-		cam.computeViewFromInput(this->window, cameraMode, timeStep);
-		//ViewMatrix = cam.getViewMatrix();
-		//DebugDraw::Instance()->cam = &cam;
+		SetUpCamera(timeStep);
+
 		double fps_timer = 0;
 		Scene::Instance()->SceneObject->node.UpdateNodeMatrix(Matrix4::identityMatrix());
 
@@ -137,15 +145,16 @@ namespace Picking
             double currentTime = glfwGetTime();
             double deltaTime = currentTime - lastTime;
 			
+			Monitor(this->window);
+
 			//is cursor window locked
             if (altButtonToggle)
             {
 				// Compute the view matrix from keyboard and mouse input
-                cam.computeViewFromInput(this->window, cameraMode, deltaTime);
+                currentCamera->Update((float)deltaTime);
             }
-            ViewMatrix = cam.getViewMatrix();
+            ViewMatrix = currentCamera->getViewMatrix();
 			FrustumManager::Instance()->ExtractPlanes(ProjectionMatrix, ViewMatrix);
-            Monitor(this->window, ViewMatrix);
 			
 			timeStep = 0.016f + timeModifier;
 			dtInv = 1.f / timeStep;
@@ -349,7 +358,7 @@ namespace Picking
     }
 
     void
-    PickingApp::Monitor(Display::Window* window, Matrix4& ViewMatrix)
+    PickingApp::Monitor(Display::Window* window)
     {
 		if (window->GetKey(GLFW_KEY_KP_ADD) == GLFW_PRESS) timeModifier += 0.0005f;
 		if (window->GetKey(GLFW_KEY_KP_SUBTRACT) == GLFW_PRESS) timeModifier -= 0.0005f;
@@ -358,6 +367,12 @@ namespace Picking
 		if (window->GetKey(GLFW_KEY_LEFT) == GLFW_PRESS) if (lastPickedObject) lastPickedObject->Translate(Vector3(0.05f, 0.f, 0.f));
 		if (window->GetKey(GLFW_KEY_RIGHT) == GLFW_PRESS) if (lastPickedObject) lastPickedObject->Translate(Vector3(-0.05f, 0.f, 0.f));
 		
+		currentCamera->holdingForward = (window->GetKey(GLFW_KEY_W) == GLFW_PRESS);
+		currentCamera->holdingBackward = (window->GetKey(GLFW_KEY_S) == GLFW_PRESS);
+		currentCamera->holdingRight = (window->GetKey(GLFW_KEY_D) == GLFW_PRESS);
+		currentCamera->holdingLeft = (window->GetKey(GLFW_KEY_A) == GLFW_PRESS);
+		currentCamera->holdingUp = (window->GetKey(GLFW_KEY_SPACE) == GLFW_PRESS);
+		currentCamera->holdingDown = (window->GetKey(GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS);
     }
 
 	void
@@ -467,7 +482,7 @@ namespace Picking
 				FBOManager::Instance()->ReadWorldPos((unsigned int)leftMouseX, this->windowHeight - (unsigned int)leftMouseY, world_position.vect);
 				//Vector3 mouseInWorld = ConvertMousePosToWorld();
 			
-				Vector3 impulse = (world_position - cam.GetPosition()).vectNormalize();
+				Vector3 impulse = (world_position - currentCamera->GetPosition()).vectNormalize();
 				this->lastPickedObject->ApplyImpulse(impulse, 20.f, world_position);
 			}
         }
@@ -515,6 +530,8 @@ namespace Picking
 		glUniform3f(LightDir, lightInvDir.x, lightInvDir.y, lightInvDir.z);
 
         this->window->GetWindowSize(&this->windowWidth, &this->windowHeight);
+		windowMidX = windowWidth / 2.0f;
+		windowMidY = windowHeight / 2.0f;
         ProjectionMatrix = Matrix4::OpenGLPersp(45.0f, (float)this->windowWidth / (float)this->windowHeight, 0.1f, 200.0f);
 		DebugDraw::Instance()->Projection = &ProjectionMatrix;
 		DebugDraw::Instance()->View = &ViewMatrix;
@@ -681,6 +698,22 @@ namespace Picking
 			Vector3 dir = obj.second->GetPosition() - Vector3(0.f,0.f,0.f);
 			obj.second->ApplyImpulse(dir*-20.f, obj.second->GetPosition());
 		}
+	}
+
+	void PickingApp::MouseCallback(double mouseX, double mouseY)
+	{
+		if (altButtonToggle)
+		{
+			currentCamera->UpdateOrientation(mouseX, mouseY);
+			window->SetCursorPos(windowMidX, windowMidY);
+		}
+	}
+
+	void PickingApp::SetUpCamera(float timeStep)
+	{
+		currentCamera = new Camera(Vector3(0.f, -3.f, 16.f), windowWidth, windowHeight);
+		currentCamera->Update(timeStep);
+		window->SetCursorPos(windowMidX, windowMidY);
 	}
 
 } // namespace Example

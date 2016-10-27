@@ -1,15 +1,10 @@
-// Include GLFW
-
-#include "config.h"
-#include "render/window.h"
 #include "cmath"
-#include <GLFW/glfw3.h>
 #include "MyMathLib.h"
 #include "Camera.h"
 
 using namespace mwm;
 
-Camera::Camera()
+Camera::Camera(const mwm::Vector3& initPos, int windowW, int windowH)
 {
 	// Initial horizontal angle : toward -Z
 	horizontalAngle = 3.14f;
@@ -20,15 +15,23 @@ Camera::Camera()
 
 	speed = 10.0f; // 3 units / second
 	mouseSpeed = 0.002f;
+
+	holdingForward = false;
+	holdingBackward = false;
+	holdingRight = false;
+	holdingLeft = false;
+	holdingUp = false;
+	holdingDown = false;
+
+	initialPosition = initPos;
+
+	UpdateSize(windowW, windowH);
+	UpdateOrientation(windowMidX, windowMidY + 100);
 }
 
 Camera::~Camera()
 {
 }
-
-Matrix4 ViewMatrix;
-Vector3 direction;
-Vector3 up;
 
 Matrix4 Camera::getViewMatrix(){
 	return ViewMatrix;
@@ -42,11 +45,6 @@ Vector3 Camera::getDirection()
 Vector3 Camera::getUp()
 {
 	return up;
-}
-
-void Camera::SetInitPos(const Vector3& pos)
-{
-    initialPosition = pos;
 }
 
 Vector3 Camera::GetInitPos()
@@ -70,40 +68,68 @@ Vector3 Camera::GetPosition2() //if scaled view
 	return cameraPos;
 }
 
-void Camera::computeViewFromInput(Display::Window* window, int cameraType, double deltatime){
+void Camera::Update(float deltaTime){
 
-	
-	// glfwGetTime is called only once, the first time this function is called
-	//static double lastTime = glfwGetTime();
-	float deltaTime = (float)deltatime;
-	int windowWidth = 0;
-	int windowHeight = 0;
-	window->GetWindowSize(&windowWidth,&windowHeight);
-	// Compute time difference between current and last frame
+	UpdatePosition(deltaTime);
 
-	//deltaTime = 0.16f;
+	CalculateViewMatrix();		
+}
 
-	// Get mouse position
-	double xpos, ypos = 0;
-
-	window->GetCursorPos(&xpos, &ypos);
-
-	// Reset mouse position for next frame
-	window->SetCursorPos((float)windowWidth / 2.f, (float)windowHeight / 2.f);
-
+void Camera::UpdateOrientation(double mouseX, double mouseY)
+{
 	// Compute new orientation
-	
-	horizontalAngle += mouseSpeed * float((float)windowWidth / 2.0f - (float)xpos);
-	verticalAngle += mouseSpeed * float((float)windowHeight / 2.0f - (float)ypos);
-	
+
+	horizontalAngle += mouseSpeed * (windowMidX - (float)mouseX);
+	verticalAngle += mouseSpeed * (windowMidY - (float)mouseY);
+
 	//if monitoring camera
+	/*
 	if (cameraType == 3)
 	{
 		verticalAngle = 0.0f;
 		horizontalAngle = 3.14f;
 	}
+	*/
 
+	ComputeVectors();
+}
 
+void Camera::UpdatePosition(float deltaTime)
+{
+	// Move forward
+	if (holdingForward){
+		initialPosition = initialPosition + (direction * deltaTime * speed);
+	}
+	// Move backward
+	if (holdingBackward){
+		initialPosition = initialPosition - (direction * deltaTime * speed);
+	}
+	// Strafe right
+	if (holdingRight){
+		initialPosition = initialPosition + (right * deltaTime * speed);
+	}
+	// Strafe left
+	if (holdingLeft){
+		initialPosition = initialPosition - (right * deltaTime * speed);
+	}
+	if (holdingUp){
+		initialPosition = initialPosition + (up * deltaTime * speed);
+	}
+	if (holdingDown){
+		initialPosition = initialPosition - (up * deltaTime * speed);
+	}
+}
+
+void Camera::UpdateSize(int width, int height)
+{
+	windowWidth = width;
+	windowHeight = height;
+	windowMidX = windowWidth / 2.0f;
+	windowMidY = windowHeight / 2.0f;
+}
+
+void Camera::ComputeVectors()
+{
 	// Direction : Spherical coordinates to Cartesian coordinates conversion
 	direction = Vector3(
 		cos(verticalAngle) * sin(horizontalAngle),
@@ -112,7 +138,7 @@ void Camera::computeViewFromInput(Display::Window* window, int cameraType, doubl
 		);
 
 	// Right vector
-	Vector3 right = Vector3(
+	right = Vector3(
 		sin(horizontalAngle - 3.14f / 2.0f),
 		0.f,
 		cos(horizontalAngle - 3.14f / 2.0f)
@@ -120,40 +146,19 @@ void Camera::computeViewFromInput(Display::Window* window, int cameraType, doubl
 
 	// Up vector
 	up = right.crossProd(direction);
-	// Move forward
-	if (window->GetKey(GLFW_KEY_W) == GLFW_PRESS){
-		initialPosition = initialPosition + (direction * deltaTime * speed);
-	}
-	// Move backward
-	if (window->GetKey(GLFW_KEY_S) == GLFW_PRESS){
-		initialPosition = initialPosition - (direction * deltaTime * speed);
-	}
-	// Strafe right
-	if (window->GetKey(GLFW_KEY_D) == GLFW_PRESS){
-		initialPosition = initialPosition + (right * deltaTime * speed);
-	}
-	// Strafe left
-	if (window->GetKey(GLFW_KEY_A) == GLFW_PRESS){
-		initialPosition = initialPosition - (right * deltaTime * speed);
-	}
-	if (window->GetKey(GLFW_KEY_SPACE) == GLFW_PRESS){
-		initialPosition = initialPosition + (up * deltaTime * speed);
-	}
-	if (window->GetKey(GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS){
-		initialPosition = initialPosition - (up * deltaTime * speed);
-	}
+}
 
-	//float FoV = initialFoV;// - 5 * glfwGetMouseWheel(); // Now GLFW 3 requires setting up a callback for this. It's a bit too complicated for this beginner's tutorial, so it's disabled instead.
-
+void Camera::CalculateViewMatrix()
+{
 	// Camera matrix
-	if (cameraType == 1 || cameraType == 2)
-	{
+	//if (cameraType == 1 || cameraType == 2)
+	//{
 		ViewMatrix = Matrix4::lookAt(
 			initialPosition,           // Camera is here
 			initialPosition + direction, // and looks here : at the same position, plus "direction"
 			up                  // Head is up (set to 0,-1,0 to look upside-down)
 			);
-		if (cameraType == 2)
+		/*if (cameraType == 2)
 		{
 			ViewMatrix = ViewMatrix*Matrix4::translate(0, 0, -10);// we move the camera out after creating the look at (rotation matrix)
 		}
@@ -165,9 +170,5 @@ void Camera::computeViewFromInput(Display::Window* window, int cameraType, doubl
 			initialPosition + direction, // and looks here : at the same position, plus "direction"
 			up                  // Head is up (set to 0,-1,0 to look upside-down)
 			);
-	}
-	
-
-	// For the next frame, the "last time" will be "now"
-	
+	}*/
 }

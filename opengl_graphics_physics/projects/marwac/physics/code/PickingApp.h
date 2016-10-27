@@ -4,10 +4,11 @@
 #include "core/app.h"
 #include "render/window.h"
 #include "MyMathLib.h"
-#include "Camera.h"
-#include "Frustum.h"
+
 class BoundingBox;
 class Object;
+class Camera;
+
 namespace Picking
 {
     class PickingApp : public Core::App
@@ -22,7 +23,8 @@ namespace Picking
         bool Open();
         /// run app
         void Run();
-    private:
+
+	private:
 		void Clear();
 		void DrawPass2(const mwm::Matrix4& ProjectionMatrix, const mwm::Matrix4& ViewMatrix);
 		void DrawDebugPass(const mwm::Matrix4& Projection, const mwm::Matrix4& View);
@@ -35,7 +37,9 @@ namespace Picking
         void InitGL();
         void ClearBuffers();
         void KeyCallback(int key, int scancode, int action, int mods);
-		void Monitor(Display::Window* window, mwm::Matrix4& ViewMatrix);
+		void MouseCallback(double mouseX, double mouseY);
+		void Monitor(Display::Window* window);
+		void SetUpCamera(float timeStep);
 		mwm::Vector3 ConvertMousePosToWorld();
 		void LoadScene1();
 		void LoadScene2();
@@ -64,9 +68,12 @@ namespace Picking
         double leftMouseY;
         int windowWidth;
         int windowHeight;
+		float windowMidX;
+		float windowMidY;
+
 		mwm::Matrix4 ProjectionMatrix;
 		mwm::Matrix4 ViewMatrix;
-		Camera cam;
+		Camera* currentCamera;
         Object* lastPickedObject = nullptr;
 		float timeModifier = 0.f;
 		int objectsRendered = 0;

@@ -22,6 +22,8 @@
 #include <string>
 #include "DebugDraw.h"
 #include "PhysicsManager.h"
+#include "Camera.h"
+#include "Frustum.h"
 
 using namespace mwm;
 using namespace Display;
@@ -59,11 +61,18 @@ namespace Subdivision
 			KeyCallback(key, scancode, action, mode);
 		});
 
+		window->SetMouseMoveFunction([this](double mouseX, double mouseY)
+		{
+			MouseCallback(mouseX, mouseY);
+		});
+
 		// window resize callback
 		this->window->SetWindowSizeFunction([this](int width, int height)
 		{
 			this->windowWidth = width;
 			this->windowHeight = height;
+			this->windowMidX = windowWidth / 2.0f;
+			this->windowMidY = windowHeight / 2.0f;
 			this->window->SetSize(this->windowWidth, this->windowHeight);
 			float aspect = (float)this->windowWidth / (float)this->windowHeight;
 			this->ProjectionMatrix = Matrix4::OpenGLPersp(45.f, aspect, 0.1f, 100.f);
@@ -95,11 +104,10 @@ namespace Subdivision
 		double lastTime = glfwGetTime();
 
 		//camera rotates based on mouse movement, setting initial mouse pos will always focus camera at the beginning in specific position
-		window->SetCursorPos(windowWidth / 2.f, windowHeight / 2.f + 100);
+		window->SetCursorPos(windowMidX, windowMidY + 100);
 		window->SetCursorMode(GLFW_CURSOR_DISABLED);
 
-		cam.SetInitPos(Vector3(0.f, 1.f, 6.f));
-		cam.computeViewFromInput(this->window, 1, 0.016f);
+		SetUpCamera(0.016f);
 
 		double fps_timer = 0;
 
@@ -114,15 +122,18 @@ namespace Subdivision
 			// Measure FPS
 			double currentTime = glfwGetTime();
 			double deltaTime = currentTime - lastTime;
+
+			Monitor(this->window);
+
 			//is cursor window locked
 			if (altButtonToggle)
 			{
 				// Compute the view matrix from keyboard and mouse input
-				cam.computeViewFromInput(this->window, 1, deltaTime);
+				currentCamera->Update((float)deltaTime);
 			}
-			ViewMatrix = cam.getViewMatrix();
+			ViewMatrix = currentCamera->getViewMatrix();
 			FrustumManager::Instance()->ExtractPlanes(ProjectionMatrix, ViewMatrix);
-			Monitor(this->window, ViewMatrix);
+			
 
 			Scene::Instance()->SceneObject->node.UpdateNodeMatrix(Matrix4::identityMatrix());
 
@@ -168,59 +179,67 @@ namespace Subdivision
 	void
 		SubdivisionApp::KeyCallback(int key, int scancode, int action, int mods)
 	{
-		if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
-			running = false;
-		}
-		//this is just used to show hide cursor, mouse steal on/off
-		else if (key == GLFW_KEY_LEFT_ALT && action == GLFW_PRESS) {
-			if (altButtonToggle) {
-				altButtonToggle = false;
-				window->SetCursorMode(GLFW_CURSOR_NORMAL);
-			}
-			else {
-				altButtonToggle = true;
-				window->SetCursorPos(windowWidth / 2.f, windowHeight / 2.f);
-				window->SetCursorMode(GLFW_CURSOR_DISABLED);
-			}
-		}
-		else if (key == GLFW_KEY_1 && action == GLFW_PRESS) {
-			LoadScene1();
-		}
-		else if (key == GLFW_KEY_2 && action == GLFW_PRESS) {
-			LoadScene2();
-		}
-		else if (key == GLFW_KEY_3 && action == GLFW_PRESS) {
-			LoadScene3();
-		}
-		else if (key == GLFW_KEY_4 && action == GLFW_PRESS) {
-			printf("\nWIREFRAME MODE\n");
-			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-		}
-		else if (key == GLFW_KEY_5 && action == GLFW_PRESS) {
-			printf("\nSHADED MODE\n");
-			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-		}
-		else if (key == GLFW_KEY_S && window->GetKey(GLFW_KEY_LEFT_CONTROL) && action == GLFW_PRESS) {
-			GraphicsManager::SaveToOBJ(GraphicsStorage::objects.back());
-			std::cout << "Last Mesh Saved" << std::endl;
-		}
-		else if (key == GLFW_KEY_F5 && action == GLFW_PRESS)
+		if (action == GLFW_PRESS)
 		{
-			if (DebugDraw::Instance()->debug) DebugDraw::Instance()->debug = false;
-			else DebugDraw::Instance()->debug = true;
-		}
+			if (key == GLFW_KEY_ESCAPE) {
+				running = false;
+			}
+			//this is just used to show hide cursor, mouse steal on/off
+			else if (key == GLFW_KEY_LEFT_ALT) {
+				if (altButtonToggle) {
+					altButtonToggle = false;
+					window->SetCursorMode(GLFW_CURSOR_NORMAL);
+				}
+				else {
+					altButtonToggle = true;
+					window->SetCursorPos(windowWidth / 2.f, windowHeight / 2.f);
+					window->SetCursorMode(GLFW_CURSOR_DISABLED);
+				}
+			}
+			else if (key == GLFW_KEY_1) {
+				LoadScene1();
+			}
+			else if (key == GLFW_KEY_2) {
+				LoadScene2();
+			}
+			else if (key == GLFW_KEY_3) {
+				LoadScene3();
+			}
+			else if (key == GLFW_KEY_4) {
+				printf("\nWIREFRAME MODE\n");
+				glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+			}
+			else if (key == GLFW_KEY_5) {
+				printf("\nSHADED MODE\n");
+				glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+			}
+			else if (key == GLFW_KEY_S && window->GetKey(GLFW_KEY_LEFT_CONTROL)) {
+				GraphicsManager::SaveToOBJ(GraphicsStorage::objects.back());
+				std::cout << "Last Mesh Saved" << std::endl;
+			}
+			else if (key == GLFW_KEY_F5)
+			{
+				if (DebugDraw::Instance()->debug) DebugDraw::Instance()->debug = false;
+				else DebugDraw::Instance()->debug = true;
+			}
 
-		else if (key == GLFW_KEY_E && action == GLFW_PRESS)
-		{
-			Object* cube = Scene::Instance()->addPhysicObject("cube", Vector3(0.f, 8.f, 0.f));
-			cube->SetPosition(Vector3(0.f, (float)Scene::Instance()->idCounter * 2.f - 10.f + 0.001f, 0.f));
+			else if (key == GLFW_KEY_E)
+			{
+				Object* cube = Scene::Instance()->addPhysicObject("cube", Vector3(0.f, 8.f, 0.f));
+				cube->SetPosition(Vector3(0.f, (float)Scene::Instance()->idCounter * 2.f - 10.f + 0.001f, 0.f));
+			}
 		}
 	}
 
 	void
-		SubdivisionApp::Monitor(Display::Window* window, Matrix4& ViewMatrix)
+		SubdivisionApp::Monitor(Display::Window* window)
 	{
-
+		currentCamera->holdingForward = (window->GetKey(GLFW_KEY_W) == GLFW_PRESS);
+		currentCamera->holdingBackward = (window->GetKey(GLFW_KEY_S) == GLFW_PRESS);
+		currentCamera->holdingRight = (window->GetKey(GLFW_KEY_D) == GLFW_PRESS);
+		currentCamera->holdingLeft = (window->GetKey(GLFW_KEY_A) == GLFW_PRESS);
+		currentCamera->holdingUp = (window->GetKey(GLFW_KEY_SPACE) == GLFW_PRESS);
+		currentCamera->holdingDown = (window->GetKey(GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS);
 	}
 
 	void
@@ -245,6 +264,8 @@ namespace Subdivision
 		glUniform3f(LightID, 0.f, 0.f, 0.f);
 
 		this->window->GetWindowSize(&this->windowWidth, &this->windowHeight);
+		windowMidX = windowWidth / 2.0f;
+		windowMidY = windowHeight / 2.0f;
 		ProjectionMatrix = Matrix4::OpenGLPersp(45.0f, (float)this->windowWidth / (float)this->windowHeight, 0.1f, 200.0f);
 	}
 
@@ -353,6 +374,22 @@ namespace Subdivision
 		GraphicsManager::LoadOBJToVBO(subdividedOBJ, newHMesh);
 		
 		//must create containers for dynamic meshes and OBJ and delete them when clearing
+	}
+
+	void SubdivisionApp::MouseCallback(double mouseX, double mouseY)
+	{
+		if (altButtonToggle)
+		{
+			currentCamera->UpdateOrientation(mouseX, mouseY);
+			window->SetCursorPos(windowMidX, windowMidY);
+		}
+	}
+
+	void SubdivisionApp::SetUpCamera(float timeStep)
+	{
+		currentCamera = new Camera(Vector3(0.f, 3.f, 16.f), windowWidth, windowHeight);
+		currentCamera->Update(timeStep);
+		window->SetCursorPos(windowMidX, windowMidY);
 	}
 
 } // namespace Example

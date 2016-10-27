@@ -22,6 +22,8 @@
 #include "DebugDraw.h"
 #include "PhysicsManager.h"
 #include "FBOManager.h"
+#include "Camera.h"
+#include "Frustum.h"
 using namespace mwm;
 using namespace Display;
 namespace Picking
@@ -57,11 +59,18 @@ namespace Picking
             KeyCallback(key,scancode,action,mode);
         });
 
+		window->SetMouseMoveFunction([this](double mouseX, double mouseY)
+		{
+			MouseCallback(mouseX, mouseY);
+		});
+
         // window resize callback
         this->window->SetWindowSizeFunction([this](int width, int height)
         {
 			this->windowWidth = width;
 			this->windowHeight = height;
+			this->windowMidX = windowWidth / 2.0f;
+			this->windowMidY = windowHeight / 2.0f;
             this->window->SetSize(this->windowWidth, this->windowHeight);
             float aspect = (float)this->windowWidth / (float)this->windowHeight;
             this->ProjectionMatrix = Matrix4::OpenGLPersp(45.f, aspect, 0.1f, 100.f);
@@ -119,11 +128,10 @@ namespace Picking
 		double lastTime = glfwGetTime();
 
 		//camera rotates based on mouse movement, setting initial mouse pos will always focus camera at the beginning in specific position
-		window->SetCursorPos(windowWidth/2.f, windowHeight/2.f+100); 
+		window->SetCursorPos(windowMidX, windowMidY+100); 
 		window->SetCursorMode(GLFW_CURSOR_DISABLED);
 
-		cam.SetInitPos(Vector3(0.f, 10.f, 60.f));
-		cam.computeViewFromInput(this->window, cameraMode, timeStep);
+		SetUpCamera(timeStep);
 
 		double fps_timer = 0;
 		Scene::Instance()->SceneObject->node.UpdateNodeMatrix(Matrix4::identityMatrix());
@@ -141,15 +149,17 @@ namespace Picking
             double currentTime = glfwGetTime();
             double deltaTime = currentTime - lastTime;
 			timeCounter += deltaTime;
+
+			Monitor(this->window);
+
 			//is cursor window locked
             if (altButtonToggle)
             {
 				// Compute the view matrix from keyboard and mouse input
-                cam.computeViewFromInput(this->window, cameraMode, deltaTime);
+                currentCamera->Update((float)deltaTime);
             }
-            ViewMatrix = cam.getViewMatrix();
+            ViewMatrix = currentCamera->getViewMatrix();
 			FrustumManager::Instance()->ExtractPlanes(ProjectionMatrix, ViewMatrix);
-            Monitor(this->window, ViewMatrix);
 			
 			timeStep = 0.016f + timeModifier;
 			dtInv = 1.f / timeStep;
@@ -185,7 +195,7 @@ namespace Picking
 			PickingTest();
 
 			DrawGeometryPass(ProjectionMatrix, ViewMatrix);
-			DrawLightPass(ProjectionMatrix, ViewMatrix, cam.GetPosition2());
+			DrawLightPass(ProjectionMatrix, ViewMatrix, currentCamera->GetPosition2());
 
 			BlitToScreenPass();
 
@@ -284,94 +294,97 @@ namespace Picking
     void
     PickingApp::KeyCallback(int key, int scancode, int action, int mods)
     {
-        if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
-            running = false;
-        }
-        else if (key == GLFW_KEY_R && action == GLFW_PRESS) {
-            //Scene::Instance()->addRandomObject();
-        }
-        //this is just used to show hide cursor, mouse steal on/off
-		else if (key == GLFW_KEY_LEFT_ALT && action == GLFW_PRESS) {
-            if (altButtonToggle) {
-                altButtonToggle = false;
-                window->SetCursorMode(GLFW_CURSOR_NORMAL);
-            }
-            else {
-                altButtonToggle = true;
-				window->SetCursorPos(windowWidth/2.f,windowHeight/2.f);
-                window->SetCursorMode(GLFW_CURSOR_DISABLED);
-            }
-        }
-		else if (key == GLFW_KEY_1 && action == GLFW_PRESS) {
-            //cameraMode = 1;
-			LoadScene1();
-        }
-		else if (key == GLFW_KEY_2 && action == GLFW_PRESS) {
-            //cameraMode = 2;
-			LoadScene2();
-        }
-		else if(key == GLFW_KEY_3 && action == GLFW_PRESS) {
-            //cameraMode = 3;
-			LoadScene3();
-        }
-		else if (key == GLFW_KEY_6 && action == GLFW_PRESS) {
-			//cameraMode = 3;
-			LoadScene4();
-		}
-		else if(key == GLFW_KEY_4 && action == GLFW_PRESS) {
-            printf("\nWIREFRAME MODE\n");
-            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-        }
-		else if(key == GLFW_KEY_5 && action == GLFW_PRESS) {
-            printf("\nSHADED MODE\n");
-            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-        }
-		else if(key == GLFW_KEY_U && action == GLFW_PRESS) {
-            GraphicsManager::SaveToOBJ(GraphicsStorage::objects.back());
-            std::cout << "Last Mesh Saved" << std::endl;
-        }
-		else if(key == GLFW_KEY_O && action == GLFW_PRESS) {
-			if (debug)
-			{
-				debug = false;
-				//glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);				
-			}
-			else
-			{
-				debug = true;
-				//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-			}
-		}
-		else if(key == GLFW_KEY_P && action == GLFW_PRESS)
+		if (action == GLFW_PRESS)
 		{
-			if (paused)
-			{
-				paused = false;
+			if (key == GLFW_KEY_ESCAPE) {
+				running = false;
 			}
-			else
-			{
-				paused = true;
+			else if (key == GLFW_KEY_R) {
+				//Scene::Instance()->addRandomObject();
 			}
-		}
-		else if(key == GLFW_KEY_T && action == GLFW_PRESS)
-		{
-			timeModifier = 0.f;
-		}
-		else if (key == GLFW_KEY_F5 && action == GLFW_PRESS)
-		{
-			if (DebugDraw::Instance()->debug) DebugDraw::Instance()->debug = false;
-			else DebugDraw::Instance()->debug = true;
-		}
+			//this is just used to show hide cursor, mouse steal on/off
+			else if (key == GLFW_KEY_LEFT_ALT) {
+				if (altButtonToggle) {
+					altButtonToggle = false;
+					window->SetCursorMode(GLFW_CURSOR_NORMAL);
+				}
+				else {
+					altButtonToggle = true;
+					window->SetCursorPos(windowWidth / 2.f, windowHeight / 2.f);
+					window->SetCursorMode(GLFW_CURSOR_DISABLED);
+				}
+			}
+			else if (key == GLFW_KEY_1) {
+				//cameraMode = 1;
+				LoadScene1();
+			}
+			else if (key == GLFW_KEY_2) {
+				//cameraMode = 2;
+				LoadScene2();
+			}
+			else if (key == GLFW_KEY_3) {
+				//cameraMode = 3;
+				LoadScene3();
+			}
+			else if (key == GLFW_KEY_6) {
+				//cameraMode = 3;
+				LoadScene4();
+			}
+			else if (key == GLFW_KEY_4) {
+				printf("\nWIREFRAME MODE\n");
+				glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+			}
+			else if (key == GLFW_KEY_5) {
+				printf("\nSHADED MODE\n");
+				glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+			}
+			else if (key == GLFW_KEY_U) {
+				GraphicsManager::SaveToOBJ(GraphicsStorage::objects.back());
+				std::cout << "Last Mesh Saved" << std::endl;
+			}
+			else if (key == GLFW_KEY_O) {
+				if (debug)
+				{
+					debug = false;
+					//glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);				
+				}
+				else
+				{
+					debug = true;
+					//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+				}
+			}
+			else if (key == GLFW_KEY_P)
+			{
+				if (paused)
+				{
+					paused = false;
+				}
+				else
+				{
+					paused = true;
+				}
+			}
+			else if (key == GLFW_KEY_T)
+			{
+				timeModifier = 0.f;
+			}
+			else if (key == GLFW_KEY_F5)
+			{
+				if (DebugDraw::Instance()->debug) DebugDraw::Instance()->debug = false;
+				else DebugDraw::Instance()->debug = true;
+			}
 
-		else if (key == GLFW_KEY_E && action == GLFW_PRESS)
-		{
-			Object* cube = Scene::Instance()->addPhysicObject("cube", Vector3(0.f, 8.f, 0.f));
-			cube->SetPosition(Vector3(0.f, (float)Scene::Instance()->idCounter * 2.f - 10.f + 0.001f, 0.f));
+			else if (key == GLFW_KEY_E)
+			{
+				Object* cube = Scene::Instance()->addPhysicObject("cube", Vector3(0.f, 8.f, 0.f));
+				cube->SetPosition(Vector3(0.f, (float)Scene::Instance()->idCounter * 2.f - 10.f + 0.001f, 0.f));
+			}
 		}
     }
 
     void
-    PickingApp::Monitor(Display::Window* window, Matrix4& ViewMatrix)
+    PickingApp::Monitor(Display::Window* window)
     {
 		if (window->GetKey(GLFW_KEY_KP_ADD) == GLFW_PRESS) timeModifier += 0.0005f;
 		if (window->GetKey(GLFW_KEY_KP_SUBTRACT) == GLFW_PRESS) timeModifier -= 0.0005f;
@@ -379,7 +392,13 @@ namespace Picking
 		if (window->GetKey(GLFW_KEY_DOWN) == GLFW_PRESS) if (lastPickedObject) lastPickedObject->Translate(Vector3(0.f, -0.05f, 0.f));
 		if (window->GetKey(GLFW_KEY_LEFT) == GLFW_PRESS) if (lastPickedObject) lastPickedObject->Translate(Vector3(0.05f, 0.f, 0.f));
 		if (window->GetKey(GLFW_KEY_RIGHT) == GLFW_PRESS) if (lastPickedObject) lastPickedObject->Translate(Vector3(-0.05f, 0.f, 0.f));
-		
+
+		currentCamera->holdingForward = (window->GetKey(GLFW_KEY_W) == GLFW_PRESS);
+		currentCamera->holdingBackward = (window->GetKey(GLFW_KEY_S) == GLFW_PRESS);
+		currentCamera->holdingRight = (window->GetKey(GLFW_KEY_D) == GLFW_PRESS);
+		currentCamera->holdingLeft = (window->GetKey(GLFW_KEY_A) == GLFW_PRESS);
+		currentCamera->holdingUp = (window->GetKey(GLFW_KEY_SPACE) == GLFW_PRESS);
+		currentCamera->holdingDown = (window->GetKey(GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS);		
     }
 
 	void
@@ -489,7 +508,7 @@ namespace Picking
 				FBOManager::Instance()->ReadWorldPos((unsigned int)leftMouseX, this->windowHeight - (unsigned int)leftMouseY, world_position.vect);
 				//Vector3 mouseInWorld = ConvertMousePosToWorld();
 			
-				Vector3 impulse = (world_position - cam.GetPosition()).vectNormalize();
+				Vector3 impulse = (world_position - currentCamera->GetPosition()).vectNormalize();
 				this->lastPickedObject->ApplyImpulse(impulse, 20.f, world_position);
 			}
         }
@@ -537,6 +556,8 @@ namespace Picking
 		glUniform3f(LightDir, lightInvDir.x, lightInvDir.y, lightInvDir.z);
 
         this->window->GetWindowSize(&this->windowWidth, &this->windowHeight);
+		windowMidX = windowWidth / 2.0f;
+		windowMidY = windowHeight / 2.0f;
         ProjectionMatrix = Matrix4::OpenGLPersp(45.0f, (float)this->windowWidth / (float)this->windowHeight, 0.1f, 200.0f);
 		DebugDraw::Instance()->Projection = &ProjectionMatrix;
 		DebugDraw::Instance()->View = &ViewMatrix;
@@ -991,6 +1012,22 @@ namespace Picking
 		{
 			obj->IntegrateRunge3(timestep);
 		}
+	}
+
+	void PickingApp::MouseCallback(double mouseX, double mouseY)
+	{
+		if (altButtonToggle)
+		{
+			currentCamera->UpdateOrientation(mouseX, mouseY);
+			window->SetCursorPos(windowMidX, windowMidY);
+		}
+	}
+
+	void PickingApp::SetUpCamera(float timeStep)
+	{
+		currentCamera = new Camera(Vector3(0.f, 10.f, 60.f), windowWidth, windowHeight);
+		currentCamera->Update(timeStep);
+		window->SetCursorPos(windowMidX, windowMidY);
 	}
 
 	

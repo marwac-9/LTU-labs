@@ -1,7 +1,6 @@
 #pragma once
 #include "MyMathLib.h"
 #include "Object.h"
-#include "BoundingBox.h"
 
 struct ObjectPoint
 {

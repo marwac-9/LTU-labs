@@ -4,14 +4,14 @@
 #include "core/app.h"
 #include "render/window.h"
 #include "MyMathLib.h"
-#include "Camera.h"
-#include "Frustum.h"
+
 #include <vector>
 class BoundingBox;
 class Object;
 class OBJ;
 class Mesh;
 class HalfEdgeMesh;
+class Camera;
 
 namespace Subdivision
 {
@@ -35,7 +35,9 @@ namespace Subdivision
 		void InitGL();
 		void ClearBuffers();
 		void KeyCallback(int key, int scancode, int action, int mods);
-		void Monitor(Display::Window* window, mwm::Matrix4& ViewMatrix);
+		void MouseCallback(double mouseX, double mouseY);
+		void Monitor(Display::Window* window);
+		void SetUpCamera(float timeStep);
 		void LoadScene1();
 		void LoadScene2();
 		void LoadScene3();
@@ -49,9 +51,12 @@ namespace Subdivision
 		double leftMouseY;
 		int windowWidth;
 		int windowHeight;
+		float windowMidX;
+		float windowMidY;
+
 		mwm::Matrix4 ProjectionMatrix;
 		mwm::Matrix4 ViewMatrix;
-		Camera cam;
+		Camera* currentCamera;
 
 		int objectsRendered = 0;
 
