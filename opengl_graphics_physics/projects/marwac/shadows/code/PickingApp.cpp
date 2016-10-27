@@ -545,6 +545,7 @@ namespace Picking
 	void
 	PickingApp::DrawDebug(const Matrix4& ProjectionMatrix, const Matrix4& ViewMatrix)
 	{
+		GLuint wireframeShader = ShaderManager::Instance()->shaderIDs["wireframe"];
 		for (auto& obj : PhysicsManager::Instance()->satOverlaps)
 		{
 			obj.ent1->aabb.color = Vector3(1.f, 0.f, 0.f);
@@ -556,9 +557,9 @@ namespace Picking
 			if (FrustumManager::Instance()->isBoundingSphereInView(obj.second->GetPosition(), obj.second->radius))
 			{
 				boundingBox->mat->SetColor(obj.second->obb.color);
-				boundingBox->Draw(Matrix4::scale(obj.second->GetMeshDimensions())*obj.second->node.TopDownTransform, ViewMatrix, ProjectionMatrix);
+				boundingBox->Draw(Matrix4::scale(obj.second->GetMeshDimensions())*obj.second->node.TopDownTransform, ViewMatrix, ProjectionMatrix, wireframeShader);
 				boundingBox->mat->SetColor(obj.second->aabb.color);
-				boundingBox->Draw(obj.second->aabb.model, ViewMatrix, ProjectionMatrix);
+				boundingBox->Draw(obj.second->aabb.model, ViewMatrix, ProjectionMatrix, wireframeShader);
 			}
 		}
 	}
@@ -566,6 +567,8 @@ namespace Picking
 	void 
 	PickingApp::DrawDebugAndColor(const Matrix4& ProjectionMatrix, const Matrix4& ViewMatrix)
 	{
+		GLuint wireframeShader = ShaderManager::Instance()->shaderIDs["wireframe"];
+		GLuint colorShader = ShaderManager::Instance()->shaderIDs["color"];
 		for (auto& obj : PhysicsManager::Instance()->satOverlaps)
 		{
 			obj.ent1->aabb.color = Vector3(1.f, 0.f, 0.f);
@@ -577,16 +580,16 @@ namespace Picking
 		{
 			if (FrustumManager::Instance()->isBoundingSphereInView(obj.second->GetPosition(), obj.second->radius)) {
 
-				ShaderManager::Instance()->SetCurrentShader(ShaderManager::Instance()->shaderIDs["color"]);
+				ShaderManager::Instance()->SetCurrentShader(colorShader);
 				obj.second->draw(ProjectionMatrix, ViewMatrix);
 				objectsRendered++;
 
-				ShaderManager::Instance()->SetCurrentShader(ShaderManager::Instance()->shaderIDs["wireframe"]);
+				ShaderManager::Instance()->SetCurrentShader(wireframeShader);
 
 				boundingBox->mat->SetColor(obj.second->obb.color);
-				boundingBox->Draw(Matrix4::scale(obj.second->GetMeshDimensions())*obj.second->node.TopDownTransform, ViewMatrix, ProjectionMatrix);
+				boundingBox->Draw(Matrix4::scale(obj.second->GetMeshDimensions())*obj.second->node.TopDownTransform, ViewMatrix, ProjectionMatrix, wireframeShader);
 				boundingBox->mat->SetColor(obj.second->aabb.color);
-				boundingBox->Draw(obj.second->aabb.model, ViewMatrix, ProjectionMatrix);				
+				boundingBox->Draw(obj.second->aabb.model, ViewMatrix, ProjectionMatrix, wireframeShader);
 			}
 		}
 	}

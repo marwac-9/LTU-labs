@@ -1,6 +1,5 @@
 #include "BoundingBox.h"
 #include "Mesh.h"
-#include "ShaderManager.h"
 #include "Material.h"
 #include <algorithm>
 using namespace mwm;
@@ -57,12 +56,11 @@ void BoundingBox::SetUpBuffers()
 
 }
 
-void BoundingBox::Draw(const Matrix4& Model, const Matrix4& View, const Matrix4& Projection)
+void BoundingBox::Draw(const mwm::Matrix4& Model, const mwm::Matrix4& View, const mwm::Matrix4& Projection, GLuint wireframeShader)
 {
 	Matrix4F MVP = (Model*View*Projection).toFloat();
-
-	MatrixHandle = glGetUniformLocation(ShaderManager::Instance()->shaderIDs["wireframe"], "MVP");
-	MaterialColorValueHandle = glGetUniformLocation(ShaderManager::Instance()->shaderIDs["wireframe"], "MaterialColorValue");
+	MatrixHandle = glGetUniformLocation(wireframeShader, "MVP");
+	MaterialColorValueHandle = glGetUniformLocation(wireframeShader, "MaterialColorValue");
 
 	glUniformMatrix4fv(MatrixHandle, 1, GL_FALSE, &MVP[0][0]);
 	glUniform3fv(MaterialColorValueHandle, 1, &this->mat->color.vect[0]);

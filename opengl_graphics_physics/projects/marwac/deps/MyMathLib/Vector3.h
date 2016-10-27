@@ -8,6 +8,7 @@ namespace mwm
 class Vector4;
 class Vector2;
 struct loc;
+
 /*! class for constructing 3D vector*/
 class Vector3
 {
@@ -73,5 +74,11 @@ inline float Vector3::vectLengthSSE() const
 	length.v = _mm_sqrt_ss(_mm_dp_ps(tmp, tmp, 0x7F));
 	return length.x;
 }
+
+struct MinMax
+{
+	Vector3 min;
+	Vector3 max;
+};
 }
 

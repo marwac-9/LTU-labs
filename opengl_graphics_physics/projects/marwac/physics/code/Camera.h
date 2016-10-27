@@ -1,6 +1,5 @@
 #pragma once
 class Window;
-class mwm::Vector3;
 
 class Camera
 {

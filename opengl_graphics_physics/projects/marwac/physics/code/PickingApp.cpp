@@ -451,6 +451,7 @@ namespace Picking
 	void
 	PickingApp::DrawDebug(const Matrix4& ProjectionMatrix, const Matrix4& ViewMatrix)
 	{
+		GLuint wireframeShader = ShaderManager::Instance()->shaderIDs["wireframe"];
 		for (auto& obj : PhysicsManager::Instance()->satOverlaps)
 		{
 			obj.ent1->aabb.color = Vector3(1.f, 0.f, 0.f);
@@ -464,7 +465,7 @@ namespace Picking
 				//boundingBox->mat->SetColor(obj.second->obb.color);
 				//boundingBox->Draw(obj.second->obb.model, ViewMatrix, ProjectionMatrix);
 				boundingBox->mat->SetColor(obj.second->aabb.color);
-				boundingBox->Draw(obj.second->aabb.model, ViewMatrix, ProjectionMatrix);
+				boundingBox->Draw(obj.second->aabb.model, ViewMatrix, ProjectionMatrix, wireframeShader);
 			}
 		}
 	}
@@ -472,6 +473,7 @@ namespace Picking
 	void 
 	PickingApp::DebugDraw2(const Matrix4& ProjectionMatrix, const Matrix4& ViewMatrix)
 	{
+		GLuint wireframeShader = ShaderManager::Instance()->shaderIDs["wireframe"];
 		for (auto& obj : PhysicsManager::Instance()->satOverlaps)
 		{
 			obj.ent1->aabb.color = Vector3(1.f, 0.f, 0.f);
@@ -492,9 +494,9 @@ namespace Picking
 				ShaderManager::Instance()->SetCurrentShader(ShaderManager::Instance()->shaderIDs["wireframe"]);
 
 				boundingBox->mat->SetColor(obj.second->obb.color);
-				boundingBox->Draw(Matrix4::scale(obj.second->GetMeshDimensions())*obj.second->node.TopDownTransform, ViewMatrix, ProjectionMatrix);
+				boundingBox->Draw(Matrix4::scale(obj.second->GetMeshDimensions())*obj.second->node.TopDownTransform, ViewMatrix, ProjectionMatrix, wireframeShader);
 				boundingBox->mat->SetColor(obj.second->aabb.color);
-				boundingBox->Draw(obj.second->aabb.model, ViewMatrix, ProjectionMatrix);				
+				boundingBox->Draw(obj.second->aabb.model, ViewMatrix, ProjectionMatrix, wireframeShader);
 			}
 		}
 		//glPolygonMode(GL_FRONT_AND_BACK, GL_FILL); //lit

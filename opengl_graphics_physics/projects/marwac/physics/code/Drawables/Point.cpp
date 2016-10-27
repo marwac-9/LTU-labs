@@ -3,9 +3,7 @@
 #include "ShaderManager.h"
 #include "Material.h"
 #include <algorithm>
-
 using namespace mwm;
-
 Point::Point(){
 
 	mat = new Material();
@@ -51,9 +49,10 @@ void Point::Draw(const Matrix4& Model, const Matrix4& View, const Matrix4& Proje
 {
 	Matrix4F MVP = (Model*View*Projection).toFloat();
 	GLuint prevShader = ShaderManager::Instance()->GetCurrentShaderID();
-	ShaderManager::Instance()->SetCurrentShader(ShaderManager::Instance()->shaderIDs["wireframe"]);
-	MatrixHandle = glGetUniformLocation(ShaderManager::Instance()->shaderIDs["wireframe"], "MVP");
-	MaterialColorValueHandle = glGetUniformLocation(ShaderManager::Instance()->shaderIDs["wireframe"], "MaterialColorValue");
+	GLuint wireframeShader = ShaderManager::Instance()->shaderIDs["wireframe"];
+	glUseProgram(wireframeShader);
+	MatrixHandle = glGetUniformLocation(wireframeShader, "MVP");
+	MaterialColorValueHandle = glGetUniformLocation(wireframeShader, "MaterialColorValue");
 
 	glUniformMatrix4fv(MatrixHandle, 1, GL_FALSE, &MVP[0][0]);
 	glUniform3fv(MaterialColorValueHandle, 1, &this->mat->color.vect[0]);
@@ -63,5 +62,5 @@ void Point::Draw(const Matrix4& Model, const Matrix4& View, const Matrix4& Proje
 	glPointSize(size);
 	// Draw the lines !
 	glDrawElements(GL_POINTS, 1, GL_UNSIGNED_SHORT, 0);
-	ShaderManager::Instance()->SetCurrentShader(prevShader);
+	glUseProgram(prevShader);
 }

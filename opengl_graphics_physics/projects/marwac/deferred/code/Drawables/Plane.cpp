@@ -52,9 +52,10 @@ void Plane::Draw(const Matrix4& Model, const Matrix4& View, const Matrix4& Proje
 {
 	Matrix4F MVP = (Model*View*Projection).toFloat();
 	GLuint prevShader = ShaderManager::Instance()->GetCurrentShaderID();
-	ShaderManager::Instance()->SetCurrentShader(ShaderManager::Instance()->shaderIDs["wireframe"]);	
-	MatrixHandle = glGetUniformLocation(ShaderManager::Instance()->shaderIDs["wireframe"], "MVP");
-	MaterialColorValueHandle = glGetUniformLocation(ShaderManager::Instance()->shaderIDs["wireframe"], "MaterialColorValue");
+	GLuint wireframeShader = ShaderManager::Instance()->shaderIDs["wireframe"];
+	glUseProgram(wireframeShader);
+	MatrixHandle = glGetUniformLocation(wireframeShader, "MVP");
+	MaterialColorValueHandle = glGetUniformLocation(wireframeShader, "MaterialColorValue");
 
 	glUniformMatrix4fv(MatrixHandle, 1, GL_FALSE, &MVP[0][0]);
 	glUniform3fv(MaterialColorValueHandle, 1, &this->mat->color.vect[0]);
@@ -64,5 +65,5 @@ void Plane::Draw(const Matrix4& Model, const Matrix4& View, const Matrix4& Proje
 
 	// Draw the triangles !
 	glDrawElements(GL_TRIANGLES, this->mesh->indicesSize, GL_UNSIGNED_SHORT, (void*)0); // mode, count, type, element array buffer offset
-	ShaderManager::Instance()->SetCurrentShader(prevShader);
+	glUseProgram(prevShader);
 }

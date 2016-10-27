@@ -3,7 +3,6 @@
 #include "ShaderManager.h"
 #include "Material.h"
 #include <algorithm>
-
 using namespace mwm;
 
 BoundingBox::BoundingBox(){
@@ -58,7 +57,7 @@ void BoundingBox::SetUpBuffers()
 
 }
 
-void BoundingBox::Draw(const Matrix4& Model, const Matrix4& View, const Matrix4& Projection)
+void BoundingBox::Draw(const mwm::Matrix4& Model, const mwm::Matrix4& View, const mwm::Matrix4& Projection, GLuint wireframeShader)
 {
 	Matrix4F MVP = (Model*View*Projection).toFloat();
 

@@ -50,9 +50,10 @@ void Line::Draw(const Matrix4& Model, const Matrix4& View, const Matrix4& Projec
 {
 	Matrix4F MVP = (Model*View*Projection).toFloat();
 	GLuint prevShader = ShaderManager::Instance()->GetCurrentShaderID();
-	ShaderManager::Instance()->SetCurrentShader(ShaderManager::Instance()->shaderIDs["wireframe"]);
-	MatrixHandle = glGetUniformLocation(ShaderManager::Instance()->shaderIDs["wireframe"], "MVP");
-	MaterialColorValueHandle = glGetUniformLocation(ShaderManager::Instance()->shaderIDs["wireframe"], "MaterialColorValue");
+	GLuint wireframeShader = ShaderManager::Instance()->shaderIDs["wireframe"];
+	glUseProgram(wireframeShader);
+	MatrixHandle = glGetUniformLocation(wireframeShader, "MVP");
+	MaterialColorValueHandle = glGetUniformLocation(wireframeShader, "MaterialColorValue");
 
 	glUniformMatrix4fv(MatrixHandle, 1, GL_FALSE, &MVP[0][0]);
 	glUniform3fv(MaterialColorValueHandle, 1, &this->mat->color.vect[0]);
@@ -63,5 +64,5 @@ void Line::Draw(const Matrix4& Model, const Matrix4& View, const Matrix4& Projec
 	// Draw the lines !
 	glDrawElements(GL_LINES, 2, GL_UNSIGNED_SHORT, 0);
 	glLineWidth(1.f);
-	ShaderManager::Instance()->SetCurrentShader(prevShader);
+	glUseProgram(prevShader);
 }

@@ -1,5 +1,5 @@
 #include "Node.h"
-#include "Object.h"
+
 using namespace mwm;
 Node::Node()
 {

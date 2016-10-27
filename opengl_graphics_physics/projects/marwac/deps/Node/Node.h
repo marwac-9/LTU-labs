@@ -1,7 +1,6 @@
 #pragma once
 #include <vector>
 #include "MyMathLib.h"
-class Object;
 
 class Node
 {
