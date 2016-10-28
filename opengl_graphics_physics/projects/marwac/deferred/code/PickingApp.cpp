@@ -195,20 +195,11 @@ namespace Picking
 			PickingTest();
 
 			DrawGeometryPass(ProjectionMatrix, ViewMatrix);
+			
 			DrawLightPass(ProjectionMatrix, ViewMatrix, currentCamera->GetPosition2());
 
 			BlitToScreenPass();
-			/*
-			if (debug)
-			{
-				glDepthMask(GL_TRUE);
-				FBOManager::Instance()->BindGeometryBuffer(read);
-				ShaderManager::Instance()->SetCurrentShader(ShaderManager::Instance()->shaderIDs["wireframe"]);
-				DrawDebug(ProjectionMatrix, ViewMatrix); //draw debug
-				FBOManager::Instance()->UnbindFrameBuffer(read);
-			}
-			*/
-			DebugDraw::Instance()->DrawCrossHair(windowWidth, windowHeight);
+			
 			//DebugDraw::Instance()->DrawShadowMap(windowWidth, windowHeight);
 			DebugDraw::Instance()->DrawGeometryMaps(windowWidth, windowHeight);
 			if (currentTime - fps_timer >= 0.2f){ 
@@ -605,6 +596,7 @@ namespace Picking
 					objectsRendered++;
 				}
 			}
+			DebugDraw::Instance()->DrawCrossHair(windowWidth, windowHeight);
 		}
 		else
 		{
@@ -616,6 +608,7 @@ namespace Picking
 					objectsRendered++;
 				}
 			}
+			DebugDraw::Instance()->DrawCrossHair(windowWidth, windowHeight);
 		}		
 	}
 
