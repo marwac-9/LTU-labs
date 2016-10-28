@@ -54,7 +54,7 @@ namespace Picking
     {
         App::Open();
         this->window = new Display::Window;
-		glfwSwapInterval(0);
+
         window->SetKeyPressFunction([this](int32 key , int32 scancode, int32 action, int32 mode)
         {
             KeyCallback(key,scancode,action,mode);

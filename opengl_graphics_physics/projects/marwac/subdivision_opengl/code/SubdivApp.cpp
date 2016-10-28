@@ -55,7 +55,7 @@ namespace Subdivision
 	{
 		App::Open();
 		this->window = new Display::Window;
-		glfwSwapInterval(0);
+
 		window->SetKeyPressFunction([this](int32 key, int32 scancode, int32 action, int32 mode)
 		{
 			KeyCallback(key, scancode, action, mode);
@@ -112,6 +112,7 @@ namespace Subdivision
 		double fps_timer = 0;
 
 		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+		//glfwSwapInterval(0); //unlock fps
 
 		while (running)
 		{
@@ -298,14 +299,14 @@ namespace Subdivision
 			delete obj;
 		}
 		dynamicOBJs.clear();
-		for (auto& obj : dynamicMeshes)
+		for (auto& mesh : dynamicMeshes)
 		{
-			delete obj;
+			delete mesh;
 		}
 		dynamicMeshes.clear();
-		for (auto& obj : dynamicHEMeshes)
+		for (auto& mesh : dynamicHEMeshes)
 		{
-			delete obj;
+			delete mesh;
 		}
 		dynamicHEMeshes.clear();
 	}
