@@ -76,6 +76,8 @@ namespace Subdivision
 			this->window->SetSize(this->windowWidth, this->windowHeight);
 			float aspect = (float)this->windowWidth / (float)this->windowHeight;
 			this->ProjectionMatrix = Matrix4::OpenGLPersp(45.f, aspect, 0.1f, 100.f);
+
+			currentCamera->UpdateSize(width, height);
 		});
 
 		if (this->window->Open())

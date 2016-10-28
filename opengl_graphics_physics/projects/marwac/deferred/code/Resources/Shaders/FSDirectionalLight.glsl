@@ -3,7 +3,7 @@
 //in vec4 ShadowCoord;
 //in vec2 UV;
 
-uniform mat4 V;
+//uniform mat4 V;
 uniform vec2 screenSize;
 uniform vec3 LightInvDirection_worldspace;
 uniform vec3 CameraPos;

@@ -76,6 +76,7 @@ namespace Picking
             this->ProjectionMatrix = Matrix4::OpenGLPersp(45.f, aspect, 0.1f, 100.f);
 
 			FBOManager::Instance()->UpdateTextureBuffers(this->windowWidth, this->windowHeight);
+			currentCamera->UpdateSize(width, height);
         });
 
         this->window->SetMousePressFunction([this](int button, int action, int mods)

@@ -29,7 +29,7 @@ void FBOManager::UpdateTextureBuffers(int windowWidth, int windowHeight)
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RG32F, windowWidth, windowHeight, 0, GL_RG, GL_FLOAT, NULL);
 
 	glBindTexture(GL_TEXTURE_2D, shadowMapBlurdHandle);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RG32F, windowWidth, windowHeight, 0, GL_RG, GL_FLOAT, 0);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RG32F, windowWidth, windowHeight, 0, GL_RG, GL_FLOAT, NULL);
 }
 
 void FBOManager::SetUpFrameBuffer(int windowWidth, int windowHeight)

@@ -27,10 +27,10 @@ void Object::draw(const Matrix4& Projection, const Matrix4& View)
 {
     //apply transformation matrix from node
 	Matrix4 offsetMatrix = Matrix4::translate(meshOffset);
-
-	Matrix4F ModelMatrix = (offsetMatrix*this->node.TopDownTransform).toFloat();
+	Matrix4 dModel = offsetMatrix*this->node.TopDownTransform;
+	Matrix4F ModelMatrix = dModel.toFloat();
     Matrix4F ViewMatrix = View.toFloat();
-	Matrix4F MVP = (offsetMatrix*this->node.TopDownTransform*View*Projection).toFloat();
+	Matrix4F MVP = (dModel*View*Projection).toFloat();
 	Matrix4F depthBiasMVP = (depthMVP*Matrix4::biasMatrix()).toFloat();
 	GLuint currentShaderID = ShaderManager::Instance()->GetCurrentShaderID();
 
@@ -85,10 +85,10 @@ void Object::drawDepth(const Matrix4& Projection, const Matrix4& View)
 {
 	//apply transformation matrix from node
 	Matrix4 offsetMatrix = Matrix4::translate(meshOffset);
-
-	Matrix4F ModelMatrix = (offsetMatrix*this->node.TopDownTransform).toFloat();
+	Matrix4 dModel = offsetMatrix*this->node.TopDownTransform;
+	Matrix4F ModelMatrix = dModel.toFloat();
 	Matrix4F ViewMatrix = View.toFloat();
-	depthMVP = offsetMatrix*this->node.TopDownTransform*View*Projection;
+	depthMVP = dModel*View*Projection;
 	Matrix4F MVP = (depthMVP).toFloat();
 
 	GLuint depthMatrixHandle = glGetUniformLocation(ShaderManager::Instance()->GetCurrentShaderID(), "depthMVP");

@@ -29,7 +29,7 @@ void Object::drawLight(const Matrix4& Projection, const Matrix4& View, const Vec
 	//apply transformation matrix from node
 	Matrix4 offsetMatrix = Matrix4::translate(meshOffset);
 	Matrix4 dModel = offsetMatrix*this->node.TopDownTransform;
-	Matrix4F ViewMatrix = View.toFloat();
+	//Matrix4F ViewMatrix = View.toFloat();
 	Matrix4F MVP = (dModel*View*Projection).toFloat();
 	GLuint currentShaderID = ShaderManager::Instance()->GetCurrentShaderID();
 	//vertex
@@ -37,8 +37,8 @@ void Object::drawLight(const Matrix4& Projection, const Matrix4& View, const Vec
 	glUniformMatrix4fv(MatrixHandle, 1, GL_FALSE, &MVP[0][0]);
 	
 	//fragment
-	ViewMatrixHandle = glGetUniformLocation(currentShaderID, "V");
-	glUniformMatrix4fv(ViewMatrixHandle, 1, GL_FALSE, &ViewMatrix[0][0]);
+	//ViewMatrixHandle = glGetUniformLocation(currentShaderID, "V");
+	//glUniformMatrix4fv(ViewMatrixHandle, 1, GL_FALSE, &ViewMatrix[0][0]);
 
 	GLuint LightPosHandle = glGetUniformLocation(currentShaderID, "LightPosition_worldspace");
 	//light dir is set only for directional light once //or if many dir lights then i need to add invDir to the struct prob
@@ -180,10 +180,10 @@ void Object::drawDepth(const Matrix4& Projection, const Matrix4& View)
 	//and in cases when pivot point is not in the center of the object 
 	//we have to apply the offset for the graphics to match their physical position 
 	Matrix4 offsetMatrix = Matrix4::translate(meshOffset);
-
-	Matrix4F ModelMatrix = (offsetMatrix*this->node.TopDownTransform).toFloat();
+	Matrix4 dModel = offsetMatrix*this->node.TopDownTransform;
+	Matrix4F ModelMatrix = dModel.toFloat();
 	Matrix4F ViewMatrix = View.toFloat();
-	depthMVP = offsetMatrix*this->node.TopDownTransform*View*Projection;
+	depthMVP = dModel*View*Projection;
 	Matrix4F MVP = (depthMVP).toFloat();
 
 	GLuint depthMatrixHandle = glGetUniformLocation(ShaderManager::Instance()->GetCurrentShaderID(), "depthMVP");

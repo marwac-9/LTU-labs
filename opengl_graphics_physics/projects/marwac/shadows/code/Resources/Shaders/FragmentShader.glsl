@@ -23,7 +23,7 @@ uniform vec3 MaterialSpecularValue;
 uniform vec3 MaterialColorValue;
 
 float linstep(float low, float high, float v){
-    return clamp((v-low)/(high-low), 0.0, 1.0);
+	return clamp((v - low) / (high - low), 0.0, 1.0);
 }
 
 float ChebyshevUpperBound(vec2 moments, float t)  

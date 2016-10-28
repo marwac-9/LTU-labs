@@ -1,6 +1,6 @@
 #version 330
 
-uniform mat4 V;
+//uniform mat4 V;
 uniform vec2 screenSize;
 uniform vec3 LightPosition_worldspace;
 uniform vec3 CameraPos;
@@ -47,7 +47,7 @@ void main()
 	// Vector that goes from the vertex to the light, in world space. M is ommited because it's identity.
 	vec3 LightDirection_worldSpace = LightPosition_worldspace - WorldPos;
 
-	vec3 Normal_cameraspace = (V * vec4(Normal_worldSpace,0)).xyz;
+	//vec3 Normal_cameraspace = (V * vec4(Normal_worldSpace,0)).xyz;
 	// Normal of the computed fragment, in camera space
 	vec3 n = normalize(Normal_worldSpace);
 	// Direction of the light (from the fragment to the light)
