@@ -2,7 +2,6 @@
 // Created by marwac-9 on 9/17/15.
 //
 #include "Frustum.h"
-
 using namespace mwm;
 
 FrustumManager::FrustumManager()
@@ -39,8 +38,8 @@ bool FrustumManager::isBoundingSphereInView(Vector3 position, float radius)
 {
 	for (Vector4& plane : planes) {
 		Vector3 vect3 = plane.get_xyz();
-		Vector3 normal = vect3.vectNormalize();
-		float d = plane.vect[3] / vect3.vectLengt();
+		Vector3 normal = vect3.normalizeSSE();
+		float d = plane.vect[3] / vect3.vectLengthSSE();
 		if (position.dotAKAscalar(normal) + d + radius <= 0) {
 			return false;
 		}

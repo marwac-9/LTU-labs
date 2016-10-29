@@ -22,9 +22,6 @@ void FBOManager::UpdateTextureBuffers(int windowWidth, int windowHeight)
 	glBindTexture(GL_TEXTURE_2D, pickingTextureHandle);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, windowWidth, windowHeight, 0, GL_RGB, GL_FLOAT, NULL);
 
-	//glBindTexture(GL_TEXTURE_2D, shadowMapHandle);
-	//glTexImage2D(GL_TEXTURE_2D, 0, GL_RG32F, windowWidth, windowHeight, 0, GL_RG, GL_FLOAT, NULL);
-
 	glBindTexture(GL_TEXTURE_2D, positionBufferHandle);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, windowWidth, windowHeight, 0, GL_RGB, GL_FLOAT, NULL);
 
@@ -155,34 +152,6 @@ void FBOManager::SetUpFrameBuffer(int windowWidth, int windowHeight)
 	glBindTexture(GL_TEXTURE_2D, pickingTextureHandle);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, windowWidth, windowHeight, 0, GL_RGB, GL_FLOAT, NULL);
 	glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, pickingTextureHandle, 0);
-
-	glGenTextures(1, &shadowMapHandle);
-	glBindTexture(GL_TEXTURE_2D, shadowMapHandle);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RG32F, windowWidth, windowHeight, 0, GL_RG, GL_FLOAT, NULL);
-	//glGenerateMipmap(GL_TEXTURE_2D);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE);
-	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
-	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_R_TO_TEXTURE);
-	glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, shadowMapHandle, 0);
-
-	// Create the texture object for the depth buffer
-	//glGenTextures(1, &depthTextureHandle);
-	//glBindTexture(GL_TEXTURE_2D, depthTextureHandle);
-	//glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, windowWidth, windowHeight, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
-	//glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D,	depthTextureHandle, 0);
-
-
-	//depth
-	//glGenRenderbuffers(1, &depthTextureHandle);
-	// Bind the depth buffer
-	//glBindRenderbuffer(GL_RENDERBUFFER, depthTextureHandle);
-	//glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, windowWidth, windowHeight);
-	//glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthTextureHandle);
-	
 
 	// Disable reading to avoid problems with older GPUs
 	glReadBuffer(GL_NONE);

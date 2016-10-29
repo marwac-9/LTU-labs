@@ -193,9 +193,10 @@ namespace Picking
 			Scene::Instance()->MainPointLight->node.UpdateNodeMatrix(Matrix4::identityMatrix());
 			Scene::Instance()->MainDirectionalLight->node.UpdateNodeMatrix(Matrix4::identityMatrix());
 			PassPickingTexture(ProjectionMatrix, ViewMatrix); //picking
-			PickingTest();
 
 			DrawGeometryPass(ProjectionMatrix, ViewMatrix);
+
+			PickingTest();
 			
 			DrawLightPass(ProjectionMatrix, ViewMatrix, currentCamera->GetPosition2());
 
@@ -570,10 +571,13 @@ namespace Picking
 
 	void PickingApp::DrawGeometry(const Matrix4& ProjectionMatrix, const Matrix4& ViewMatrix)
 	{
+		GLenum DrawDebugBuffers[] = { GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT3 };
 		if (debug)
 		{
 			GLuint wireframeShader = ShaderManager::Instance()->shaderIDs["wireframe"];
 			GLuint geometryShader = ShaderManager::Instance()->shaderIDs["geometry"];
+			GLenum DrawBuffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3, GL_COLOR_ATTACHMENT5, GL_COLOR_ATTACHMENT6 };
+
 			for (auto& obj : PhysicsManager::Instance()->satOverlaps)
 			{
 				obj.ent1->aabb.color = Vector3(1.f, 0.f, 0.f);
@@ -581,22 +585,27 @@ namespace Picking
 			}
 
 			objectsRendered = 0;
+			glDrawBuffers(6, DrawBuffers);
+			ShaderManager::Instance()->SetCurrentShader(geometryShader);
 			for (auto& obj : Scene::Instance()->objectsToRender)
 			{
 				if (FrustumManager::Instance()->isBoundingSphereInView(obj.second->GetPosition(), obj.second->radius)) {
-
-					ShaderManager::Instance()->SetCurrentShader(geometryShader);
 					obj.second->drawGeometry(ProjectionMatrix, ViewMatrix);
-
-					ShaderManager::Instance()->SetCurrentShader(wireframeShader);
+					objectsRendered++;
+				}
+			}
+			glDrawBuffers(2, DrawDebugBuffers);
+			ShaderManager::Instance()->SetCurrentShader(wireframeShader);
+			for (auto& obj : Scene::Instance()->objectsToRender)
+			{
+				if (FrustumManager::Instance()->isBoundingSphereInView(obj.second->GetPosition(), obj.second->radius)) {
 					boundingBox->mat->SetColor(obj.second->obb.color);
 					boundingBox->Draw(Matrix4::scale(obj.second->GetMeshDimensions())*obj.second->node.TopDownTransform, ViewMatrix, ProjectionMatrix, wireframeShader);
 					boundingBox->mat->SetColor(obj.second->aabb.color);
 					boundingBox->Draw(obj.second->aabb.model, ViewMatrix, ProjectionMatrix, wireframeShader);
-
-					objectsRendered++;
 				}
 			}
+
 			DebugDraw::Instance()->DrawCrossHair(windowWidth, windowHeight);
 		}
 		else
@@ -609,6 +618,8 @@ namespace Picking
 					objectsRendered++;
 				}
 			}
+
+			glDrawBuffers(2, DrawDebugBuffers);
 			DebugDraw::Instance()->DrawCrossHair(windowWidth, windowHeight);
 		}		
 	}
