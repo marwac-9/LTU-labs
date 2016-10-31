@@ -258,6 +258,11 @@ namespace Picking
 				scene4loaded = true;
 				LoadScene4();
 			}
+			else if (key == GLFW_KEY_7) {
+				//cameraMode = 3;
+				scene4loaded = false;
+				LoadScene5();
+			}
 			else if (key == GLFW_KEY_4) {
 				printf("\nWIREFRAME MODE\n");
 				glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -601,6 +606,19 @@ namespace Picking
 		scene4loaded = true;
 		Scene::Instance()->addRandomlyPhysicObjects("cube", 50);
 	}
+
+
+	void PickingApp::LoadScene5()
+	{
+		Clear();
+		for (int i = 0; i < 500; i++)
+		{
+			Object* sphere = Scene::Instance()->addRandomlyObject("sphere");
+			sphere->SetMass(FLT_MAX);
+			sphere->isKinematic = true;
+		}
+	}
+
 
 	void PickingApp::Vortex()
 	{

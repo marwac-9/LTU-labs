@@ -17,7 +17,7 @@ uniform vec3 LightPosition_worldspace;
 uniform float shininess;
 uniform float MaterialDiffuseIntensityValue;   
 uniform float MaterialAmbientIntensityValue;
-uniform vec3 MaterialSpecularValue;
+uniform float MaterialSpecularIntensityValue;
 uniform vec3 MaterialColorValue;
 
 
@@ -27,13 +27,10 @@ void main(){
 	// Light emission properties
 	// You probably want to put them as uniforms
 	vec3 LightColor = vec3(1,1,1);
-	float LightPower = 50.0f;
+	float LightPower = 1.f;
 	
 	// Material properties
 	vec3 MaterialDiffuseColor = texture2D( myTextureSampler, UV ).rgb + MaterialColorValue;
-	vec3 MaterialAmbientColor = MaterialAmbientIntensityValue * MaterialDiffuseColor;
-	vec3 MaterialSpecularColor = MaterialSpecularValue;
-
 	// Distance to the light
 	float distance = length( LightPosition_worldspace - Position_worldspace );
 
@@ -57,12 +54,13 @@ void main(){
 	//  - Looking into the reflection -> 1
 	//  - Looking elsewhere -> < 1
 	float cosAlpha = clamp( dot( E,R ), 0,1 );
+
+	float Ambient = MaterialAmbientIntensityValue;
+	float Diffuse = MaterialDiffuseIntensityValue * cosTheta;
+	float SpecularColor = MaterialSpecularIntensityValue * pow(cosAlpha, shininess);
 	
-	color = 
-		// Ambient : simulates indirect lighting
-		MaterialAmbientColor * MaterialDiffuseIntensityValue+
-		// Diffuse : "color" of the object
-		MaterialDiffuseColor * LightColor * LightPower * cosTheta / (distance*distance) * MaterialDiffuseIntensityValue +
-		// Specular : reflective highlight, like a mirror
-		MaterialSpecularColor * LightColor * LightPower * pow(cosAlpha,shininess) / (distance*distance);
+	//1 directional, 1 point
+	float totalLight = (Ambient + Diffuse + SpecularColor) + (Ambient + Diffuse + SpecularColor) / (distance*distance);
+
+	color = MaterialDiffuseColor * LightColor * LightPower * totalLight;
 }

@@ -10,16 +10,15 @@ uniform mat4 M;
 uniform float MaterialDiffuseIntensityValue;
 uniform float MaterialAmbientIntensityValue;
 uniform float MaterialShininessValue;
+uniform float MaterialSpecularIntensityValue;
 uniform vec3 MaterialColor;
-uniform vec3 MaterialSpecularColor;
 
 out vec2 TexCoord0;
 out vec3 Normal0;
 out vec3 WorldPos0;
 
 out vec3 materialColor0;
-out vec3 specularColor0;
-out vec3 diffIntAmbIntShine0;
+out vec4 diffIntAmbIntShineSpecInt0;
 
 void main()
 {
@@ -29,6 +28,5 @@ void main()
 	WorldPos0 = (M * vec4(Position, 1.0)).xyz;
 
 	materialColor0 = MaterialColor;
-	specularColor0 = MaterialSpecularColor;
-	diffIntAmbIntShine0 = vec3(MaterialDiffuseIntensityValue, MaterialAmbientIntensityValue, MaterialShininessValue);
+	diffIntAmbIntShineSpecInt0 = vec4(MaterialDiffuseIntensityValue, MaterialAmbientIntensityValue, MaterialShininessValue, MaterialSpecularIntensityValue);
 }

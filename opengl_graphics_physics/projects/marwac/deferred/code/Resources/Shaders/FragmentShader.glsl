@@ -19,7 +19,7 @@ uniform vec3 LightPosition_worldspace;
 uniform float MaterialDiffuseIntensityValue;   
 uniform float MaterialAmbientIntensityValue;
 uniform vec3 MaterialColor;
-uniform vec3 MaterialSpecularColor;
+uniform float MaterialSpecularIntensity;
 
 float linstep(float low, float high, float v){
     return clamp((v-low)/(high-low), 0.0, 1.0);
@@ -66,7 +66,6 @@ void main(){
 	// Material properties
 	vec3 MaterialDiffuseColor = texture2D( myTextureSampler, UV ).rgb + MaterialColor;
 	vec3 MaterialAmbientColor = MaterialAmbientIntensityValue * MaterialDiffuseColor;
-	vec3 MaterialSpecularColor = MaterialSpecularColor;
 
 	// Distance to the light
 	float distance = length( LightPosition_worldspace - Position_worldspace );
@@ -109,7 +108,7 @@ void main(){
 		// Diffuse : "color" of the object
 		visibility * MaterialDiffuseColor * LightColor * LightPower * cosTheta * MaterialDiffuseIntensityValue +
 		// Specular : reflective highlight, like a mirror
-		visibility * MaterialSpecularColor * LightColor * LightPower * pow(cosAlpha, 5);
+		visibility * MaterialSpecularIntensity * LightColor * LightPower * pow(cosAlpha, 5);
 		
 	//color with pointlight and directional
 	//color = 

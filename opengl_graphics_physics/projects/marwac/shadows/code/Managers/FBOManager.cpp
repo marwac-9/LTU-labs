@@ -30,6 +30,9 @@ void FBOManager::UpdateTextureBuffers(int windowWidth, int windowHeight)
 
 	glBindTexture(GL_TEXTURE_2D, shadowMapBlurdHandle);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RG32F, windowWidth, windowHeight, 0, GL_RG, GL_FLOAT, NULL);
+
+	glBindTexture(GL_TEXTURE_2D, depthTextureHandle);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, windowWidth, windowHeight, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
 }
 
 void FBOManager::SetUpFrameBuffer(int windowWidth, int windowHeight)
@@ -64,10 +67,10 @@ void FBOManager::SetUpFrameBuffer(int windowWidth, int windowHeight)
 	glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, shadowMapHandle, 0);
 
 	// Create the texture object for the depth buffer
-	//glGenTextures(1, &depthTextureHandle);
-	//glBindTexture(GL_TEXTURE_2D, depthTextureHandle);
-	//glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, windowWidth, windowHeight, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
-	//glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D,	depthTextureHandle, 0);
+	glGenTextures(1, &depthTextureHandle);
+	glBindTexture(GL_TEXTURE_2D, depthTextureHandle);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, windowWidth, windowHeight, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+	glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D,	depthTextureHandle, 0);
 
 
 	//depth

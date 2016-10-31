@@ -24,6 +24,7 @@ public:
 	GLuint blurFrameBufferHandle;
 	GLuint frameBufferHandle; //frame buffer handle
 	GLuint pickingTextureHandle; //picking texture for frame buffer
+	GLuint depth2TextureHandle; //depth for gbuffer 
 	GLuint depthTextureHandle; //depth for frame buffer 
 	GLuint shadowMapHandle;
 	GLuint shadowMapBlurdHandle;
@@ -34,9 +35,8 @@ public:
 	GLuint normalBufferHandle;
 	GLuint finalColorTextureHandle;
 
-	GLuint specularColorBufferHandle;
 	GLuint materialColorBufferHandle;
-	GLuint diffIntAmbIntShinBufferHandle;
+	GLuint diffIntAmbIntShinSpecIntBufferHandle;
 
 	void ReadPixelFromTexture(GLenum attachment, unsigned int x, unsigned int y, float* data);
 private:

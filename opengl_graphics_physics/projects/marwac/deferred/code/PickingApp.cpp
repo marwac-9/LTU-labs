@@ -197,13 +197,17 @@ namespace Picking
 			DrawGeometryPass(ProjectionMatrix, ViewMatrix);
 
 			PickingTest();
+
+			if (debug) DrawDebug(ProjectionMatrix, ViewMatrix);
 			
 			DrawLightPass(ProjectionMatrix, ViewMatrix, currentCamera->GetPosition2());
 
 			BlitToScreenPass();
+
+			DebugDraw::Instance()->DrawCrossHair(windowWidth, windowHeight);
 			
-			//DebugDraw::Instance()->DrawShadowMap(windowWidth, windowHeight);
 			DebugDraw::Instance()->DrawGeometryMaps(windowWidth, windowHeight);
+
 			if (currentTime - fps_timer >= 0.2f){ 
 				this->window->SetTitle("Objects rendered: " + std::to_string(objectsRendered) + " Lights rendered: " + std::to_string(lightsRendered) + " FPS: " + std::to_string(1.f / deltaTime) + " TimeStep: " + std::to_string(timeStep) + " PickedID: " + std::to_string(pickedID) + (paused ? " PAUSED" : ""));
 				fps_timer = currentTime;
@@ -571,57 +575,14 @@ namespace Picking
 
 	void PickingApp::DrawGeometry(const Matrix4& ProjectionMatrix, const Matrix4& ViewMatrix)
 	{
-		GLenum DrawDebugBuffers[] = { GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT3 };
-		if (debug)
+		objectsRendered = 0;
+		for (auto& obj : Scene::Instance()->objectsToRender)
 		{
-			GLuint wireframeShader = ShaderManager::Instance()->shaderIDs["wireframe"];
-			GLuint geometryShader = ShaderManager::Instance()->shaderIDs["geometry"];
-			GLenum DrawBuffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3, GL_COLOR_ATTACHMENT5, GL_COLOR_ATTACHMENT6 };
-
-			for (auto& obj : PhysicsManager::Instance()->satOverlaps)
-			{
-				obj.ent1->aabb.color = Vector3(1.f, 0.f, 0.f);
-				obj.ent2->aabb.color = Vector3(1.f, 0.f, 0.f);
+			if (FrustumManager::Instance()->isBoundingSphereInView(obj.second->GetPosition(), obj.second->radius)) {
+				obj.second->drawGeometry(ProjectionMatrix, ViewMatrix);
+				objectsRendered++;
 			}
-
-			objectsRendered = 0;
-			glDrawBuffers(6, DrawBuffers);
-			ShaderManager::Instance()->SetCurrentShader(geometryShader);
-			for (auto& obj : Scene::Instance()->objectsToRender)
-			{
-				if (FrustumManager::Instance()->isBoundingSphereInView(obj.second->GetPosition(), obj.second->radius)) {
-					obj.second->drawGeometry(ProjectionMatrix, ViewMatrix);
-					objectsRendered++;
-				}
-			}
-			glDrawBuffers(2, DrawDebugBuffers);
-			ShaderManager::Instance()->SetCurrentShader(wireframeShader);
-			for (auto& obj : Scene::Instance()->objectsToRender)
-			{
-				if (FrustumManager::Instance()->isBoundingSphereInView(obj.second->GetPosition(), obj.second->radius)) {
-					boundingBox->mat->SetColor(obj.second->obb.color);
-					boundingBox->Draw(Matrix4::scale(obj.second->GetMeshDimensions())*obj.second->node.TopDownTransform, ViewMatrix, ProjectionMatrix, wireframeShader);
-					boundingBox->mat->SetColor(obj.second->aabb.color);
-					boundingBox->Draw(obj.second->aabb.model, ViewMatrix, ProjectionMatrix, wireframeShader);
-				}
-			}
-
-			DebugDraw::Instance()->DrawCrossHair(windowWidth, windowHeight);
 		}
-		else
-		{
-			objectsRendered = 0;
-			for (auto& obj : Scene::Instance()->objectsToRender)
-			{
-				if (FrustumManager::Instance()->isBoundingSphereInView(obj.second->GetPosition(), obj.second->radius)) {
-					obj.second->drawGeometry(ProjectionMatrix, ViewMatrix);
-					objectsRendered++;
-				}
-			}
-
-			glDrawBuffers(2, DrawDebugBuffers);
-			DebugDraw::Instance()->DrawCrossHair(windowWidth, windowHeight);
-		}		
 	}
 
 	void
@@ -636,7 +597,15 @@ namespace Picking
 	void
 	PickingApp::DrawDebug(const Matrix4& ProjectionMatrix, const Matrix4& ViewMatrix)
 	{
+		FBOManager::Instance()->BindGeometryBuffer(draw);
+		GLenum DrawDebugBuffers[] = { GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT3 };
+		glDrawBuffers(2, DrawDebugBuffers);
+		glDepthMask(GL_TRUE);
+		glEnable(GL_DEPTH_TEST);
+		
 		GLuint wireframeShader = ShaderManager::Instance()->shaderIDs["wireframe"];
+		GLuint prevShader = ShaderManager::Instance()->GetCurrentShaderID();
+		ShaderManager::Instance()->SetCurrentShader(wireframeShader);
 		for (auto& obj : PhysicsManager::Instance()->satOverlaps)
 		{
 			obj.ent1->aabb.color = Vector3(1.f, 0.f, 0.f);
@@ -653,6 +622,10 @@ namespace Picking
 				boundingBox->Draw(obj.second->aabb.model, ViewMatrix, ProjectionMatrix, wireframeShader);
 			}
 		}
+
+		glDepthMask(GL_FALSE);
+		ShaderManager::Instance()->SetCurrentShader(prevShader);
+		FBOManager::Instance()->UnbindFrameBuffer(draw);
 	}
 
 	void 
@@ -702,7 +675,7 @@ namespace Picking
 		//A plank suspended on a static box.	
 		Clear();
 
-		Object* sphere = Scene::Instance()->addPhysicObject("sphere", Vector3(0.f, 3.f, 0.f));
+		Object* sphere = Scene::Instance()->addPhysicObject("sphere", Vector3(0.f, -7.f, 0.f));
 		sphere->isKinematic = true;
 		sphere->SetMass(FLT_MAX);
 
@@ -711,7 +684,7 @@ namespace Picking
 		//directionalLight->mat->SetSpecularColor(0, 0, 0);
 		//directionalLight->mat->SetColor(0.5,0,0.5);
 		//directionalLight->mat->SetDiffuseIntensity(1.5f);
-		Object* pointLight = Scene::Instance()->addPointLight(Vector3(0.f, 3.f, 3.f));
+		Object* pointLight = Scene::Instance()->addPointLight(Vector3(0.f, -7.f, 3.f));
 		//Object* sphere1 = Scene::Instance()->addObject("sphere");
 		//sphere1->isKinematic = true;
 		//sphere1->SetMass(FLT_MAX);
@@ -723,7 +696,7 @@ namespace Picking
 		//pointLight->mat->SetColor(1, 1, 1);
 		
 
-		Object* plane = Scene::Instance()->addPhysicObject("cube", Vector3(0.f, 0.f, 0.f));
+		Object* plane = Scene::Instance()->addPhysicObject("cube", Vector3(0.f, -10.f, 0.f));
 		plane->SetScale(25, 2, 25);
 		plane->SetMass(FLT_MAX);
 		plane->radius = 50.f;
@@ -783,9 +756,9 @@ namespace Picking
 		Clear();
 
 		Object* directionalLight = Scene::Instance()->addDirectionalLight(lightInvDir);
-		directionalLight->mat->SetColor(0.5f, 0.0f, 0.0f);
+		directionalLight->mat->SetColor(0.2f, 0.2f, 0.2f);
 
-		Scene::Instance()->addRandomlyPointLights(500);
+		Scene::Instance()->addRandomlyPointLights(300);
 		Scene::Instance()->addRandomlyObjects("sphere", 500);
 
 		Object* plane = Scene::Instance()->addObject("cube");
@@ -830,8 +803,8 @@ namespace Picking
 		//bind for geometry pass
 		FBOManager::Instance()->BindGeometryBuffer(draw);
 
-		GLenum DrawBuffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3, GL_COLOR_ATTACHMENT5, GL_COLOR_ATTACHMENT6 };
-		glDrawBuffers(6, DrawBuffers);
+		GLenum DrawBuffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3 };
+		glDrawBuffers(4, DrawBuffers);
 		//glViewport(0, 0, 2048, 2048);
 		glDepthMask(GL_TRUE);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -976,20 +949,9 @@ namespace Picking
 		glUniform1i(normalsSampler, 2);
 
 		glActiveTexture(GL_TEXTURE3);
-		glBindTexture(GL_TEXTURE_2D, FBOManager::Instance()->diffIntAmbIntShinBufferHandle);
-		GLuint diffIntAmbIntShinSampler = glGetUniformLocation(ShaderManager::Instance()->GetCurrentShaderID(), "diffIntAmbIntShinSampler");
+		glBindTexture(GL_TEXTURE_2D, FBOManager::Instance()->diffIntAmbIntShinSpecIntBufferHandle);
+		GLuint diffIntAmbIntShinSampler = glGetUniformLocation(ShaderManager::Instance()->GetCurrentShaderID(), "diffIntAmbIntShinSpecIntSampler");
 		glUniform1i(diffIntAmbIntShinSampler, 3);
-
-		glActiveTexture(GL_TEXTURE4);
-		glBindTexture(GL_TEXTURE_2D, FBOManager::Instance()->materialColorBufferHandle);
-		GLuint materialColorSampler = glGetUniformLocation(ShaderManager::Instance()->GetCurrentShaderID(), "materialColorSampler");
-		glUniform1i(materialColorSampler, 4);
-
-		glActiveTexture(GL_TEXTURE5);
-		glBindTexture(GL_TEXTURE_2D, FBOManager::Instance()->specularColorBufferHandle);
-		GLuint specularColorSampler = glGetUniformLocation(ShaderManager::Instance()->GetCurrentShaderID(), "specularColorSampler");
-		glUniform1i(specularColorSampler, 5);
-
 	}
 
 	void PickingApp::BlitToScreenPass()
@@ -1026,12 +988,6 @@ namespace Picking
 		glBindTexture(GL_TEXTURE_2D, 0);
 
 		glActiveTexture(GL_TEXTURE3);
-		glBindTexture(GL_TEXTURE_2D, 0);
-
-		glActiveTexture(GL_TEXTURE4);
-		glBindTexture(GL_TEXTURE_2D, 0);
-
-		glActiveTexture(GL_TEXTURE5);
 		glBindTexture(GL_TEXTURE_2D, 0);
 	}
 

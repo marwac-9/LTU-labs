@@ -42,7 +42,7 @@ void Object::draw(
 	ModelMatrixHandle = glGetUniformLocation(currentShaderID, "M");
     
 	MaterialAmbientValueHandle = glGetUniformLocation(currentShaderID, "MaterialAmbientIntensityValue");
-	MaterialSpecularValueHandle = glGetUniformLocation(currentShaderID, "MaterialSpecularValue");
+	MaterialSpecularIntensityValueHandle = glGetUniformLocation(currentShaderID, "MaterialSpecularIntensityValue");
 	MaterialDiffuseIntensityValueHandle = glGetUniformLocation(currentShaderID, "MaterialDiffuseIntensityValue");
 	MaterialColorValueHandle = glGetUniformLocation(currentShaderID, "MaterialColorValue");
 	GLuint shininess = glGetUniformLocation(currentShaderID, "shininess");
@@ -54,7 +54,7 @@ void Object::draw(
     glUniformMatrix4fv(ViewMatrixHandle, 1, GL_FALSE, &ViewMatrix[0][0]);
 
     glUniform1f(MaterialAmbientValueHandle, this->mat->ambientIntensity);
-    glUniform3fv(MaterialSpecularValueHandle, 1, &this->mat->specular.vect[0]);
+    glUniform1f(MaterialSpecularIntensityValueHandle, this->mat->specularIntensity);
     glUniform1f(MaterialDiffuseIntensityValueHandle, this->mat->diffuseIntensity);
 	glUniform1f(shininess, this->mat->shininess);
     glUniform3fv(MaterialColorValueHandle, 1, &this->mat->color.vect[0]);

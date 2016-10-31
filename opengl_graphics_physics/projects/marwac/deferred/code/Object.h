@@ -96,7 +96,7 @@ private:
 	GLuint ViewMatrixHandle;
 	GLuint ModelMatrixHandle;
 	GLuint MaterialAmbientIntensityValueHandle;
-	GLuint MaterialSpecularColorHandle;
+	GLuint MaterialSpecularIntensityHandle;
 	GLuint MaterialDiffuseIntensityValueHandle;
 	GLuint MaterialColorHandle;
 	GLuint MaterialShininessValue;

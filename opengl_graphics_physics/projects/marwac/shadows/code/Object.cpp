@@ -41,7 +41,7 @@ void Object::draw(const Matrix4& Projection, const Matrix4& View)
 	
 
 	MaterialAmbientValueHandle = glGetUniformLocation(currentShaderID, "MaterialAmbientValue");
-	MaterialSpecularValueHandle = glGetUniformLocation(currentShaderID, "MaterialSpecularValue");
+	MaterialSpecularIntensityValueHandle = glGetUniformLocation(currentShaderID, "MaterialSpecularIntensityValue");
 	MaterialDiffuseIntensityValueHandle = glGetUniformLocation(currentShaderID, "MaterialDiffuseIntensityValue");
 	MaterialColorValueHandle = glGetUniformLocation(currentShaderID, "MaterialColorValue");
 	PickingObjectIndexHandle = glGetUniformLocation(currentShaderID, "gObjectIndexVec4");
@@ -54,7 +54,7 @@ void Object::draw(const Matrix4& Projection, const Matrix4& View)
 	glUniformMatrix4fv(DepthBiasMatrixHandle, 1, GL_FALSE, &depthBiasMVP[0][0]);
 
 	glUniform1f(MaterialAmbientValueHandle, this->mat->ambientIntensity);
-	glUniform3fv(MaterialSpecularValueHandle, 1, &this->mat->specular.vect[0]);
+	glUniform1f(MaterialSpecularIntensityValueHandle, this->mat->specularIntensity);
 	glUniform1f(MaterialDiffuseIntensityValueHandle, this->mat->diffuseIntensity);
 	glUniform1f(shininess, this->mat->shininess);
 	glUniform3fv(MaterialColorValueHandle, 1, &this->mat->color.vect[0]);

@@ -45,6 +45,7 @@ namespace Picking
 		void LoadScene2();
 		void LoadScene3();
 		void LoadScene4();
+		void LoadScene5();
 		void Vortex();
 		bool scene4loaded = false;
         GLuint MatrixHandle;

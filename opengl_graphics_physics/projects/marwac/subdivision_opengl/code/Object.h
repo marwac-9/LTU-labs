@@ -23,8 +23,7 @@ public:
 	void AssignMesh(Mesh* mesh);
 	int indicesSize;
 	void draw(const mwm::Matrix4& Projection, const mwm::Matrix4& View);
-	void drawLight(const mwm::Matrix4& Projection, const mwm::Matrix4& View, const mwm::Vector3& camPos);
-	void drawGeometry(const mwm::Matrix4& Projection, const mwm::Matrix4& View);
+
 	mwm::Vector3 extractScale();
 	mwm::Vector3 getScale();
 
@@ -96,7 +95,7 @@ private:
 	GLuint ViewMatrixHandle;
 	GLuint ModelMatrixHandle;
 	GLuint MaterialAmbientIntensityValueHandle;
-	GLuint MaterialSpecularColorHandle;
+	GLuint MaterialSpecularIntensityHandle;
 	GLuint MaterialDiffuseIntensityValueHandle;
 	GLuint MaterialColorHandle;
 	GLuint MaterialShininessValue;

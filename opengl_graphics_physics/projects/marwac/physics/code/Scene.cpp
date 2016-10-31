@@ -95,9 +95,9 @@ Object* Scene::addRandomlyObject(const char* name)
 {
 	Object* newChild = addChild(SceneObject);
 
-	float rX = (float)(rand() % 40 - 20);
-	float rY = (float)(rand() % 40 + 2);
-	float rZ = (float)(rand() % 40 - 20);
+	float rX = (float)(rand() % 20 - 10);
+	float rY = (float)(rand() % 20 - 10);
+	float rZ = (float)(rand() % 20 - 10);
 	/*
 	float rX = (float)(rand() % 40 - 20);
 	float rY = (float)(rand() % 40 - 20);
@@ -106,9 +106,9 @@ Object* Scene::addRandomlyObject(const char* name)
 
 	while (!((rY > 8 || rY < -8) || (rZ > 8 || rZ < -8) || (rX > 8 || rX < -8)))
 	{
-		rX = (float)(rand() % 40 - 20);
-		rY = (float)(rand() % 40 + 2);
-		rZ = (float)(rand() % 40 - 20);
+		rX = (float)(rand() % 20 - 10);
+		rY = (float)(rand() % 20 - 10);
+		rZ = (float)(rand() % 20 - 10);
 		/*
 		rX = (float)(rand() % 40 - 20);
 		rY = (float)(rand() % 40 - 20);

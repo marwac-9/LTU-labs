@@ -9,9 +9,7 @@ uniform sampler2D diffuseSampler;
 uniform sampler2D positionSampler;
 uniform sampler2D normalsSampler;
 
-uniform sampler2D diffIntAmbIntShinSampler;
-uniform sampler2D materialColorSampler;
-uniform sampler2D specularColorSampler;
+uniform sampler2D diffIntAmbIntShinSpecIntSampler;
 
 uniform float lightRadius;
 uniform float lightPower;
@@ -26,17 +24,8 @@ void main()
 	vec3 WorldPos = texture(positionSampler, TexCoord).xyz;
 	vec3 MaterialDiffuseColor = texture(diffuseSampler, TexCoord).xyz;
 	vec3 Normal_worldSpace = texture(normalsSampler, TexCoord).xyz;
-
 	// Material properties
-	vec3 MaterialColor = texture(materialColorSampler, TexCoord).xyz;
-	vec3 MaterialSpecularColor = texture(specularColorSampler, TexCoord).xyz;
-	vec3 MatPropertiesDiffAmbShin = texture(diffIntAmbIntShinSampler, TexCoord).xyz;
-	float MaterialDiffuseIntensityValue = MatPropertiesDiffAmbShin.x;
-	float shininess = MatPropertiesDiffAmbShin.z;
-	//update the diffuse color with material color
-	MaterialDiffuseColor = MaterialDiffuseColor + MaterialColor;
-	float MaterialAmbientIntensity = MatPropertiesDiffAmbShin.y;
-	vec3 MaterialAmbientColor = MaterialAmbientIntensity * MaterialDiffuseColor;
+	vec4 MatPropertiesDiffAmbShinSpec = texture(diffIntAmbIntShinSpecIntSampler, TexCoord);
 
 	// Distance to the light
 	float distance = length(LightPosition_worldspace - WorldPos);
@@ -83,11 +72,22 @@ void main()
 	//Distance is divided by the max radius of the light which must be <= scale of the light mesh
 	float attenuation = clamp((1.0f - distance / (lightRadius-0.5f)), 0.0, 1.0);
 	//color with pointlight
-	color = 
+
+	float Ambient = MatPropertiesDiffAmbShinSpec.y;
+	float Diffuse = MatPropertiesDiffAmbShinSpec.x * cosTheta;
+	float SpecularColor = MatPropertiesDiffAmbShinSpec.w * pow(cosAlpha, MatPropertiesDiffAmbShinSpec.z); // yea should make specular intensity a float only screw in specular color
+	//specular sent to shader should be only the specular strength but we can try to specify color as well to fake translucent paint effect
+	//these are only light calculations
+	//we add the texture color later
+
+	//color with point light only
+	color = MaterialDiffuseColor * lightColor * lightPower * (Ambient + Diffuse + SpecularColor) * attenuation;
+
+	//color = 
 	// Ambient : simulates indirect lighting
 	//MaterialAmbientColor * MaterialDiffuseIntensityValue +
 	// Diffuse : "color" of the object
-	MaterialDiffuseColor * lightColor * lightPower * cosTheta * attenuation * MaterialDiffuseIntensityValue +
+	//MaterialDiffuseColor * lightColor * lightPower * cosTheta * attenuation * MaterialDiffuseIntensityValue +
 	// Specular : reflective highlight, like a mirror
-	MaterialSpecularColor * lightColor * lightPower * pow(cosAlpha, shininess) * attenuation;
+	//MaterialSpecularColor * lightColor * lightPower * pow(cosAlpha, shininess) * attenuation;
 }

@@ -19,7 +19,7 @@ uniform vec3 LightPosition_worldspace;
 uniform float shininess;
 uniform float MaterialDiffuseIntensityValue;
 uniform float MaterialAmbientIntensityValue;
-uniform vec3 MaterialSpecularValue;
+uniform float MaterialSpecularIntensityValue;
 uniform vec3 MaterialColorValue;
 
 float linstep(float low, float high, float v){
@@ -66,8 +66,6 @@ void main(){
 	
 	// Material properties
 	vec3 MaterialDiffuseColor = texture2D(myTextureSampler, UV).rgb + MaterialColorValue;
-	vec3 MaterialAmbientColor = MaterialAmbientIntensityValue * MaterialDiffuseColor;
-	vec3 MaterialSpecularColor = MaterialSpecularValue;
 
 	// Distance to the light
 	float distance = length( LightPosition_worldspace - Position_worldspace );
@@ -103,15 +101,12 @@ void main(){
 	//	visibility = 0.5f;
 	//}
 	
-	//color with directional only
-	color = 
-		// Ambient : simulates indirect lighting
-		MaterialAmbientColor * MaterialDiffuseIntensityValue +
-		// Diffuse : "color" of the object
-		visibility * MaterialDiffuseColor * LightColor * LightPower * cosTheta * MaterialDiffuseIntensityValue +
-		// Specular : reflective highlight, like a mirror
-		visibility * MaterialSpecularColor * LightColor * LightPower * pow(cosAlpha, shininess);
-		
+	//just directional light
+	float Ambient = MaterialAmbientIntensityValue;
+	float Diffuse = MaterialDiffuseIntensityValue * cosTheta;
+	float SpecularColor = MaterialSpecularIntensityValue * pow(cosAlpha, shininess);
+
+	color = MaterialDiffuseColor * LightColor * LightPower * visibility * (Ambient + Diffuse + SpecularColor);
 	//color with pointlight and directional
 	//color = 
 		// Ambient : simulates indirect lighting

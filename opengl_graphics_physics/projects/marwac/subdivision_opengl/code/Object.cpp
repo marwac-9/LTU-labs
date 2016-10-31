@@ -24,97 +24,6 @@ Object::~Object()
 {
 }
 
-void Object::drawLight(const Matrix4& Projection, const Matrix4& View, const Vector3& camPos)
-{
-	//apply transformation matrix from node
-	Matrix4 offsetMatrix = Matrix4::translate(meshOffset);
-	Matrix4 dModel = offsetMatrix*this->node.TopDownTransform;
-	Matrix4F ViewMatrix = View.toFloat();
-	Matrix4F MVP = (dModel*View*Projection).toFloat();
-	GLuint currentShaderID = ShaderManager::Instance()->GetCurrentShaderID();
-	//vertex
-	MatrixHandle = glGetUniformLocation(currentShaderID, "MVP");
-	glUniformMatrix4fv(MatrixHandle, 1, GL_FALSE, &MVP[0][0]);
-
-	//fragment
-	ViewMatrixHandle = glGetUniformLocation(currentShaderID, "V");
-	glUniformMatrix4fv(ViewMatrixHandle, 1, GL_FALSE, &ViewMatrix[0][0]);
-
-	GLuint LightPosHandle = glGetUniformLocation(currentShaderID, "LightPosition_worldspace");
-	//light dir is set only for directional light once //or if many dir lights then i need to add invDir to the struct prob
-	glUniform3fv(LightPosHandle, 1, &this->node.position.x);
-
-	GLuint LightRadius = glGetUniformLocation(currentShaderID, "lightRadius");
-	glUniform1f(LightRadius, this->node.scale.x);
-
-	GLuint CameraPos = glGetUniformLocation(currentShaderID, "CameraPos");
-
-	glUniform3fv(CameraPos, 1, &camPos.x);
-
-
-	//this values are for the light, previously they were for objects so now i have to generate textures instead
-	//and move those variables out
-	//i probably wnat to keep and rename the color for light color and the specual value for shininess
-	//ok let's do this
-
-	GLuint LightPower = glGetUniformLocation(ShaderManager::Instance()->GetCurrentShaderID(), "lightPower");
-	glUniform1f(LightPower, this->mat->diffuseIntensity);
-
-	GLuint LightColor = glGetUniformLocation(ShaderManager::Instance()->GetCurrentShaderID(), "lightColor");
-	glUniform3fv(LightColor, 1, &this->mat->color.x);
-
-	//bind vao before drawing
-	glBindVertexArray(this->mesh->vaoHandle);
-
-	// Draw the triangles !
-	glDrawElements(GL_TRIANGLES, this->mesh->indicesSize, GL_UNSIGNED_INT, (void*)0); // mode, count, type, element array buffer offset
-}
-
-
-
-void Object::drawGeometry(const Matrix4& Projection, const Matrix4& View)
-{
-	//apply transformation matrix from node
-	Matrix4 offsetMatrix = Matrix4::translate(meshOffset);
-	Matrix4 dModel = offsetMatrix*this->node.TopDownTransform;
-	Matrix4F ModelMatrix = dModel.toFloat();
-	Matrix4F MVP = (dModel*View*Projection).toFloat();
-	GLuint currentShaderID = ShaderManager::Instance()->GetCurrentShaderID();
-	//vertex
-	MatrixHandle = glGetUniformLocation(currentShaderID, "MVP");
-	glUniformMatrix4fv(MatrixHandle, 1, GL_FALSE, &MVP[0][0]);
-
-	ModelMatrixHandle = glGetUniformLocation(currentShaderID, "M");
-	glUniformMatrix4fv(ModelMatrixHandle, 1, GL_FALSE, &ModelMatrix[0][0]);
-
-	//below is only for geometry pass
-	MaterialShininessValue = glGetUniformLocation(currentShaderID, "MaterialShininessValue");
-	MaterialAmbientIntensityValueHandle = glGetUniformLocation(currentShaderID, "MaterialAmbientIntensityValue"); //ambient color for object
-	MaterialSpecularColorHandle = glGetUniformLocation(currentShaderID, "MaterialSpecularColor"); //specular color for object
-	MaterialDiffuseIntensityValueHandle = glGetUniformLocation(currentShaderID, "MaterialDiffuseIntensityValue"); //intensity of the diffuse color for object
-	MaterialColorHandle = glGetUniformLocation(currentShaderID, "MaterialColor"); //diffuse color of the object
-	glUniform1f(MaterialDiffuseIntensityValueHandle, this->mat->diffuseIntensity);
-	glUniform1f(MaterialShininessValue, this->mat->shininess);
-	glUniform1f(MaterialAmbientIntensityValueHandle, this->mat->ambientIntensity);
-	glUniform3fv(MaterialSpecularColorHandle, 1, &this->mat->specular.x);
-	glUniform3fv(MaterialColorHandle, 1, &this->mat->color.x);
-
-	TextureSamplerHandle = glGetUniformLocation(currentShaderID, "myTextureSampler");
-	//we bind texture for each object since it can be different 
-	// Bind our texture in Texture Unit 0
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, this->mat->texture2D->TextureID);
-	// Set our "myTextureSampler" sampler to user Texture Unit 0
-	glUniform1i(TextureSamplerHandle, 0);
-
-	//bind vao before drawing
-	glBindVertexArray(this->mesh->vaoHandle);
-
-	// Draw the triangles !
-	glDrawElements(GL_TRIANGLES, this->mesh->indicesSize, GL_UNSIGNED_INT, (void*)0); // mode, count, type, element array buffer offset
-}
-
-
 void Object::draw(const Matrix4& Projection, const Matrix4& View)
 {
 	//apply transformation matrix from node
@@ -136,7 +45,7 @@ void Object::draw(const Matrix4& Projection, const Matrix4& View)
 
 
 	MaterialAmbientIntensityValueHandle = glGetUniformLocation(currentShaderID, "MaterialAmbientIntensityValue");
-	MaterialSpecularColorHandle = glGetUniformLocation(currentShaderID, "MaterialSpecularValue");
+	MaterialSpecularIntensityHandle = glGetUniformLocation(currentShaderID, "MaterialSpecularIntensityValue");
 	MaterialDiffuseIntensityValueHandle = glGetUniformLocation(currentShaderID, "MaterialDiffuseIntensityValue");
 	MaterialColorHandle = glGetUniformLocation(currentShaderID, "MaterialColorValue");
 	PickingObjectIndexHandle = glGetUniformLocation(currentShaderID, "gObjectIndexVec4");
@@ -148,7 +57,7 @@ void Object::draw(const Matrix4& Projection, const Matrix4& View)
 	glUniformMatrix4fv(DepthBiasMatrixHandle, 1, GL_FALSE, &depthBiasMVP[0][0]);
 
 	glUniform1f(MaterialAmbientIntensityValueHandle, this->mat->ambientIntensity);
-	glUniform3fv(MaterialSpecularColorHandle, 1, &this->mat->specular.vect[0]);
+	glUniform1f(MaterialSpecularIntensityHandle, this->mat->specularIntensity);
 	glUniform1f(MaterialDiffuseIntensityValueHandle, this->mat->diffuseIntensity);
 	glUniform3fv(MaterialColorHandle, 1, &this->mat->color.vect[0]);
 

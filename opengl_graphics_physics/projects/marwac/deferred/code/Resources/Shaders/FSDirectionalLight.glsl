@@ -13,9 +13,7 @@ uniform sampler2D positionSampler;
 uniform sampler2D normalsSampler;
 //uniform sampler2D shadowMapSampler;
 
-uniform sampler2D diffIntAmbIntShinSampler;
-uniform sampler2D materialColorSampler;
-uniform sampler2D specularColorSampler;
+uniform sampler2D diffIntAmbIntShinSpecIntSampler;
 
 uniform float lightPower;
 uniform vec3 lightColor;
@@ -65,24 +63,8 @@ void main()
 	vec3 WorldPos = texture(positionSampler, TexCoord).xyz;
 	vec3 MaterialDiffuseColor = texture(diffuseSampler, TexCoord).xyz;
 	vec3 Normal_worldSpace = texture(normalsSampler, TexCoord).xyz;
-
-	// Light emission properties
-	// You probably want to put them as uniforms
-	vec3 LightColor = vec3(1, 1, 1);
-	float LightPower = 1.f;
-
 	// Material properties
-	vec3 MaterialColor = texture(materialColorSampler, TexCoord).xyz;
-	vec3 MaterialSpecularColor = texture(specularColorSampler, TexCoord).xyz;
-	vec3 MatPropertiesDiffAmbShin = texture(diffIntAmbIntShinSampler, TexCoord).xyz;
-	float MaterialDiffuseIntensityValue = MatPropertiesDiffAmbShin.x;
-	float MaterialAmbientIntensity = MatPropertiesDiffAmbShin.y;
-	float shininess = MatPropertiesDiffAmbShin.z;
-
-	//update the diffuse color with material color
-	MaterialDiffuseColor = MaterialDiffuseColor + MaterialColor;
-	//update ambient with diffuse color
-	vec3 MaterialAmbientColor = MaterialAmbientIntensity * MaterialDiffuseColor;
+	vec4 MatPropertiesDiffAmbShinSpec = texture(diffIntAmbIntShinSpecIntSampler, TexCoord);
 
 	// Vector that goes from the vertex to the camera, in world space.
 	vec3 EyeDirection_worldSpace = CameraPos - WorldPos;
@@ -117,13 +99,23 @@ void main()
 	//if ( depth  <  ShadowCoord.z - bias){
 	//	visibility = 0.5f;
 	//}
+	//vec3 Ambient = lightColor * lightPower * MaterialAmbientIntensity;
+	//vec3 Diffuse = lightColor * lightPower * MaterialDiffuseIntensityValue * cosTheta;
+	//vec3 SpecularColor = MaterialSpecularColor * lightColor * lightPower * pow(cosAlpha, shininess);
+	//specular sent to shader should be only the specular strength but we can try to specify color as well to fake translucent paint effect
+	//these are only light calculations
+	//we add the texture color later
+
+	float Ambient = MatPropertiesDiffAmbShinSpec.y;
+	float Diffuse = MatPropertiesDiffAmbShinSpec.x * cosTheta;
+	float SpecularColor = MatPropertiesDiffAmbShinSpec.w * pow(cosAlpha, MatPropertiesDiffAmbShinSpec.z);
 
 	//color with directional only
-	color =
+	color = MaterialDiffuseColor * lightColor * lightPower * (Ambient + Diffuse + SpecularColor);
 		// Ambient : simulates indirect lighting
-		MaterialAmbientColor * MaterialDiffuseIntensityValue +
+		//MaterialAmbientColor * MaterialDiffuseIntensityValue +
 		// Diffuse : "color" of the object
-		MaterialDiffuseColor * lightColor * lightPower * cosTheta * MaterialDiffuseIntensityValue +
+		//MaterialDiffuseColor * lightColor * lightPower * cosTheta * MaterialDiffuseIntensityValue +
 		// Specular : reflective highlight, like a mirror
-		MaterialSpecularColor * lightColor * lightPower * pow(cosAlpha, shininess);
+		//MaterialSpecularColor * lightColor * lightPower * pow(cosAlpha, shininess);
 }
