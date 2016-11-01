@@ -106,7 +106,7 @@ void main(){
 	float Diffuse = MaterialDiffuseIntensityValue * cosTheta;
 	float SpecularColor = MaterialSpecularIntensityValue * pow(cosAlpha, shininess);
 
-	color = MaterialDiffuseColor * LightColor * LightPower * visibility * (Ambient + Diffuse + SpecularColor);
+	color = MaterialDiffuseColor * LightColor * LightPower * (Ambient + (Diffuse + SpecularColor) * visibility);
 	//color with pointlight and directional
 	//color = 
 		// Ambient : simulates indirect lighting

@@ -40,7 +40,7 @@ void Object::draw(const Matrix4& Projection, const Matrix4& View)
 	DepthBiasMatrixHandle = glGetUniformLocation(currentShaderID, "DepthBiasMVP");
 	
 
-	MaterialAmbientValueHandle = glGetUniformLocation(currentShaderID, "MaterialAmbientValue");
+	MaterialAmbientIntensityHandle = glGetUniformLocation(currentShaderID, "MaterialAmbientIntensityValue");
 	MaterialSpecularIntensityValueHandle = glGetUniformLocation(currentShaderID, "MaterialSpecularIntensityValue");
 	MaterialDiffuseIntensityValueHandle = glGetUniformLocation(currentShaderID, "MaterialDiffuseIntensityValue");
 	MaterialColorValueHandle = glGetUniformLocation(currentShaderID, "MaterialColorValue");
@@ -53,7 +53,7 @@ void Object::draw(const Matrix4& Projection, const Matrix4& View)
     glUniformMatrix4fv(ViewMatrixHandle, 1, GL_FALSE, &ViewMatrix[0][0]);
 	glUniformMatrix4fv(DepthBiasMatrixHandle, 1, GL_FALSE, &depthBiasMVP[0][0]);
 
-	glUniform1f(MaterialAmbientValueHandle, this->mat->ambientIntensity);
+	glUniform1f(MaterialAmbientIntensityHandle, this->mat->ambientIntensity);
 	glUniform1f(MaterialSpecularIntensityValueHandle, this->mat->specularIntensity);
 	glUniform1f(MaterialDiffuseIntensityValueHandle, this->mat->diffuseIntensity);
 	glUniform1f(shininess, this->mat->shininess);
