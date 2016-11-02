@@ -14,7 +14,7 @@ out vec3 color;
 uniform sampler2D myTextureSampler;
 uniform mat4 MV;
 uniform vec3 LightPosition_worldspace;
-uniform float shininess;
+uniform float MaterialShininessValue;
 uniform float MaterialDiffuseIntensityValue;   
 uniform float MaterialAmbientIntensityValue;
 uniform float MaterialSpecularIntensityValue;
@@ -57,7 +57,7 @@ void main(){
 
 	float Ambient = MaterialAmbientIntensityValue;
 	float Diffuse = MaterialDiffuseIntensityValue * cosTheta;
-	float SpecularColor = MaterialSpecularIntensityValue * pow(cosAlpha, shininess);
+	float SpecularColor = MaterialSpecularIntensityValue * pow(cosAlpha, MaterialShininessValue);
 	
 	//1 directional, 1 point
 	float totalLight = (Ambient + Diffuse + SpecularColor) + (Ambient + Diffuse + SpecularColor) / (distance*distance);

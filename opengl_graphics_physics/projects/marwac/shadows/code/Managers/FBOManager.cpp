@@ -1,5 +1,7 @@
 #include "FBOManager.h"
 #include <string>
+#include "ShaderManager.h"
+#include "DebugDraw.h"
 
 FBOManager::FBOManager()
 {
@@ -224,3 +226,27 @@ void FBOManager::ReadPixelFromTexture(GLenum attachment, unsigned int x, unsigne
 	UnbindFrameBuffer(read);
 }
 
+void FBOManager::DrawShadowMap(int width, int height)
+{
+	//Quad render
+
+	ShaderManager::Instance()->SetCurrentShader(ShaderManager::Instance()->shaderIDs["depthPanel"]);
+	//Enable Scissor box to only the clear the color buffer and depth buffer for it
+	float fHeight = (float)height;
+	float fWidth = (float)width;
+	int glWidth = (int)(fWidth *0.15f);
+	int glHeight = (int)(fHeight*0.20f);
+	glEnable(GL_SCISSOR_TEST);
+	glScissor(0, 0, glWidth, glHeight);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glDisable(GL_SCISSOR_TEST);
+	glViewport(0, 0, glWidth, glHeight);
+
+	// Bind our texture in Texture Unit 0
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, shadowMapHandle);
+
+	DebugDraw::Instance()->DrawQuad();
+	glBindTexture(GL_TEXTURE_2D, 0);
+	glViewport(0, 0, width, height);
+}

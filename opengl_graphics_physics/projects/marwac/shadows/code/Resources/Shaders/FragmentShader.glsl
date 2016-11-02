@@ -16,7 +16,7 @@ uniform sampler2D myTextureSampler;
 uniform sampler2D shadowMapSampler;
 uniform mat4 MV;
 uniform vec3 LightPosition_worldspace;
-uniform float shininess;
+uniform float MaterialShininessValue;
 uniform float MaterialDiffuseIntensityValue;
 uniform float MaterialAmbientIntensityValue;
 uniform float MaterialSpecularIntensityValue;
@@ -104,7 +104,7 @@ void main(){
 	//just directional light
 	float Ambient = MaterialAmbientIntensityValue;
 	float Diffuse = MaterialDiffuseIntensityValue * cosTheta;
-	float SpecularColor = MaterialSpecularIntensityValue * pow(cosAlpha, shininess);
+	float SpecularColor = MaterialSpecularIntensityValue * pow(cosAlpha, MaterialShininessValue);
 
 	color = MaterialDiffuseColor * LightColor * LightPower * (Ambient + (Diffuse + SpecularColor) * visibility);
 	//color with pointlight and directional

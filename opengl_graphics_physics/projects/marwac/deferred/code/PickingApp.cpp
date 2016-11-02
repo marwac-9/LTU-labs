@@ -206,7 +206,7 @@ namespace Picking
 
 			DebugDraw::Instance()->DrawCrossHair(windowWidth, windowHeight);
 			
-			DebugDraw::Instance()->DrawGeometryMaps(windowWidth, windowHeight);
+			FBOManager::Instance()->DrawGeometryMaps(windowWidth, windowHeight);
 
 			if (currentTime - fps_timer >= 0.2f){ 
 				this->window->SetTitle("Objects rendered: " + std::to_string(objectsRendered) + " Lights rendered: " + std::to_string(lightsRendered) + " FPS: " + std::to_string(1.f / deltaTime) + " TimeStep: " + std::to_string(timeStep) + " PickedID: " + std::to_string(pickedID) + (paused ? " PAUSED" : ""));
@@ -269,22 +269,8 @@ namespace Picking
     void
     PickingApp::ClearBuffers()
     {
-        //clean up buffers
-        for (auto& mesh : GraphicsStorage::meshes)
-        {
-            glDeleteBuffers(1, &mesh.second->vertexbuffer);
-			glDeleteBuffers(1, &mesh.second->uvbuffer);
-			glDeleteBuffers(1, &mesh.second->normalbuffer);
-			glDeleteBuffers(1, &mesh.second->elementbuffer);
-			glDeleteBuffers(1, &mesh.second->vaoHandle);
-        }
-
-        //clean up textures
-		for (auto& texture : GraphicsStorage::textures)
-		{
-			glDeleteBuffers(1, &texture->TextureID);
-		}
-
+		GraphicsStorage::ClearMeshes();
+		GraphicsStorage::ClearTextures();
 		ShaderManager::Instance()->DeleteShaders();
     }
 
@@ -545,7 +531,7 @@ namespace Picking
         // Cull triangles which normal is not towards the camera
         glEnable(GL_CULL_FACE);
 
-		ShaderManager::Instance()->LoadShaders();
+		LoadShaders();
 		ShaderManager::Instance()->SetCurrentShader(ShaderManager::Instance()->shaderIDs["color"]);
 		LightID = glGetUniformLocation(ShaderManager::Instance()->shaderIDs["color"], "LightPosition_worldspace");
 		GLuint LightDir = glGetUniformLocation(ShaderManager::Instance()->shaderIDs["color"], "LightInvDirection_worldspace");
@@ -662,8 +648,8 @@ namespace Picking
     {
 		for(auto& obj : Scene::Instance()->objectsToRender)
 		{
-			obj.second->IntegrateRunge3(timestep);
-			obj.second->UpdateBoundingBoxes();
+			obj.second->IntegrateRunge3(timestep, PhysicsManager::Instance()->gravity);
+			obj.second->UpdateBoundingBoxes(DebugDraw::Instance()->boundingBox);
 			obj.second->UpdateInertiaTensor();
 		}
     }
@@ -1002,7 +988,7 @@ namespace Picking
 	{
 		for (auto& obj : Scene::Instance()->pointLights)
 		{
-			obj->IntegrateRunge3(timestep);
+			obj->IntegrateRunge3(timestep, PhysicsManager::Instance()->gravity);
 		}
 	}
 
@@ -1020,6 +1006,21 @@ namespace Picking
 		currentCamera = new Camera(Vector3(0.f, 10.f, 60.f), windowWidth, windowHeight);
 		currentCamera->Update(timeStep);
 		window->SetCursorPos(windowMidX, windowMidY);
+	}
+
+	void PickingApp::LoadShaders()
+	{
+		ShaderManager::Instance()->AddShader("color", GraphicsManager::LoadShaders("Resources/Shaders/VertexShader.glsl", "Resources/Shaders/FragmentShader.glsl"));
+		ShaderManager::Instance()->AddShader("picking", GraphicsManager::LoadShaders("Resources/Shaders/VSPicking.glsl", "Resources/Shaders/FSPicking.glsl"));
+		ShaderManager::Instance()->AddShader("wireframe", GraphicsManager::LoadShaders("Resources/Shaders/VSBB.glsl", "Resources/Shaders/FSBB.glsl"));
+		ShaderManager::Instance()->AddShader("dftext", GraphicsManager::LoadShaders("Resources/Shaders/VSDFText.glsl", "Resources/Shaders/FSDFText.glsl"));
+		ShaderManager::Instance()->AddShader("depth", GraphicsManager::LoadShaders("Resources/Shaders/VSDepth.glsl", "Resources/Shaders/FSDepth.glsl"));
+		ShaderManager::Instance()->AddShader("depthPanel", GraphicsManager::LoadShaders("Resources/Shaders/VSShadowMapPlane.glsl", "Resources/Shaders/FSShadowMapPlane.glsl"));
+		ShaderManager::Instance()->AddShader("blur", GraphicsManager::LoadShaders("Resources/Shaders/VSBlur.glsl", "Resources/Shaders/FSBlur.glsl"));
+		ShaderManager::Instance()->AddShader("geometry", GraphicsManager::LoadShaders("Resources/Shaders/VSGeometry.glsl", "Resources/Shaders/FSGeometry.glsl"));
+		ShaderManager::Instance()->AddShader("pointLight", GraphicsManager::LoadShaders("Resources/Shaders/VSPointLight.glsl", "Resources/Shaders/FSPointLight.glsl"));
+		ShaderManager::Instance()->AddShader("directionalLight", GraphicsManager::LoadShaders("Resources/Shaders/VSDirectionalLight.glsl", "Resources/Shaders/FSDirectionalLight.glsl"));
+		ShaderManager::Instance()->AddShader("stencil", GraphicsManager::LoadShaders("Resources/Shaders/VSStencil.glsl", "Resources/Shaders/FSStencil.glsl"));
 	}
 
 	

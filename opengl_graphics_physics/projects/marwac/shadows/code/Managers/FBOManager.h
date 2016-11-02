@@ -19,6 +19,7 @@ public:
 	void UnbindFrameBuffer(FrameBufferMode readWrite);
 	void ReadPixelID(unsigned int x, unsigned int y, unsigned char* data);
 	void ReadWorldPos(unsigned int x, unsigned int y, float* data);
+	void DrawShadowMap(int width, int height);
 	GLuint blurFrameBufferHandle;
 	GLuint frameBufferHandle; //frame buffer handle
 	GLuint pickingTextureHandle; //picking texture for frame buffer

@@ -49,6 +49,8 @@ namespace Picking
 		void LoadScene2();
 		void LoadScene3();
 		void LoadScene4();
+		void LoadScene5();
+		void LoadShaders();
 		void Vortex();
 		bool altButtonToggle = true;
         //camera type 1 == fps, 2 == tps 3 == monitoring camera

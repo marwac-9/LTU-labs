@@ -76,6 +76,7 @@ namespace Picking
 		void DisableTextures();
 		void DrawGeometry(const mwm::Matrix4& ProjectionMatrix, const mwm::Matrix4& ViewMatrix);
 		void SpawnSomeLights();
+		void LoadShaders();
 		bool altButtonToggle = true;
         //camera type 1 == fps, 2 == tps 3 == monitoring camera
         int cameraMode = 1;

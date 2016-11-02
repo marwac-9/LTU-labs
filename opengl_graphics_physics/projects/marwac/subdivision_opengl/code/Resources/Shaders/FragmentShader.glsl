@@ -16,6 +16,7 @@ uniform mat4 MV;
 uniform vec3 LightPosition_worldspace;
 uniform float MaterialDiffuseIntensityValue;   
 uniform float MaterialAmbientIntensityValue;
+uniform float MaterialShininessValue;
 uniform vec3 MaterialColor;
 uniform float MaterialSpecularIntensityValue;
 
@@ -54,7 +55,7 @@ void main(){
 	
 	float Ambient = MaterialAmbientIntensityValue;
 	float Diffuse = MaterialDiffuseIntensityValue * cosTheta;
-	float SpecularColor = MaterialSpecularIntensityValue * pow(cosAlpha, 5);
+	float SpecularColor = MaterialSpecularIntensityValue * pow(cosAlpha, MaterialShininessValue);
 
 	//1 directional, 1 point
 	float totalLight = (Ambient + Diffuse + SpecularColor) + (Ambient + Diffuse + SpecularColor) / (distance*distance);

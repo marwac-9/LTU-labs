@@ -13,7 +13,7 @@ SET(files_material
 SOURCE_GROUP("material" FILES ${files_material})
 
 ADD_LIBRARY(material STATIC ${files_material})
-TARGET_LINK_LIBRARIES(material mymathlib)
+TARGET_LINK_LIBRARIES(material mymathlib render)
 SET_TARGET_PROPERTIES(material PROPERTIES LINKER_LANGUAGE CXX)
 SET_TARGET_PROPERTIES(material PROPERTIES FOLDER "MyLibs")
 TARGET_INCLUDE_DIRECTORIES(material PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

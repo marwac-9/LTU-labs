@@ -160,22 +160,8 @@ namespace Subdivision
 	void
 		SubdivisionApp::ClearBuffers()
 	{
-		//clean up buffers
-		for (auto& mesh : GraphicsStorage::meshes)
-		{
-			glDeleteBuffers(1, &mesh.second->vertexbuffer);
-			glDeleteBuffers(1, &mesh.second->uvbuffer);
-			glDeleteBuffers(1, &mesh.second->normalbuffer);
-			glDeleteBuffers(1, &mesh.second->elementbuffer);
-			glDeleteBuffers(1, &mesh.second->vaoHandle);
-		}
-
-		//clean up textures
-		for (auto& texture : GraphicsStorage::textures)
-		{
-			glDeleteBuffers(1, &texture->TextureID);
-		}
-
+		GraphicsStorage::ClearMeshes();
+		GraphicsStorage::ClearTextures();
 		ShaderManager::Instance()->DeleteShaders();
 	}
 
@@ -260,7 +246,7 @@ namespace Subdivision
 		// Cull triangles which normal is not towards the camera
 		glEnable(GL_CULL_FACE);
 
-		ShaderManager::Instance()->LoadShaders();
+		LoadShaders();
 		ShaderManager::Instance()->SetCurrentShader(ShaderManager::Instance()->shaderIDs["color"]);
 		LightID = glGetUniformLocation(ShaderManager::Instance()->shaderIDs["color"], "LightPosition_worldspace");
 		GLuint LightDir = glGetUniformLocation(ShaderManager::Instance()->shaderIDs["color"], "LightInvDirection_worldspace");
@@ -393,6 +379,11 @@ namespace Subdivision
 		currentCamera = new Camera(Vector3(0.f, 3.f, 16.f), windowWidth, windowHeight);
 		currentCamera->Update(timeStep);
 		window->SetCursorPos(windowMidX, windowMidY);
+	}
+
+	void SubdivisionApp::LoadShaders()
+	{
+		ShaderManager::Instance()->AddShader("color", GraphicsManager::LoadShaders("Resources/Shaders/VertexShader.glsl", "Resources/Shaders/FragmentShader.glsl"));
 	}
 
 } // namespace Example

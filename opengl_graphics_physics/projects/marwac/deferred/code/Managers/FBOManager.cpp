@@ -1,5 +1,7 @@
 #include "FBOManager.h"
 #include <string>
+#include "ShaderManager.h"
+#include "DebugDraw.h"
 
 FBOManager::FBOManager()
 {
@@ -298,4 +300,88 @@ void FBOManager::BindGeometryBuffer(FrameBufferMode readWrite)
 		break;
 	}
 }
+
+void FBOManager::DrawShadowMap(int width, int height)
+{
+	//Quad render
+
+	ShaderManager::Instance()->SetCurrentShader(ShaderManager::Instance()->shaderIDs["depthPanel"]);
+	//Enable Scissor box to only the clear the color buffer and depth buffer for it
+	float fHeight = (float)height;
+	float fWidth = (float)width;
+	int y = (int)(fHeight - fHeight*0.20f);
+	int glWidth = (int)(fWidth *0.15f);
+	int glHeight = (int)(fHeight*0.20f);
+	glEnable(GL_SCISSOR_TEST);
+	glScissor(0, y, glWidth, glHeight);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glDisable(GL_SCISSOR_TEST);
+	glViewport(0, y, glWidth, glHeight);
+
+	// Bind our texture in Texture Unit 0
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, shadowMapHandle);
+	// Set our "myTextureSampler" sampler to user Texture Unit 0
+	glUniform1i(shadowMapHandle, 0);
+
+	DebugDraw::Instance()->DrawQuad();
+	glBindTexture(GL_TEXTURE_2D, 0);
+	glViewport(0, 0, width, height);
+}
+
+void FBOManager::DrawGeometryMaps(int width, int height)
+{
+	ShaderManager::Instance()->SetCurrentShader(ShaderManager::Instance()->shaderIDs["depthPanel"]);
+	//GLuint ShadowMapHandle = glGetUniformLocation(ShaderManager::Instance()->GetCurrentShaderID(), "shadowMapSampler");
+	//glUniform1i(ShadowMapHandle, 0);
+	float fHeight = (float)height;
+	float fWidth = (float)width;
+	int y = (int)(fHeight*0.20f);
+	int glWidth = (int)(fWidth *0.15f);
+	int glHeight = (int)(fHeight*0.20f);
+
+	glEnable(GL_SCISSOR_TEST);
+	glScissor(0, y, glWidth, glHeight);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glDisable(GL_SCISSOR_TEST);
+	glViewport(0, y, glWidth, glHeight);
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, FBOManager::Instance()->positionBufferHandle);
+	DebugDraw::Instance()->DrawQuad();
+
+	glEnable(GL_SCISSOR_TEST);
+	glScissor(0, 0, glWidth, glHeight);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glDisable(GL_SCISSOR_TEST);
+	glViewport(0, 0, glWidth, glHeight);
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, FBOManager::Instance()->diffuseBufferHandle);
+	DebugDraw::Instance()->DrawQuad();
+
+	glEnable(GL_SCISSOR_TEST);
+	glScissor(glWidth, 0, glWidth, glHeight);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glDisable(GL_SCISSOR_TEST);
+	glViewport(glWidth, 0, glWidth, glHeight);
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, FBOManager::Instance()->normalBufferHandle);
+	DebugDraw::Instance()->DrawQuad();
+	/*
+	glEnable(GL_SCISSOR_TEST);
+	glScissor(width *0.15, height*0.20, width *0.15, height*0.20);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glDisable(GL_SCISSOR_TEST);
+	glViewport(width *0.15, height*0.20, width *0.15, height*0.20);
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, FBOManager::Instance()->texcoordBufferHandle);
+	DrawQuad();
+	*/
+	glBindTexture(GL_TEXTURE_2D, 0);
+	glViewport(0, 0, width, height);
+}
+
 

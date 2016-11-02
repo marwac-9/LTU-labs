@@ -17,7 +17,7 @@ SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/bin")
 
 ADD_EXECUTABLE(subdivision_notoptimized ${files_subdivision_notoptimized})
 SET_TARGET_PROPERTIES(subdivision_notoptimized PROPERTIES FOLDER "LABS")
-TARGET_LINK_LIBRARIES(subdivision_notoptimized mesh obj node core render)
+TARGET_LINK_LIBRARIES(subdivision_notoptimized node graphics_storage graphics_manager core)
 #ADD_DEPENDENCIES(subdivision_notoptimizied core render)
 
 

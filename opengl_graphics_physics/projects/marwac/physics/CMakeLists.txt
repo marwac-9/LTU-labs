@@ -4,8 +4,6 @@
 
 PROJECT(physics)
 INCLUDE_DIRECTORIES("code/Managers") #helps access files without any ..\ when including files
-INCLUDE_DIRECTORIES("code/Drawables")
-INCLUDE_DIRECTORIES("code/HalfEdgeMesh")
 INCLUDE_DIRECTORIES("code/")
 
 FILE(GLOB SRC "code/*.h")
@@ -18,23 +16,18 @@ FILE(GLOB HEAD "code/Managers/*.h")
 LIST(APPEND SRCSMANAGERS ${SRC} ${HEAD})
 SOURCE_GROUP("Physics\\Managers" FILES ${SRCSMANAGERS})
 
-FILE(GLOB SRC "code/Drawables/*.cpp")
-FILE(GLOB HEAD "code/Drawables/*.h")
-LIST(APPEND SRCDRAWABLES ${SRC} ${HEAD})
-SOURCE_GROUP("Physics\\Drawables" FILES ${SRCDRAWABLES})
-
 FILE(GLOB SRC "code/Resources/Shaders/*.glsl")
 LIST(APPEND SRCSSHADERS ${SRC} )
 SOURCE_GROUP("Physics\\Shaders" FILES ${SRCSSHADERS})
 
-LIST(APPEND ALLSRCS ${SRCSBASE} ${SRCSMANAGERS} ${SRCDRAWABLES} ${SRCSSHADERS})
+LIST(APPEND ALLSRCS ${SRCSBASE} ${SRCSMANAGERS} ${SRCSSHADERS})
 
 SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/bin")
 #FILE(COPY "GLFW_lab6/Resources" DESTINATION "${CMAKE_CURRENT_SOURCE_DIR}/bin")
 
 ADD_EXECUTABLE(physics ${ALLSRCS})
 SET_TARGET_PROPERTIES(physics PROPERTIES FOLDER "LABS")
-TARGET_LINK_LIBRARIES(physics mesh obj material node drawables camera frustum stb core render)
+TARGET_LINK_LIBRARIES(physics camera frustum graphics_storage shader_manager graphics_manager object physics_manager scene core)
 #ADD_DEPENDENCIES(physics mymathlib stb core render)
 
 

@@ -184,7 +184,7 @@ namespace Picking
 			//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); i clear screen above instead, fbo is cleared inside passes
 			DrawColorDebugPass(ProjectionMatrix, ViewMatrix); // color || debug
 			DebugDraw::Instance()->DrawCrossHair(windowWidth, windowHeight);
-			DebugDraw::Instance()->DrawShadowMap(windowWidth, windowHeight);
+			FBOManager::Instance()->DrawShadowMap(windowWidth, windowHeight);
 			if (currentTime - fps_timer >= 0.2f){ 
 				this->window->SetTitle("Objects rendered: " + std::to_string(objectsRendered) + " FPS: " + std::to_string(1.f / deltaTime) + " TimeStep: " + std::to_string(timeStep) + " PickedID: " + std::to_string(pickedID) + (paused ? " PAUSED" : ""));
 				fps_timer = currentTime;
@@ -246,22 +246,8 @@ namespace Picking
     void
     PickingApp::ClearBuffers()
     {
-        //clean up buffers
-        for (auto& mesh : GraphicsStorage::meshes)
-        {
-            glDeleteBuffers(1, &mesh.second->vertexbuffer);
-			glDeleteBuffers(1, &mesh.second->uvbuffer);
-			glDeleteBuffers(1, &mesh.second->normalbuffer);
-			glDeleteBuffers(1, &mesh.second->elementbuffer);
-			glDeleteBuffers(1, &mesh.second->vaoHandle);
-        }
-
-        //clean up textures
-        for (auto& texture : GraphicsStorage::textures)
-		{
-			glDeleteBuffers(1, &texture->TextureID);
-		}
-
+		GraphicsStorage::ClearMeshes();
+		GraphicsStorage::ClearTextures();
 		ShaderManager::Instance()->DeleteShaders();
     }
 
@@ -305,6 +291,11 @@ namespace Picking
 			//cameraMode = 3;
 			scene4loaded = true;
 			LoadScene4();
+		}
+		else if (key == GLFW_KEY_7) {
+			//cameraMode = 3;
+			scene4loaded = false;
+			LoadScene5();
 		}
 		else if(key == GLFW_KEY_4 && action == GLFW_PRESS) {
             printf("\nWIREFRAME MODE\n");
@@ -523,7 +514,7 @@ namespace Picking
         // Cull triangles which normal is not towards the camera
         glEnable(GL_CULL_FACE);
 
-		ShaderManager::Instance()->LoadShaders();
+		LoadShaders();
 		ShaderManager::Instance()->SetCurrentShader(ShaderManager::Instance()->shaderIDs["color"]);
 		LightID = glGetUniformLocation(ShaderManager::Instance()->shaderIDs["color"], "LightPosition_worldspace");
 		GLuint LightDir = glGetUniformLocation(ShaderManager::Instance()->shaderIDs["color"], "LightInvDirection_worldspace");
@@ -617,8 +608,8 @@ namespace Picking
     {
 		for(auto& obj : Scene::Instance()->objectsToRender)
 		{
-			obj.second->IntegrateRunge3(timestep);
-			obj.second->UpdateBoundingBoxes();
+			obj.second->IntegrateRunge3(timestep, PhysicsManager::Instance()->gravity);
+			obj.second->UpdateBoundingBoxes(DebugDraw::Instance()->boundingBox);
 			obj.second->UpdateInertiaTensor();
 		}
     }
@@ -667,7 +658,7 @@ namespace Picking
 		//Boxes sliding of a static plane oriented at an angle.
 		Clear();
 
-		Object* plane = Scene::Instance()->addPhysicObject("cube");
+		Object* plane = Scene::Instance()->addPhysicObject("cube", Vector3(0.f, -20.f, 0.f));
 		plane->SetScale(25, 2, 25);
 		plane->SetMass(FLT_MAX);
 		plane->radius = 50.f;
@@ -682,6 +673,17 @@ namespace Picking
 		Clear();
 		scene4loaded = true;
 		Scene::Instance()->addRandomlyPhysicObjects("cube", 50);
+	}
+
+	void PickingApp::LoadScene5()
+	{
+		Clear();
+		for (int i = 0; i < 700; i++)
+		{
+			Object* sphere = Scene::Instance()->addRandomlyObject("sphere");
+			sphere->SetMass(FLT_MAX);
+			sphere->isKinematic = true;
+		}
 	}
 
 	void 
@@ -712,9 +714,20 @@ namespace Picking
 
 	void PickingApp::SetUpCamera(float timeStep)
 	{
-		currentCamera = new Camera(Vector3(0.f, -3.f, 16.f), windowWidth, windowHeight);
+		currentCamera = new Camera(Vector3(0.f, -3.f, 26.f), windowWidth, windowHeight);
 		currentCamera->Update(timeStep);
 		window->SetCursorPos(windowMidX, windowMidY);
+	}
+
+	void PickingApp::LoadShaders()
+	{
+		ShaderManager::Instance()->AddShader("color", GraphicsManager::LoadShaders("Resources/Shaders/VertexShader.glsl", "Resources/Shaders/FragmentShader.glsl"));
+		ShaderManager::Instance()->AddShader("picking", GraphicsManager::LoadShaders("Resources/Shaders/VSPicking.glsl", "Resources/Shaders/FSPicking.glsl"));
+		ShaderManager::Instance()->AddShader("wireframe", GraphicsManager::LoadShaders("Resources/Shaders/VSBB.glsl", "Resources/Shaders/FSBB.glsl"));
+		ShaderManager::Instance()->AddShader("dftext", GraphicsManager::LoadShaders("Resources/Shaders/VSDFText.glsl", "Resources/Shaders/FSDFText.glsl"));
+		ShaderManager::Instance()->AddShader("depth", GraphicsManager::LoadShaders("Resources/Shaders/VSDepth.glsl", "Resources/Shaders/FSDepth.glsl"));
+		ShaderManager::Instance()->AddShader("depthPanel", GraphicsManager::LoadShaders("Resources/Shaders/VSShadowMapPlane.glsl", "Resources/Shaders/FSShadowMapPlane.glsl"));
+		ShaderManager::Instance()->AddShader("blur", GraphicsManager::LoadShaders("Resources/Shaders/VSBlur.glsl", "Resources/Shaders/FSBlur.glsl"));
 	}
 
 } // namespace Example

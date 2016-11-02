@@ -42,7 +42,7 @@ namespace Subdivision
 		void LoadScene2();
 		void LoadScene3();
 		void Subdivide(OBJ* objToSubdivide);
-
+		void LoadShaders();
 		bool altButtonToggle = true;
 
 		bool running = false;
