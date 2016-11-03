@@ -46,6 +46,7 @@ namespace Subdivision
 		bool altButtonToggle = true;
 
 		bool running = false;
+		bool wireframe = false;
 		Display::Window* window;
 		double leftMouseX;
 		double leftMouseY;

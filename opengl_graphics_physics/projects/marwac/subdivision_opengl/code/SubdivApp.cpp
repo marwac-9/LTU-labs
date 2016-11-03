@@ -51,7 +51,7 @@ namespace Subdivision
 	/**
 	*/
 	bool
-		SubdivisionApp::Open()
+	SubdivisionApp::Open()
 	{
 		App::Open();
 		this->window = new Display::Window;
@@ -92,7 +92,7 @@ namespace Subdivision
 	/**
 	*/
 	void
-		SubdivisionApp::Run()
+	SubdivisionApp::Run()
 	{
 
 		InitGL();
@@ -114,6 +114,7 @@ namespace Subdivision
 		double fps_timer = 0;
 
 		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+		wireframe = true;
 		//glfwSwapInterval(0); //unlock fps
 
 		while (running)
@@ -156,9 +157,8 @@ namespace Subdivision
 		this->window->Close();
 	}
 
-
 	void
-		SubdivisionApp::ClearBuffers()
+	SubdivisionApp::ClearBuffers()
 	{
 		GraphicsStorage::ClearMeshes();
 		GraphicsStorage::ClearTextures();
@@ -166,7 +166,7 @@ namespace Subdivision
 	}
 
 	void
-		SubdivisionApp::KeyCallback(int key, int scancode, int action, int mods)
+	SubdivisionApp::KeyCallback(int key, int scancode, int action, int mods)
 	{
 		if (action == GLFW_PRESS)
 		{
@@ -194,13 +194,19 @@ namespace Subdivision
 			else if (key == GLFW_KEY_3) {
 				LoadScene3();
 			}
-			else if (key == GLFW_KEY_4) {
-				printf("\nWIREFRAME MODE\n");
-				glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-			}
-			else if (key == GLFW_KEY_5) {
-				printf("\nSHADED MODE\n");
-				glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+			else if (key == GLFW_KEY_TAB) {
+				if (wireframe)
+				{
+					wireframe = false;
+					printf("\nSHADED MODE\n");
+					glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+				}
+				else
+				{
+					wireframe = true;
+					printf("\nWIREFRAME MODE\n");
+					glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+				}
 			}
 			else if (key == GLFW_KEY_S && window->GetKey(GLFW_KEY_LEFT_CONTROL)) {
 				GraphicsManager::SaveToOBJ(GraphicsStorage::objects.back());
@@ -221,7 +227,7 @@ namespace Subdivision
 	}
 
 	void
-		SubdivisionApp::Monitor(Display::Window* window)
+	SubdivisionApp::Monitor(Display::Window* window)
 	{
 		currentCamera->holdingForward = (window->GetKey(GLFW_KEY_W) == GLFW_PRESS);
 		currentCamera->holdingBackward = (window->GetKey(GLFW_KEY_S) == GLFW_PRESS);
@@ -232,7 +238,7 @@ namespace Subdivision
 	}
 
 	void
-		SubdivisionApp::InitGL()
+	SubdivisionApp::InitGL()
 	{
 
 		// grey background
@@ -259,7 +265,7 @@ namespace Subdivision
 	}
 
 	void
-		SubdivisionApp::Draw(const Matrix4& ProjectionMatrix, const Matrix4& ViewMatrix)
+	SubdivisionApp::Draw(const Matrix4& ProjectionMatrix, const Matrix4& ViewMatrix)
 	{
 		objectsRendered = 0;
 		for (auto& obj : Scene::Instance()->objectsToRender)
@@ -272,15 +278,15 @@ namespace Subdivision
 	}
 
 	void
-		SubdivisionApp::Clear()
+	SubdivisionApp::Clear()
 	{
 		Scene::Instance()->Clear();
 		PhysicsManager::Instance()->Clear();
 		ClearSubdivisionData();
 	}
 
-
-	void SubdivisionApp::ClearSubdivisionData()
+	void
+	SubdivisionApp::ClearSubdivisionData()
 	{
 		for (auto& obj : dynamicOBJs)
 		{
@@ -300,25 +306,28 @@ namespace Subdivision
 	}
 
 	void
-		SubdivisionApp::LoadScene1()
+	SubdivisionApp::LoadScene1()
 	{
 		Clear();
 		Subdivide(GraphicsStorage::objects[5]);
 	}
 
-	void SubdivisionApp::LoadScene2()
+	void
+	SubdivisionApp::LoadScene2()
 	{
 		Clear();
 		Subdivide(GraphicsStorage::objects[1]);
 	}
 
-	void SubdivisionApp::LoadScene3()
+	void
+	SubdivisionApp::LoadScene3()
 	{
 		Clear();
 		Subdivide(GraphicsStorage::objects[2]);
 	}
 
-	void SubdivisionApp::Subdivide(OBJ* objToSubdivide)
+	void
+	SubdivisionApp::Subdivide(OBJ* objToSubdivide)
 	{
 		Object* HalfMesh = Scene::Instance()->addChild(Scene::Instance()->SceneObject); //Object added to scene for rendering
 		
@@ -365,7 +374,8 @@ namespace Subdivision
 		//must create containers for dynamic meshes and OBJ and delete them when clearing
 	}
 
-	void SubdivisionApp::MouseCallback(double mouseX, double mouseY)
+	void
+	SubdivisionApp::MouseCallback(double mouseX, double mouseY)
 	{
 		if (altButtonToggle)
 		{
@@ -374,14 +384,16 @@ namespace Subdivision
 		}
 	}
 
-	void SubdivisionApp::SetUpCamera(float timeStep)
+	void
+	SubdivisionApp::SetUpCamera(float timeStep)
 	{
 		currentCamera = new Camera(Vector3(0.f, 3.f, 16.f), windowWidth, windowHeight);
 		currentCamera->Update(timeStep);
 		window->SetCursorPos(windowMidX, windowMidY);
 	}
 
-	void SubdivisionApp::LoadShaders()
+	void
+	SubdivisionApp::LoadShaders()
 	{
 		ShaderManager::Instance()->AddShader("color", GraphicsManager::LoadShaders("Resources/Shaders/VertexShader.glsl", "Resources/Shaders/FragmentShader.glsl"));
 	}

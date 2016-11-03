@@ -158,8 +158,10 @@ namespace Picking
 			FrustumManager::Instance()->ExtractPlanes(ProjectionMatrix, ViewMatrix);
 			
 			timeStep = 0.016f + timeModifier;
-			dtInv = 1.f / timeStep;
-			if (paused) timeStep = 0.f, dtInv = 0;
+			if (timeStep == 0.f) dtInv = 0.f;
+			else dtInv = 1.f / timeStep;
+
+			if (paused) timeStep = 0.f, dtInv = 0.f;
 
 			if (scene4loaded)
 			{
@@ -225,52 +227,51 @@ namespace Picking
 				}
 			}
 			else if (key == GLFW_KEY_1) {
-				//cameraMode = 1;
 				scene4loaded = false;
 				LoadScene1();
 			}
 			else if (key == GLFW_KEY_2) {
-				//cameraMode = 2;
 				scene4loaded = false;
 				LoadScene2();
 			}
 			else if (key == GLFW_KEY_3) {
-				//cameraMode = 3;
 				scene4loaded = false;
 				LoadScene3();
 			}
-			else if (key == GLFW_KEY_6) {
-				//cameraMode = 3;
+			else if (key == GLFW_KEY_4) {
 				scene4loaded = true;
 				LoadScene4();
 			}
-			else if (key == GLFW_KEY_7) {
-				//cameraMode = 3;
+			else if (key == GLFW_KEY_5) {
 				scene4loaded = false;
 				LoadScene5();
 			}
-			else if (key == GLFW_KEY_4) {
-				printf("\nWIREFRAME MODE\n");
-				glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+			else if (key == GLFW_KEY_TAB) {
+				if (wireframe)
+				{
+					wireframe = false;
+					printf("\nSHADED MODE\n");
+					glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+				}
+				else
+				{
+					wireframe = true;
+					printf("\nWIREFRAME MODE\n");
+					glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+				}
 			}
-			else if (key == GLFW_KEY_5) {
-				printf("\nSHADED MODE\n");
-				glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-			}
-			else if (key == GLFW_KEY_U) {
+			else if (key == GLFW_KEY_S && window->GetKey(GLFW_KEY_LEFT_CONTROL)) {
 				GraphicsManager::SaveToOBJ(GraphicsStorage::objects.back());
 				std::cout << "Last Mesh Saved" << std::endl;
 			}
 			else if (key == GLFW_KEY_O) {
 				if (debug)
 				{
-					debug = false;
-					//glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);				
+					debug = false;				
 				}
 				else
 				{
 					debug = true;
-					//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 				}
 			}
 			else if (key == GLFW_KEY_P)
@@ -306,8 +307,8 @@ namespace Picking
     void
     PickingApp::Monitor(Display::Window* window)
     {
-		if (window->GetKey(GLFW_KEY_KP_ADD) == GLFW_PRESS) timeModifier += 0.0005f;
-		if (window->GetKey(GLFW_KEY_KP_SUBTRACT) == GLFW_PRESS) timeModifier -= 0.0005f;
+		if (window->GetKey(GLFW_KEY_KP_ADD) == GLFW_PRESS) timeModifier += 0.005f;
+		if (window->GetKey(GLFW_KEY_KP_SUBTRACT) == GLFW_PRESS) timeModifier -= 0.005f;
 		if (window->GetKey(GLFW_KEY_UP) == GLFW_PRESS) if (lastPickedObject) lastPickedObject->Translate(Vector3(0.f, 0.05f, 0.f));
 		if (window->GetKey(GLFW_KEY_DOWN) == GLFW_PRESS) if (lastPickedObject) lastPickedObject->Translate(Vector3(0.f, -0.05f, 0.f));
 		if (window->GetKey(GLFW_KEY_LEFT) == GLFW_PRESS) if (lastPickedObject) lastPickedObject->Translate(Vector3(0.05f, 0.f, 0.f));
@@ -326,33 +327,17 @@ namespace Picking
     {
 		if (debug)
 		{
-			DebugDraw2(Projection, View);
-			/*
-			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL); //lit
 			ShaderManager::Instance()->SetCurrentShader(ShaderManager::Instance()->shaderIDs["color"]);
-			//previous shader has to be set to color for light or move it to the color pass
-			glUniform3f(LightID, 0.f, 0.f, 0.f);
-			Draw(Projection, View); //draw color lit
-			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE); //lines
-			DrawDebugPass(ProjectionMatrix, ViewMatrix); //draw debug
-			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL); //back to lit
-			//ShaderManager::Instance()->SetCurrentShader((ShaderManager::Instance()->shaderIDs["color"])); //back to color
-			*/
+			Draw(Projection, View);
+			ShaderManager::Instance()->SetCurrentShader(ShaderManager::Instance()->shaderIDs["wireframe"]);
+			DrawDebug(Projection, View);
 		}
 		else
 		{
 			ShaderManager::Instance()->SetCurrentShader(ShaderManager::Instance()->shaderIDs["color"]);
-			//previous shader has to be set to color for light or move it to the color pass
 			Draw(Projection, View);
 		}
     }
-
-	void
-	PickingApp::DrawDebugPass(const Matrix4& Projection, const Matrix4& View)
-	{
-		ShaderManager::Instance()->SetCurrentShader(ShaderManager::Instance()->shaderIDs["wireframe"]);
-		DrawDebug(Projection, View);
-	}
 
     void
     PickingApp::PassPickingTexture(const Matrix4& Projection, const Matrix4& View)
@@ -382,20 +367,19 @@ namespace Picking
 			pickedID = Pixel[0] + Pixel[1] * 256 + Pixel[2] * 256 * 256;
 
 			//std::cout << pickedID << std::endl;
-			if(lastPickedObject != nullptr)
+			if (lastPickedObject != nullptr) //reset previously picked object color
 			{
-				lastPickedObject->mat->color = Vector3(0.f,0.f,0.f);
-				lastPickedObject = nullptr;
-			}  
-			if(Scene::Instance()->objectsToRender.find(pickedID) != Scene::Instance()->objectsToRender.end())
+				lastPickedObject->mat->color = Vector3(0.f, 0.f, 0.f);
+			}
+			if (Scene::Instance()->objectsToRender.find(pickedID) != Scene::Instance()->objectsToRender.end())
 			{
 				lastPickedObject = Scene::Instance()->objectsToRender[pickedID];
-				lastPickedObject->mat->color = Vector3(2.f,2.f,0.f);
-			
+				lastPickedObject->mat->color = Vector3(1.f, 0.f, 0.f);
+
 				Vector3 world_position;
 				FBOManager::Instance()->ReadWorldPos((unsigned int)leftMouseX, this->windowHeight - (unsigned int)leftMouseY, world_position.vect);
 				//Vector3 mouseInWorld = ConvertMousePosToWorld();
-			
+
 				Vector3 impulse = (world_position - currentCamera->GetPosition()).vectNormalize();
 				this->lastPickedObject->ApplyImpulse(impulse, 20.f, world_position);
 			}
@@ -471,53 +455,16 @@ namespace Picking
 			obj.ent1->aabb.color = Vector3(1.f, 0.f, 0.f);
 			obj.ent2->aabb.color = Vector3(1.f, 0.f, 0.f);
 		}
-
-		for (auto& obj : Scene::Instance()->objectsToRender)
-		{
-			if (FrustumManager::Instance()->isBoundingSphereInView(obj.second->GetPosition(), obj.second->radius))
-			{
-				//boundingBox->mat->SetColor(obj.second->obb.color);
-				//boundingBox->Draw(obj.second->obb.model, ViewMatrix, ProjectionMatrix);
-				boundingBox->mat->SetColor(obj.second->aabb.color);
-				boundingBox->Draw(obj.second->aabb.model, ViewMatrix, ProjectionMatrix, wireframeShader);
-			}
-		}
-	}
-
-	void 
-	PickingApp::DebugDraw2(const Matrix4& ProjectionMatrix, const Matrix4& ViewMatrix)
-	{
-		GLuint wireframeShader = ShaderManager::Instance()->shaderIDs["wireframe"];
-		for (auto& obj : PhysicsManager::Instance()->satOverlaps)
-		{
-			obj.ent1->aabb.color = Vector3(1.f, 0.f, 0.f);
-			obj.ent2->aabb.color = Vector3(1.f, 0.f, 0.f);
-		}
-
-		objectsRendered = 0;
 		for (auto& obj : Scene::Instance()->objectsToRender)
 		{
 			if (FrustumManager::Instance()->isBoundingSphereInView(obj.second->GetPosition(), obj.second->radius)) {
-
-				//glPolygonMode(GL_FRONT_AND_BACK, GL_FILL); //lit
-				ShaderManager::Instance()->SetCurrentShader(ShaderManager::Instance()->shaderIDs["color"]);
-				obj.second->draw(ProjectionMatrix, ViewMatrix);
-				objectsRendered++;
-
-				//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE); //lines
-				ShaderManager::Instance()->SetCurrentShader(ShaderManager::Instance()->shaderIDs["wireframe"]);
-
 				boundingBox->mat->SetColor(obj.second->obb.color);
 				boundingBox->Draw(Matrix4::scale(obj.second->GetMeshDimensions())*obj.second->node.TopDownTransform, ViewMatrix, ProjectionMatrix, wireframeShader);
 				boundingBox->mat->SetColor(obj.second->aabb.color);
 				boundingBox->Draw(obj.second->aabb.model, ViewMatrix, ProjectionMatrix, wireframeShader);
 			}
 		}
-		//glPolygonMode(GL_FRONT_AND_BACK, GL_FILL); //lit
 	}
-
-
-	
 
     void PickingApp::IntegrateAndUpdateBoxes(float timestep)
     {
@@ -533,7 +480,7 @@ namespace Picking
 	{
 		//A plank suspended on a static box.	
 		Clear();
-
+		PhysicsManager::Instance()->gravity = Vector3(0.f, -9.f, 0.f);
 		Object* plane = Scene::Instance()->addPhysicObject("fatplane", Vector3(0.f, -10.f, 0.f));
 		plane->SetMass(FLT_MAX);
 		plane->radius = 50.f;
@@ -552,7 +499,7 @@ namespace Picking
 	{
 		//A stack of boxes.
 		Clear();
-
+		PhysicsManager::Instance()->gravity = Vector3(0.f, -9.f, 0.f);
 		Object* plane = Scene::Instance()->addPhysicObject("fatplane", Vector3(0.f, -10.f, 0.f));
 		plane->SetMass(FLT_MAX);
 		plane->radius = 50.f;
@@ -569,7 +516,7 @@ namespace Picking
 	{
 		//Boxes sliding of a static plane oriented at an angle.
 		Clear();
-
+		PhysicsManager::Instance()->gravity = Vector3(0.f, -9.f, 0.f);
 		Object* plane = Scene::Instance()->addPhysicObject("fatplane", Vector3(0.f, -20.f, 0.f));
 		plane->SetMass(FLT_MAX);
 		plane->radius = 50.f;
@@ -589,6 +536,7 @@ namespace Picking
 	void PickingApp::LoadScene4()
 	{
 		Clear();
+		PhysicsManager::Instance()->gravity = Vector3(0.f, -9.f, 0.f);
 		scene4loaded = true;
 		Scene::Instance()->addRandomlyPhysicObjects("cube", 50);
 	}
@@ -597,12 +545,8 @@ namespace Picking
 	void PickingApp::LoadScene5()
 	{
 		Clear();
-		for (int i = 0; i < 700; i++)
-		{
-			Object* sphere = Scene::Instance()->addRandomlyObject("sphere");
-			sphere->SetMass(FLT_MAX);
-			sphere->isKinematic = true;
-		}
+		PhysicsManager::Instance()->gravity = Vector3();
+		Scene::Instance()->addRandomlyPhysicObjects("icosphere", 600);
 	}
 
 

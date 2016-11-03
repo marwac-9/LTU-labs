@@ -254,98 +254,99 @@ namespace Picking
     void
     PickingApp::KeyCallback(int key, int scancode, int action, int mods)
     {
-        if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
-            running = false;
-        }
-        else if (key == GLFW_KEY_R && action == GLFW_PRESS) {
-            //Scene::Instance()->addRandomObject();
-        }
-        //this is just used to show hide cursor, mouse steal on/off
-		else if (key == GLFW_KEY_LEFT_ALT && action == GLFW_PRESS) {
-            if (altButtonToggle) {
-                altButtonToggle = false;
-                window->SetCursorMode(GLFW_CURSOR_NORMAL);
-            }
-            else {
-                altButtonToggle = true;
-				window->SetCursorPos(windowWidth/2.f,windowHeight/2.f);
-                window->SetCursorMode(GLFW_CURSOR_DISABLED);
-            }
-        }
-		else if (key == GLFW_KEY_1 && action == GLFW_PRESS) {
-            //cameraMode = 1;
-			scene4loaded = false;
-			LoadScene1();
-        }
-		else if (key == GLFW_KEY_2 && action == GLFW_PRESS) {
-            //cameraMode = 2;
-			scene4loaded = false;
-			LoadScene2();
-        }
-		else if(key == GLFW_KEY_3 && action == GLFW_PRESS) {
-            //cameraMode = 3;
-			scene4loaded = false;
-			LoadScene3();
-        }
-		else if (key == GLFW_KEY_6 && action == GLFW_PRESS) {
-			//cameraMode = 3;
-			scene4loaded = true;
-			LoadScene4();
-		}
-		else if (key == GLFW_KEY_7) {
-			//cameraMode = 3;
-			scene4loaded = false;
-			LoadScene5();
-		}
-		else if(key == GLFW_KEY_4 && action == GLFW_PRESS) {
-            printf("\nWIREFRAME MODE\n");
-            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-        }
-		else if(key == GLFW_KEY_5 && action == GLFW_PRESS) {
-            printf("\nSHADED MODE\n");
-            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-        }
-		else if(key == GLFW_KEY_U && action == GLFW_PRESS) {
-            GraphicsManager::SaveToOBJ(GraphicsStorage::objects.back());
-            std::cout << "Last Mesh Saved" << std::endl;
-        }
-		else if(key == GLFW_KEY_O && action == GLFW_PRESS) {
-			if (debug)
-			{
-				debug = false;
-				//glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);				
-			}
-			else
-			{
-				debug = true;
-				//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-			}
-		}
-		else if(key == GLFW_KEY_P && action == GLFW_PRESS)
+		if (action == GLFW_PRESS)
 		{
-			if (paused)
-			{
-				paused = false;
+			if (key == GLFW_KEY_ESCAPE) {
+				running = false;
 			}
-			else
-			{
-				paused = true;
+			else if (key == GLFW_KEY_R) {
+				//Scene::Instance()->addRandomObject();
 			}
-		}
-		else if(key == GLFW_KEY_T && action == GLFW_PRESS)
-		{
-			timeModifier = 0.f;
-		}
-		else if (key == GLFW_KEY_F5 && action == GLFW_PRESS)
-		{
-			if (DebugDraw::Instance()->debug) DebugDraw::Instance()->debug = false;
-			else DebugDraw::Instance()->debug = true;
-		}
-
-		else if (key == GLFW_KEY_E && action == GLFW_PRESS)
-		{
-			Object* cube = Scene::Instance()->addPhysicObject("cube", Vector3(0.f, 8.f, 0.f));
-			cube->SetPosition(Vector3(0, (float)Scene::Instance()->idCounter * 2.f - 10.f + 0.001f, 0.f));
+			//this is just used to show hide cursor, mouse steal on/off
+			else if (key == GLFW_KEY_LEFT_ALT) {
+				if (altButtonToggle) {
+					altButtonToggle = false;
+					window->SetCursorMode(GLFW_CURSOR_NORMAL);
+				}
+				else {
+					altButtonToggle = true;
+					window->SetCursorPos(windowWidth / 2.f, windowHeight / 2.f);
+					window->SetCursorMode(GLFW_CURSOR_DISABLED);
+				}
+			}
+			else if (key == GLFW_KEY_1) {
+				scene4loaded = false;
+				LoadScene1();
+			}
+			else if (key == GLFW_KEY_2) {
+				scene4loaded = false;
+				LoadScene2();
+			}
+			else if (key == GLFW_KEY_3) {
+				scene4loaded = false;
+				LoadScene3();
+			}
+			else if (key == GLFW_KEY_4) {
+				scene4loaded = true;
+				LoadScene4();
+			}
+			else if (key == GLFW_KEY_5) {
+				scene4loaded = false;
+				LoadScene5();
+			}
+			else if (key == GLFW_KEY_TAB) {
+				if (wireframe)
+				{
+					wireframe = false;
+					printf("\nSHADED MODE\n");
+					glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+				}
+				else
+				{
+					wireframe = true;
+					printf("\nWIREFRAME MODE\n");
+					glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+				}
+			}
+			else if (key == GLFW_KEY_S && window->GetKey(GLFW_KEY_LEFT_CONTROL)) {
+				GraphicsManager::SaveToOBJ(GraphicsStorage::objects.back());
+				std::cout << "Last Mesh Saved" << std::endl;
+			}
+			else if (key == GLFW_KEY_O) {
+				if (debug)
+				{
+					debug = false;
+				}
+				else
+				{
+					debug = true;
+				}
+			}
+			else if (key == GLFW_KEY_P)
+			{
+				if (paused)
+				{
+					paused = false;
+				}
+				else
+				{
+					paused = true;
+				}
+			}
+			else if (key == GLFW_KEY_T)
+			{
+				timeModifier = 0.f;
+			}
+			else if (key == GLFW_KEY_F5)
+			{
+				if (DebugDraw::Instance()->debug) DebugDraw::Instance()->debug = false;
+				else DebugDraw::Instance()->debug = true;
+			}
+			else if (key == GLFW_KEY_E)
+			{
+				Object* cube = Scene::Instance()->addPhysicObject("cube", Vector3(0.f, 8.f, 0.f));
+				cube->SetPosition(Vector3(0, (float)Scene::Instance()->idCounter * 2.f - 10.f + 0.001f, 0.f));
+			}
 		}
     }
 
@@ -408,23 +409,14 @@ namespace Picking
 
 		if (debug)
 		{
-			DrawDebugAndColor(Projection, View);
-			/*
 			ShaderManager::Instance()->SetCurrentShader(ShaderManager::Instance()->shaderIDs["color"]);
-			//previous shader has to be set to color for light or move it to the color pass
-			glUniform3f(LightID, 0.f, 0.f, 0.f);
-			DrawColor(Projection, View); //draw color lit
-			
+			Draw(Projection, View);
 			ShaderManager::Instance()->SetCurrentShader(ShaderManager::Instance()->shaderIDs["wireframe"]);
-			DrawDebug(ProjectionMatrix, ViewMatrix); //draw debug
-
-			//ShaderManager::Instance()->SetCurrentShader((ShaderManager::Instance()->shaderIDs["color"])); //back to color
-			*/
+			DrawDebug(Projection, View);
 		}
 		else
 		{
 			ShaderManager::Instance()->SetCurrentShader(ShaderManager::Instance()->shaderIDs["color"]);
-			//previous shader has to be set to color for light or move it to the color pass
 			Draw(Projection, View);
 		}
 		glActiveTexture(GL_TEXTURE1);
@@ -460,20 +452,19 @@ namespace Picking
 			pickedID = Pixel[0] + Pixel[1] * 256 + Pixel[2] * 256 * 256;
 
 			//std::cout << pickedID << std::endl;
-			if(lastPickedObject != nullptr)
+			if (lastPickedObject != nullptr) //reset previously picked object color
 			{
-				lastPickedObject->mat->color = Vector3(0.f,0.f,0.f);
-				lastPickedObject = nullptr;
-			}  
-			if(Scene::Instance()->objectsToRender.find(pickedID) != Scene::Instance()->objectsToRender.end())
+				lastPickedObject->mat->color = Vector3(0.f, 0.f, 0.f);
+			}
+			if (Scene::Instance()->objectsToRender.find(pickedID) != Scene::Instance()->objectsToRender.end())
 			{
 				lastPickedObject = Scene::Instance()->objectsToRender[pickedID];
-				lastPickedObject->mat->color = Vector3(2.f,2.f,0.f);
-			
+				lastPickedObject->mat->color = Vector3(1.f, 0.f, 0.f);
+
 				Vector3 world_position;
 				FBOManager::Instance()->ReadWorldPos((unsigned int)leftMouseX, this->windowHeight - (unsigned int)leftMouseY, world_position.vect);
 				//Vector3 mouseInWorld = ConvertMousePosToWorld();
-			
+
 				Vector3 impulse = (world_position - currentCamera->GetPosition()).vectNormalize();
 				this->lastPickedObject->ApplyImpulse(impulse, 20.f, world_position);
 			}
@@ -560,41 +551,10 @@ namespace Picking
 			obj.ent1->aabb.color = Vector3(1.f, 0.f, 0.f);
 			obj.ent2->aabb.color = Vector3(1.f, 0.f, 0.f);
 		}
-
 		for (auto& obj : Scene::Instance()->objectsToRender)
 		{
 			if (FrustumManager::Instance()->isBoundingSphereInView(obj.second->GetPosition(), obj.second->radius))
 			{
-				boundingBox->mat->SetColor(obj.second->obb.color);
-				boundingBox->Draw(Matrix4::scale(obj.second->GetMeshDimensions())*obj.second->node.TopDownTransform, ViewMatrix, ProjectionMatrix, wireframeShader);
-				boundingBox->mat->SetColor(obj.second->aabb.color);
-				boundingBox->Draw(obj.second->aabb.model, ViewMatrix, ProjectionMatrix, wireframeShader);
-			}
-		}
-	}
-
-	void 
-	PickingApp::DrawDebugAndColor(const Matrix4& ProjectionMatrix, const Matrix4& ViewMatrix)
-	{
-		GLuint wireframeShader = ShaderManager::Instance()->shaderIDs["wireframe"];
-		GLuint colorShader = ShaderManager::Instance()->shaderIDs["color"];
-		for (auto& obj : PhysicsManager::Instance()->satOverlaps)
-		{
-			obj.ent1->aabb.color = Vector3(1.f, 0.f, 0.f);
-			obj.ent2->aabb.color = Vector3(1.f, 0.f, 0.f);
-		}
-
-		objectsRendered = 0;
-		for (auto& obj : Scene::Instance()->objectsToRender)
-		{
-			if (FrustumManager::Instance()->isBoundingSphereInView(obj.second->GetPosition(), obj.second->radius)) {
-
-				ShaderManager::Instance()->SetCurrentShader(colorShader);
-				obj.second->draw(ProjectionMatrix, ViewMatrix);
-				objectsRendered++;
-
-				ShaderManager::Instance()->SetCurrentShader(wireframeShader);
-
 				boundingBox->mat->SetColor(obj.second->obb.color);
 				boundingBox->Draw(Matrix4::scale(obj.second->GetMeshDimensions())*obj.second->node.TopDownTransform, ViewMatrix, ProjectionMatrix, wireframeShader);
 				boundingBox->mat->SetColor(obj.second->aabb.color);
@@ -668,14 +628,16 @@ namespace Picking
 		Scene::Instance()->addRandomlyPhysicObjects("cube", 50);
 	}
 
-	void PickingApp::LoadScene4()
+	void 
+	PickingApp::LoadScene4()
 	{
 		Clear();
 		scene4loaded = true;
 		Scene::Instance()->addRandomlyPhysicObjects("cube", 50);
 	}
 
-	void PickingApp::LoadScene5()
+	void
+	PickingApp::LoadScene5()
 	{
 		Clear();
 		for (int i = 0; i < 700; i++)
@@ -694,7 +656,8 @@ namespace Picking
 		lastPickedObject = nullptr;
 	}
 
-	void PickingApp::Vortex()
+	void
+	PickingApp::Vortex()
 	{
 		for (auto& obj : Scene::Instance()->objectsToRender)
 		{
@@ -703,7 +666,8 @@ namespace Picking
 		}
 	}
 
-	void PickingApp::MouseCallback(double mouseX, double mouseY)
+	void
+	PickingApp::MouseCallback(double mouseX, double mouseY)
 	{
 		if (altButtonToggle)
 		{
@@ -712,14 +676,16 @@ namespace Picking
 		}
 	}
 
-	void PickingApp::SetUpCamera(float timeStep)
+	void
+	PickingApp::SetUpCamera(float timeStep)
 	{
 		currentCamera = new Camera(Vector3(0.f, -3.f, 26.f), windowWidth, windowHeight);
 		currentCamera->Update(timeStep);
 		window->SetCursorPos(windowMidX, windowMidY);
 	}
 
-	void PickingApp::LoadShaders()
+	void
+	PickingApp::LoadShaders()
 	{
 		ShaderManager::Instance()->AddShader("color", GraphicsManager::LoadShaders("Resources/Shaders/VertexShader.glsl", "Resources/Shaders/FragmentShader.glsl"));
 		ShaderManager::Instance()->AddShader("picking", GraphicsManager::LoadShaders("Resources/Shaders/VSPicking.glsl", "Resources/Shaders/FSPicking.glsl"));

@@ -27,7 +27,6 @@ namespace Picking
 		void Clear();
 
 		void DrawColorDebugPass(const mwm::Matrix4& ProjectionMatrix, const mwm::Matrix4& ViewMatrix);
-		void DrawDebugAndColor(const mwm::Matrix4& ProjectionMatrix, const mwm::Matrix4& ViewMatrix);
 
 		void Draw(const mwm::Matrix4& ProjectionMatrix, const mwm::Matrix4& ViewMatrix);
 		void DrawDebug(const mwm::Matrix4& ProjectionMatrix, const mwm::Matrix4& ViewMatrix);
@@ -59,6 +58,7 @@ namespace Picking
         bool running = false;
 		bool debug = true;
 		bool paused = false;
+		bool wireframe = false;
         Display::Window* window;
         bool isLeftMouseButtonPressed = false;
         double leftMouseX;

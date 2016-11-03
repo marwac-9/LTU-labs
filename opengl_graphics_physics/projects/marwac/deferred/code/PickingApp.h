@@ -33,19 +33,11 @@ namespace Picking
     private:
 		void Clear();
 
-		void DrawColorDebugPass(const mwm::Matrix4& ProjectionMatrix, const mwm::Matrix4& ViewMatrix);
-		void DrawDebugAndColor(const mwm::Matrix4& ProjectionMatrix, const mwm::Matrix4& ViewMatrix);
-
 		void Draw(const mwm::Matrix4& ProjectionMatrix, const mwm::Matrix4& ViewMatrix);
 		void DrawDebug(const mwm::Matrix4& ProjectionMatrix, const mwm::Matrix4& ViewMatrix);
 
-		void DrawDepthPass();
-		void DrawToDepth(const mwm::Matrix4& ProjectionMatrix, const mwm::Matrix4& ViewMatrix);
-
 		void PassPickingTexture(const mwm::Matrix4& ProjectionMatrix, const mwm::Matrix4& ViewMatrix);
         void PickingTest();
-		
-		void BlurShadowMap();
 
 		void DrawGeometryPass(const mwm::Matrix4& ProjectionMatrix, const mwm::Matrix4& ViewMatrix);
 
@@ -92,7 +84,7 @@ namespace Picking
         int windowHeight;
 		float windowMidX;
 		float windowMidY;
-
+		bool wireframe = false;
 		mwm::Matrix4 ProjectionMatrix;
 		mwm::Matrix4 ViewMatrix;
 		Camera* currentCamera;

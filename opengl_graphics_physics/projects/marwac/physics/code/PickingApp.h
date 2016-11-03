@@ -27,7 +27,6 @@ namespace Picking
 	private:
 		void Clear();
 		void DrawPass2(const mwm::Matrix4& ProjectionMatrix, const mwm::Matrix4& ViewMatrix);
-		void DrawDebugPass(const mwm::Matrix4& Projection, const mwm::Matrix4& View);
 		void PassPickingTexture(const mwm::Matrix4& ProjectionMatrix, const mwm::Matrix4& ViewMatrix);
         void PickingTest();
 
@@ -49,6 +48,7 @@ namespace Picking
 		void LoadShaders();
 		void Vortex();
 		bool scene4loaded = false;
+		bool wireframe = false;
         GLuint MatrixHandle;
         GLuint ViewMatrixHandle;
         GLuint ModelMatrixHandle;
@@ -82,6 +82,5 @@ namespace Picking
 		int pickedID = 0;
 		BoundingBox* boundingBox;
 		GLuint LightID;
-		void DebugDraw2(const mwm::Matrix4& ProjectionMatrix, const mwm::Matrix4& ViewMatrix);
     };
 } // namespace Example

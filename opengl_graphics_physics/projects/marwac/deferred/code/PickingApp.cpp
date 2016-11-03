@@ -222,50 +222,6 @@ namespace Picking
         this->window->Close();
     }
 
-	void 
-	PickingApp::BlurShadowMap()
-	{
-		ShaderManager::Instance()->SetCurrentShader(ShaderManager::Instance()->shaderIDs["blur"]);
-		GLuint scaleUniform = glGetUniformLocation(ShaderManager::Instance()->GetCurrentShaderID(), "scaleUniform");
-		GLuint ShadowMapSamplerHandle = glGetUniformLocation(ShaderManager::Instance()->GetCurrentShaderID(), "shadowMapSampler");
-
-		for (int i = 0; i < 2; i++){
-
-			FBOManager::Instance()->BindBlurFrameBuffer(draw);
-			GLenum DrawBlurBuffers[] = { GL_COLOR_ATTACHMENT0 };
-			glDrawBuffers(1, DrawBlurBuffers);
-			//glViewport(0, 0, 2048, 2048);
-			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-			glUniform2f(scaleUniform, 1.0f / (float)windowWidth, 0.0f); //horizontally
-
-			//Bind shadow map to be blurred
-			glActiveTexture(GL_TEXTURE0);
-			glBindTexture(GL_TEXTURE_2D, FBOManager::Instance()->shadowMapHandle);
-			glUniform1i(ShadowMapSamplerHandle, 0);
-
-			DebugDraw::Instance()->DrawQuad(); 
-			FBOManager::Instance()->UnbindFrameBuffer(draw);
-			
-
-
-			FBOManager::Instance()->BindFrameBuffer(draw);
-			GLenum DrawShadowBuffers[] = { GL_COLOR_ATTACHMENT2 };
-			glDrawBuffers(1, DrawShadowBuffers);
-			//glViewport(0, 0, 2048, 2048);
-			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-			glUniform2f(scaleUniform, 0.0f, 1.0f / (float)windowHeight); //vertically
-
-			//Bind shadow map to be blurredblurred
-			glActiveTexture(GL_TEXTURE0);
-			glBindTexture(GL_TEXTURE_2D, FBOManager::Instance()->shadowMapBlurdHandle);
-			glUniform1i(ShadowMapSamplerHandle, 0);
-
-			DebugDraw::Instance()->DrawQuad();
-			FBOManager::Instance()->UnbindFrameBuffer(draw);
-
-		}
-	}
-
     void
     PickingApp::ClearBuffers()
     {
@@ -298,43 +254,44 @@ namespace Picking
 				}
 			}
 			else if (key == GLFW_KEY_1) {
-				//cameraMode = 1;
 				LoadScene1();
 			}
 			else if (key == GLFW_KEY_2) {
-				//cameraMode = 2;
 				LoadScene2();
 			}
 			else if (key == GLFW_KEY_3) {
-				//cameraMode = 3;
 				LoadScene3();
 			}
-			else if (key == GLFW_KEY_6) {
-				//cameraMode = 3;
+			else if (key == GLFW_KEY_4) {
 				LoadScene4();
 			}
-			else if (key == GLFW_KEY_4) {
-				printf("\nWIREFRAME MODE\n");
-				glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+			else if (key == GLFW_KEY_TAB) {
+				if (wireframe)
+				{
+					wireframe = false;
+					printf("\nSHADED MODE\n");
+					glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+				}
+				else
+				{
+					wireframe = true;
+					printf("\nWIREFRAME MODE\n");
+					glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+				}
+				
 			}
-			else if (key == GLFW_KEY_5) {
-				printf("\nSHADED MODE\n");
-				glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-			}
-			else if (key == GLFW_KEY_U) {
+			else if (key == GLFW_KEY_S && window->GetKey(GLFW_KEY_LEFT_CONTROL)) {
 				GraphicsManager::SaveToOBJ(GraphicsStorage::objects.back());
 				std::cout << "Last Mesh Saved" << std::endl;
 			}
 			else if (key == GLFW_KEY_O) {
 				if (debug)
 				{
-					debug = false;
-					//glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);				
+					debug = false;			
 				}
 				else
 				{
 					debug = true;
-					//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 				}
 			}
 			else if (key == GLFW_KEY_P)
@@ -384,70 +341,6 @@ namespace Picking
 		currentCamera->holdingDown = (window->GetKey(GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS);		
     }
 
-	void
-	PickingApp::DrawDepthPass()
-	{
-		Vector3 lightInvDir = Vector3(-1.f, 1.f, 1.f);
-
-		// Compute the MVP matrix from the light's point of view
-
-		//this projection and view work as directional light
-
-		//left right bottom top near far
-		float left = -40, right = 40, bottom = -40, top = 40, near = -30, far = 40;
-		Matrix4 depthProjectionMatrix = Matrix4::orthographic(near, far, left, right, top, bottom);
-
-		//eye target up
-		Matrix4 depthViewMatrix = Matrix4::lookAt(lightInvDir, Vector3(0.f, 0.f, 0.f), Vector3(0.f, 1.f, 0.f));
-
-
-		FBOManager::Instance()->BindFrameBuffer(draw);
-		GLenum DrawBuffers[] = { GL_COLOR_ATTACHMENT2 };
-		glDrawBuffers(1, DrawBuffers);
-		//glViewport(0, 0, 2048, 2048);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		ShaderManager::Instance()->SetCurrentShader(ShaderManager::Instance()->shaderIDs["depth"]);
-		DrawToDepth(depthProjectionMatrix, depthViewMatrix);
-		FBOManager::Instance()->UnbindFrameBuffer(draw);
-		
-		//DebugDraw::Instance()->DrawNormal(lightInvDir.vectNormalize(),Vector3(0,0,0));
-	}
-
-    void
-	PickingApp::DrawColorDebugPass(const Matrix4& Projection, const Matrix4& View)
-    {
-		ShaderManager::Instance()->SetCurrentShader(ShaderManager::Instance()->shaderIDs["color"]);
-		//we bind depth texture only once since it's same for all objects
-		//depth texture
-		GLuint ShadowMapHandle = glGetUniformLocation(ShaderManager::Instance()->GetCurrentShaderID(), "shadowMapSampler");
-		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, FBOManager::Instance()->shadowMapHandle);
-		glUniform1i(ShadowMapHandle, 1);
-
-		if (debug)
-		{
-			DrawDebugAndColor(Projection, View);
-			/*
-			ShaderManager::Instance()->SetCurrentShader(ShaderManager::Instance()->shaderIDs["color"]);
-			//previous shader has to be set to color for light or move it to the color pass
-			glUniform3f(LightID, 0.f, 0.f, 0.f);
-			DrawColor(Projection, View); //draw color lit
-			
-			ShaderManager::Instance()->SetCurrentShader(ShaderManager::Instance()->shaderIDs["wireframe"]);
-			DrawDebug(ProjectionMatrix, ViewMatrix); //draw debug
-
-			//ShaderManager::Instance()->SetCurrentShader((ShaderManager::Instance()->shaderIDs["color"])); //back to color
-			*/
-		}
-		else
-		{
-			//previous shader has to be set to color for light or move it to the color pass
-			Draw(Projection, View);
-		}
-		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, 0);
-    }
-
     void
     PickingApp::PassPickingTexture(const Matrix4& Projection, const Matrix4& View)
     {
@@ -477,15 +370,17 @@ namespace Picking
 			pickedID = Pixel[0] + Pixel[1] * 256 + Pixel[2] * 256 * 256;
 
 			//std::cout << pickedID << std::endl;
-			if(lastPickedObject != nullptr)
+			if(lastPickedObject != nullptr) //reset previously picked object color
 			{
-				lastPickedObject->mat->color = Vector3(0.f,0.f,0.f);
-				lastPickedObject = nullptr;
+				if (std::find(Scene::Instance()->pointLights.begin(), Scene::Instance()->pointLights.end(), lastPickedObject) == Scene::Instance()->pointLights.end())
+				{
+					lastPickedObject->mat->color = Vector3(0.f, 0.f, 0.f);
+				}
 			}  
 			if(Scene::Instance()->objectsToRender.find(pickedID) != Scene::Instance()->objectsToRender.end())
 			{
 				lastPickedObject = Scene::Instance()->objectsToRender[pickedID];
-				lastPickedObject->mat->color = Vector3(2.f,2.f,0.f);
+				lastPickedObject->mat->color = Vector3(1.f,0.f,0.f);
 			
 				Vector3 world_position;
 				FBOManager::Instance()->ReadWorldPos((unsigned int)leftMouseX, this->windowHeight - (unsigned int)leftMouseY, world_position.vect);
@@ -572,15 +467,6 @@ namespace Picking
 	}
 
 	void
-	PickingApp::DrawToDepth(const Matrix4& ProjectionMatrix, const Matrix4& ViewMatrix)
-	{
-		for (auto& obj : Scene::Instance()->objectsToRender)
-		{
-			obj.second->drawDepth(ProjectionMatrix, ViewMatrix);
-		}
-	}
-
-	void
 	PickingApp::DrawDebug(const Matrix4& ProjectionMatrix, const Matrix4& ViewMatrix)
 	{
 		FBOManager::Instance()->BindGeometryBuffer(draw);
@@ -612,35 +498,6 @@ namespace Picking
 		glDepthMask(GL_FALSE);
 		ShaderManager::Instance()->SetCurrentShader(prevShader);
 		FBOManager::Instance()->UnbindFrameBuffer(draw);
-	}
-
-	void 
-	PickingApp::DrawDebugAndColor(const Matrix4& ProjectionMatrix, const Matrix4& ViewMatrix)
-	{
-		GLuint wireframeShader = ShaderManager::Instance()->shaderIDs["wireframe"];
-		for (auto& obj : PhysicsManager::Instance()->satOverlaps)
-		{
-			obj.ent1->aabb.color = Vector3(1.f, 0.f, 0.f);
-			obj.ent2->aabb.color = Vector3(1.f, 0.f, 0.f);
-		}
-
-		objectsRendered = 0;
-		for (auto& obj : Scene::Instance()->objectsToRender)
-		{
-			if (FrustumManager::Instance()->isBoundingSphereInView(obj.second->GetPosition(), obj.second->radius)) {
-
-				ShaderManager::Instance()->SetCurrentShader(ShaderManager::Instance()->shaderIDs["color"]);
-				obj.second->draw(ProjectionMatrix, ViewMatrix);
-				objectsRendered++;
-
-				ShaderManager::Instance()->SetCurrentShader(ShaderManager::Instance()->shaderIDs["wireframe"]);
-
-				boundingBox->mat->SetColor(obj.second->obb.color);
-				boundingBox->Draw(Matrix4::scale(obj.second->GetMeshDimensions())*obj.second->node.TopDownTransform, ViewMatrix, ProjectionMatrix, wireframeShader);
-				boundingBox->mat->SetColor(obj.second->aabb.color);
-				boundingBox->Draw(obj.second->aabb.model, ViewMatrix, ProjectionMatrix, wireframeShader);
-			}
-		}
 	}
 
     void 
