@@ -1,22 +1,22 @@
 #include <vector>
 #include <map>
-#include "HalfEdgeMesh.h"
+#include "HalfEdgeMesh2D.h"
 #include "Vertex.h"
 #include "Edge.h"
 #include "Face.h"
 
 using namespace mwm;
 
-HalfEdgeMesh::HalfEdgeMesh()
+HalfEdgeMesh2D::HalfEdgeMesh2D()
 {
 
 }
 
-HalfEdgeMesh::~HalfEdgeMesh()
+HalfEdgeMesh2D::~HalfEdgeMesh2D()
 {
 }
 
-void HalfEdgeMesh::Construct(const char * path)
+void HalfEdgeMesh2D::Construct(const char * path)
 {
 	FILE * file;
 	errno_t err = fopen_s(&file, path, "r");
@@ -209,7 +209,7 @@ void HalfEdgeMesh::Construct(const char * path)
 	}
 }
 
-bool HalfEdgeMesh::checkIfSameVect(Vector2 &vect1, Vector2 &vect2)
+bool HalfEdgeMesh2D::checkIfSameVect(Vector2 &vect1, Vector2 &vect2)
 {
 	if (vect1.vect[0] == vect2.vect[0] && vect1.vect[1] == vect2.vect[1]) {
 		return true;
@@ -220,7 +220,7 @@ bool HalfEdgeMesh::checkIfSameVect(Vector2 &vect1, Vector2 &vect2)
 	}
 }
 
-Face* HalfEdgeMesh::findNode(Vector2 point)
+Face* HalfEdgeMesh2D::findNode(Vector2 point)
 {
 	for (size_t i = 0; i < faces.size(); i++)
 	{
@@ -232,7 +232,7 @@ Face* HalfEdgeMesh::findNode(Vector2 point)
 	return NULL;
 }
 
-bool HalfEdgeMesh::isPointInNode(Vector2 point, Face* node)
+bool HalfEdgeMesh2D::isPointInNode(Vector2 point, Face* node)
 {
 	Edge* currentEdge = node->edge;
 	//Looping through every edge in the current node
@@ -258,7 +258,7 @@ bool HalfEdgeMesh::isPointInNode(Vector2 point, Face* node)
 	return true;
 }
 
-void HalfEdgeMesh::quadrangulate()
+void HalfEdgeMesh2D::quadrangulate()
 {
 	std::list<Face*> toOptimize;
 	std::vector<Face*> optimized;
@@ -284,7 +284,7 @@ void HalfEdgeMesh::quadrangulate()
 	faces = optimized;
 }
 
-void HalfEdgeMesh::optimizeMesh()
+void HalfEdgeMesh2D::optimizeMesh()
 {
 	std::list<Face*> toOptimize;
 	std::vector<Face*> optimized;
@@ -312,7 +312,7 @@ void HalfEdgeMesh::optimizeMesh()
 }
 
 
-bool HalfEdgeMesh::tryToJoin(Face* face)
+bool HalfEdgeMesh2D::tryToJoin(Face* face)
 {
 	Edge* currentEdge = face->edge;
 	do {
@@ -338,7 +338,7 @@ bool HalfEdgeMesh::tryToJoin(Face* face)
 	return false;
 }
 
-bool HalfEdgeMesh::tryToJoin2(Face* face)
+bool HalfEdgeMesh2D::tryToJoin2(Face* face)
 {
 	Edge* currentEdge = face->edge;
 	do {
@@ -364,7 +364,7 @@ bool HalfEdgeMesh::tryToJoin2(Face* face)
 	return false;
 }
 
-bool HalfEdgeMesh::turnsRight(Edge* e1, Edge* e2)
+bool HalfEdgeMesh2D::turnsRight(Edge* e1, Edge* e2)
 {
 	Vector2 vectorOfEdge1 = e1->next->vertex->pos - e1->vertex->pos;
 	Vector2 vectorOfEdge2 = e2->next->vertex->pos - e2->vertex->pos;
@@ -373,7 +373,7 @@ bool HalfEdgeMesh::turnsRight(Edge* e1, Edge* e2)
 	return sideVectorToEdge.dotAKAscalar(vectorOfEdge2) < 0;
 }
 
-bool HalfEdgeMesh::turnsRightOrParallel(Edge* e1, Edge* e2)
+bool HalfEdgeMesh2D::turnsRightOrParallel(Edge* e1, Edge* e2)
 {
 	Vector2 vectorOfEdge1 = e1->next->vertex->pos - e1->vertex->pos;
 	Vector2 vectorOfEdge2 = e2->next->vertex->pos - e2->vertex->pos;
@@ -382,7 +382,7 @@ bool HalfEdgeMesh::turnsRightOrParallel(Edge* e1, Edge* e2)
 	return sideVectorToEdge.dotAKAscalar(vectorOfEdge2) <= 0;
 }
 
-void HalfEdgeMesh::moveEdgesToFace(Edge* startEdge, Face* destFace)
+void HalfEdgeMesh2D::moveEdgesToFace(Edge* startEdge, Face* destFace)
 {
 	Edge* currentEdge = startEdge;
 	do
@@ -393,7 +393,7 @@ void HalfEdgeMesh::moveEdgesToFace(Edge* startEdge, Face* destFace)
 	} while (currentEdge != startEdge);
 }
 
-void HalfEdgeMesh::joinSharedEdges(Face* testedFace)
+void HalfEdgeMesh2D::joinSharedEdges(Face* testedFace)
 {
 	Edge* currentEdge = testedFace->edge;
 	do {

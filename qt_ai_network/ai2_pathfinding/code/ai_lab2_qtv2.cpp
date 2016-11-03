@@ -1,5 +1,5 @@
 #include "ai_lab2_qtv2.h"
-#include "HalfEdgeMesh.h"
+#include "HalfEdgeMesh2D.h"
 #include "Face.h"
 #include "Edge.h"
 #include "Vertex.h"
@@ -195,7 +195,7 @@ void Ai_Lab2_qtv2::loadSelectedMap()
 		delete mesh;
 	}
 	int current = ui.listWidget->currentRow();
-	mesh = new HalfEdgeMesh();
+	mesh = new HalfEdgeMesh2D();
 	QString mapPath = mapPaths.at(current);
 	std::string mapstd = mapPath.toStdString();
 	mesh->Construct(mapstd.c_str());

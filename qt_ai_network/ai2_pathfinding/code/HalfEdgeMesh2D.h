@@ -7,11 +7,11 @@ class Vertex;
 class Edge;
 class Face;
 
-class HalfEdgeMesh
+class HalfEdgeMesh2D
 {
 public:
-	HalfEdgeMesh();
-	~HalfEdgeMesh();
+	HalfEdgeMesh2D();
+	~HalfEdgeMesh2D();
 	void Construct(const char * path);
 
 	std::vector<Vertex*> vertices;

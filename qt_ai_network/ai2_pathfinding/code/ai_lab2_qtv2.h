@@ -16,7 +16,7 @@
 #include <string>
 #include <list>
 
-class HalfEdgeMesh;
+class HalfEdgeMesh2D;
 
 class Ai_Lab2_qtv2 : public QMainWindow
 {
@@ -43,7 +43,7 @@ private:
 	void drawPathFaces(const std::list<Face*>& faces, QColor &color);
 	QGraphicsPolygonItem* drawface(Face* face, QColor &color);
 	void drawpath(const std::vector<Face*> &path, const mwm::Vector2 &start, const mwm::Vector2 &end);
-	HalfEdgeMesh* mesh = NULL;
+	HalfEdgeMesh2D* mesh = NULL;
 	std::vector<QGraphicsPolygonItem*> polygons;
 	std::vector<QGraphicsPolygonItem*> goals;
 	QGraphicsPolygonItem* start;
