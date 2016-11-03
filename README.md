@@ -16,4 +16,4 @@ Almost everything I have bashed on the keyboard the during game development stud
 - F5 - Toggle drawing of contact points, collision normals, and clip planes.
 - TAB - Toggle wireframe/shaded drawing modes.
 - E - Spawn a cube.
-- LCtrl + S - Save the last object added to the scene, mostly for saving the subdivided mesh back to obj file.
+- LCtrl+S - Save the last object added to the scene, mostly for saving the subdivided mesh back to obj file.
