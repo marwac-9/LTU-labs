@@ -1,5 +1,5 @@
 #--------------------------------------------------------------------------
-# deps
+# utils
 #--------------------------------------------------------------------------
 FILE(GLOB children RELATIVE ${CMAKE_CURRENT_LIST_DIR} ${CMAKE_CURRENT_LIST_DIR}/*)
 FOREACH(child ${children})
