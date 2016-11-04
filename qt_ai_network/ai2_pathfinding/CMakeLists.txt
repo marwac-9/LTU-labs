@@ -33,7 +33,7 @@ SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/bin")
 ADD_EXECUTABLE(ai2_pathfinding WIN32 ${CODE} ${UI})
 
 SET_TARGET_PROPERTIES(ai2_pathfinding PROPERTIES FOLDER "LABS")
-TARGET_LINK_LIBRARIES(ai2_pathfinding Qt5::Widgets mymathlib dirent)
+TARGET_LINK_LIBRARIES(ai2_pathfinding Qt5::Widgets mymathlib dirent halfedgemesh2d)
 
 #MESSAGE( STATUS "CMAKE_BINARY_DIR:         " ${FORMS} )
 ADD_CUSTOM_COMMAND(TARGET ai2_pathfinding PRE_BUILD
