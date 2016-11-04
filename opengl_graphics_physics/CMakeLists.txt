@@ -1,7 +1,7 @@
 #--------------------------------------------------------------------------
 # gscept laboration environment
 #--------------------------------------------------------------------------
-PROJECT(opengl_graphic_physic)
+PROJECT(opengl_graphics_physics)
 CMAKE_MINIMUM_REQUIRED(VERSION 3.2)
 
 IF(CMAKE_COMPILER_IS_GNUCXX)
