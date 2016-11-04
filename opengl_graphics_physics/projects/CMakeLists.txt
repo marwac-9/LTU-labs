@@ -1,8 +1,0 @@
-ADD_SUBDIRECTORY(deps)
-ADD_SUBDIRECTORY(shadows)
-ADD_SUBDIRECTORY(deferred)
-ADD_SUBDIRECTORY(physics)
-ADD_SUBDIRECTORY(subdivision_optimizing)
-ADD_SUBDIRECTORY(subdivision_notoptimized)
-ADD_SUBDIRECTORY(subdivision_opengl)
-#ADD_SUBDIRECTORY(deferred_and_shadows)
