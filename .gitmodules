@@ -2,3 +2,7 @@
 	path = qt_ai_network/deps/myframework
 	url = git@github.com:marwac-9/myframework.git
 	branch = master
+[submodule "opengl_graphics_physics/deps/myframework"]
+	path = opengl_graphics_physics/deps/myframework
+	url = git@github.com:marwac-9/myframework.git
+	branch = master
