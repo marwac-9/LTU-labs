@@ -1,5 +1,5 @@
 #--------------------------------------------------------------------------
-# gscept laboration environment
+# opengl_graphics_physics
 #--------------------------------------------------------------------------
 PROJECT(opengl_graphics_physics)
 CMAKE_MINIMUM_REQUIRED(VERSION 3.2)
