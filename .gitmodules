@@ -1,7 +1,3 @@
-[submodule "opengl_graphics_physics/projects/marwac/deps/myframework"]
-	path = opengl_graphics_physics/projects/marwac/deps/myframework
-	url = git@github.com:marwac-9/myframework.git
-	branch = master
 [submodule "qt_ai_network/deps/myframework"]
 	path = qt_ai_network/deps/myframework
 	url = git@github.com:marwac-9/myframework.git
