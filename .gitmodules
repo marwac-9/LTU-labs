@@ -1,0 +1,4 @@
+[submodule "opengl_graphics_physics/projects/marwac/deps/myframework"]
+	path = opengl_graphics_physics/projects/marwac/deps/myframework
+	url = git@github.com:marwac-9/myframework.git
+	branch = master
