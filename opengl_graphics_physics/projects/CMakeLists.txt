@@ -1,9 +1,8 @@
-#--------------------------------------------------------------------------
-# projects
-#--------------------------------------------------------------------------
-FILE(GLOB children RELATIVE ${CMAKE_CURRENT_LIST_DIR} ${CMAKE_CURRENT_LIST_DIR}/*)
-FOREACH(child ${children})
-	IF(IS_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/${child})
-		ADD_SUBDIRECTORY(${child})
-	ENDIF()
-ENDFOREACH()
+ADD_SUBDIRECTORY(deps)
+ADD_SUBDIRECTORY(shadows)
+ADD_SUBDIRECTORY(deferred)
+ADD_SUBDIRECTORY(physics)
+ADD_SUBDIRECTORY(subdivision_optimizing)
+ADD_SUBDIRECTORY(subdivision_notoptimized)
+ADD_SUBDIRECTORY(subdivision_opengl)
+#ADD_SUBDIRECTORY(deferred_and_shadows)
