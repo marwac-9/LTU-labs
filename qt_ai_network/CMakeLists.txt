@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.2)
-PROJECT(mw_labs_part2)
+PROJECT(qt_ai_network)
 SET_PROPERTY(GLOBAL PROPERTY USE_FOLDERS ON)
 
 ADD_LIBRARY(labs INTERFACE)
