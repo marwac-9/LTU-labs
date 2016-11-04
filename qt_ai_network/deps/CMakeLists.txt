@@ -1,5 +1,9 @@
-ADD_SUBDIRECTORY("MyMathLib")
-ADD_SUBDIRECTORY("STB")
-ADD_SUBDIRECTORY("PoolParty")
-ADD_SUBDIRECTORY("Vector")
-ADD_SUBDIRECTORY("Dirent")
+#--------------------------------------------------------------------------
+# deps
+#--------------------------------------------------------------------------
+FILE(GLOB children RELATIVE ${CMAKE_CURRENT_LIST_DIR} ${CMAKE_CURRENT_LIST_DIR}/*)
+FOREACH(child ${children})
+	IF(IS_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/${child})
+		ADD_SUBDIRECTORY(${child})
+	ENDIF()
+ENDFOREACH()
