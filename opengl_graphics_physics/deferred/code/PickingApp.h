@@ -85,6 +85,7 @@ namespace Picking
 		float windowMidX;
 		float windowMidY;
 		bool wireframe = false;
+		bool lightsPhysics = false;
 		mwm::Matrix4 ProjectionMatrix;
 		mwm::Matrix4 ViewMatrix;
 		Camera* currentCamera;

@@ -186,7 +186,7 @@ namespace Picking
 			
 			IntegrateAndUpdateBoxes(timeStep);
 			
-			//IntegrateLights(timeStep);
+			if (lightsPhysics) IntegrateLights(timeStep);
 			
 			Scene::Instance()->SceneObject->node.UpdateNodeMatrix(Matrix4::identityMatrix());
 			Scene::Instance()->MainPointLight->node.UpdateNodeMatrix(Matrix4::identityMatrix());
@@ -263,6 +263,11 @@ namespace Picking
 			}
 			else if (key == GLFW_KEY_4) {
 				LoadScene4();
+			}
+			else if (key == GLFW_KEY_BACKSPACE)
+			{
+				if (lightsPhysics) lightsPhysics = false;
+				else lightsPhysics = true;
 			}
 			else if (key == GLFW_KEY_TAB) {
 				if (wireframe)
@@ -844,7 +849,7 @@ namespace Picking
 	{
 		for (auto& obj : Scene::Instance()->pointLights)
 		{
-			obj->IntegrateRunge3(timestep, PhysicsManager::Instance()->gravity);
+			obj->IntegrateRunge3(timestep, Vector3());
 		}
 	}
 
