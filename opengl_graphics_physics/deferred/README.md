@@ -1,8 +1,15 @@
 
 # Deferred shading
 
+## Features
+- directional lights
+- point lights
+- physics(see physics project for more details)
+- lights treated as objects meaning that physics can be easily applied(to activate press Backspace and switch to scene 4)
+- per-pixel picking
+
 ## Implementation
-uses 4 textures:
+Uses 4 textures:
 - worldpos
 - diffuse+material color
 - normals
@@ -11,13 +18,6 @@ uses 4 textures:
   - diffuse intensity
   - specular intensity
   - glossiness/shininess
-
-## Features
-- directional lights
-- point lights
-- physics(see physics project for more details)
-- lights treated as objects meaning that physics can be easily applied(to activate press Backspace and switch to scene 4)
-- per-pixel picking
 
 ## Key-bindings
 - 1-5 - Changing scenes.
