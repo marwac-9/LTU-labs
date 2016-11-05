@@ -1,7 +1,7 @@
 # LTU-labs
 Almost everything I have bashed on the keyboard the during game development studies at LTU
 
-Each projects builds to its own bin folder copying over the required resources so the working directory has to be set accordingly for each project to run debug.
+Each project builds to its own bin folder copying over the required resources so the working directory has to be set accordingly for each project to run debug.
 
 Subdivision projects require two parameters: number of subdivisions and name of the mesh to use as the starting point.
 
