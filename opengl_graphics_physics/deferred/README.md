@@ -1,5 +1,5 @@
 
-# Deferred shading
+# Deferred Shading
 
 ## Features
 - directional lights
