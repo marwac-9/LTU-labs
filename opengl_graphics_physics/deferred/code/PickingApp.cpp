@@ -379,7 +379,7 @@ namespace Picking
 			if(Scene::Instance()->objectsToRender.find(pickedID) != Scene::Instance()->objectsToRender.end())
 			{
 				lastPickedObject = Scene::Instance()->objectsToRender[pickedID];
-				lastPickedObject->mat->color = Vector3(1.f,0.f,0.f);
+				lastPickedObject->mat->color = Vector3(2.f,1.f,0.f);
 			
 				Vector3 world_position;
 				FBOManager::Instance()->ReadWorldPos((unsigned int)leftMouseX, this->windowHeight - (unsigned int)leftMouseY, world_position.vect);
