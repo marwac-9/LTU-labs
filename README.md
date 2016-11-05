@@ -4,7 +4,7 @@ Almost everything I have bashed on the keyboard the during game development stud
 Each project builds to its own bin folder copying over the required resources so the working directory has to be set accordingly for each project to run debug.
 
 # Key-bindings for OpenGL projects
-- 1-5 - Changing scenes.(number of scenes may vary for each project)
+- 1-5 - Changing scenes(number of scenes may vary for each project)
 - WASD - Camera movement.
 - Backspace - Enable physics for lights(deferred project only)
 - LShift - Descend
