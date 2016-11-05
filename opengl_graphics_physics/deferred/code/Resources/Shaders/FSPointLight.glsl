@@ -73,9 +73,9 @@ void main()
 	float attenuation = clamp((1.0f - distance / (lightRadius-0.5f)), 0.0, 1.0);
 	//color with pointlight
 
-	float Ambient = MatPropertiesDiffAmbShinSpec.y;
-	float Diffuse = MatPropertiesDiffAmbShinSpec.x * cosTheta;
-	float SpecularColor = MatPropertiesDiffAmbShinSpec.w * pow(cosAlpha, MatPropertiesDiffAmbShinSpec.z); // yea should make specular intensity a float only screw in specular color
+	float Ambient = MatPropertiesDiffAmbShinSpec.x;
+	float Diffuse = MatPropertiesDiffAmbShinSpec.y * cosTheta;
+	float SpecularColor = MatPropertiesDiffAmbShinSpec.z * pow(cosAlpha, MatPropertiesDiffAmbShinSpec.w); // yea should make specular intensity a float only screw in specular color
 	//specular sent to shader should be only the specular strength but we can try to specify color as well to fake translucent paint effect
 	//these are only light calculations
 	//we add the texture color later

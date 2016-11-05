@@ -16,10 +16,8 @@ uniform sampler2D myTextureSampler;
 uniform sampler2D shadowMapSampler;
 uniform mat4 MV;
 uniform vec3 LightPosition_worldspace;
-uniform float MaterialDiffuseIntensityValue;   
-uniform float MaterialAmbientIntensityValue;
 uniform vec3 MaterialColor;
-uniform float MaterialSpecularIntensity;
+uniform vec4 MaterialProperties;
 
 float linstep(float low, float high, float v){
     return clamp((v-low)/(high-low), 0.0, 1.0);
@@ -65,7 +63,6 @@ void main(){
 	
 	// Material properties
 	vec3 MaterialDiffuseColor = texture2D( myTextureSampler, UV ).rgb + MaterialColor;
-	vec3 MaterialAmbientColor = MaterialAmbientIntensityValue * MaterialDiffuseColor;
 
 	// Distance to the light
 	float distance = length( LightPosition_worldspace - Position_worldspace );
@@ -100,22 +97,13 @@ void main(){
 	//if ( depth  <  ShadowCoord.z - bias){
 	//	visibility = 0.5f;
 	//}
-	
-	//color with directional only
-	color = 
-		// Ambient : simulates indirect lighting
-		MaterialAmbientColor * MaterialDiffuseIntensityValue +
-		// Diffuse : "color" of the object
-		visibility * MaterialDiffuseColor * LightColor * LightPower * cosTheta * MaterialDiffuseIntensityValue +
-		// Specular : reflective highlight, like a mirror
-		visibility * MaterialSpecularIntensity * LightColor * LightPower * pow(cosAlpha, 5);
-		
-	//color with pointlight and directional
-	//color = 
-		// Ambient : simulates indirect lighting
-	//	MaterialAmbientColor * MaterialDiffuseIntensityValue+
-		// Diffuse : "color" of the object
-	//	visibility * MaterialDiffuseColor * LightColor * LightPower * cosTheta / (distance*distance) * MaterialDiffuseIntensityValue +
-		// Specular : reflective highlight, like a mirror
-	//	visibility * MaterialSpecularColor * LightColor * LightPower * pow(cosAlpha,5) / (distance*distance);
+	float Ambient = MaterialProperties.x;
+	float Diffuse = MaterialProperties.y * cosTheta;
+	float SpecularColor = MaterialProperties.z * pow(cosAlpha, MaterialProperties.w);
+
+	//1 directional
+	float totalLight = (Ambient + Diffuse + SpecularColor);
+
+	color = MaterialDiffuseColor * LightColor * LightPower * totalLight;
+
 }

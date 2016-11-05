@@ -7,10 +7,7 @@ layout(location = 2) in vec3 Normal;
 uniform mat4 MVP;
 uniform mat4 M;
 
-uniform float MaterialDiffuseIntensityValue;
-uniform float MaterialAmbientIntensityValue;
-uniform float MaterialShininessValue;
-uniform float MaterialSpecularIntensityValue;
+uniform vec4 MaterialProperties;
 uniform vec3 MaterialColor;
 
 out vec2 TexCoord0;
@@ -28,5 +25,5 @@ void main()
 	WorldPos0 = (M * vec4(Position, 1.0)).xyz;
 
 	materialColor0 = MaterialColor;
-	diffIntAmbIntShineSpecInt0 = vec4(MaterialDiffuseIntensityValue, MaterialAmbientIntensityValue, MaterialShininessValue, MaterialSpecularIntensityValue);
+	diffIntAmbIntShineSpecInt0 = MaterialProperties;
 }

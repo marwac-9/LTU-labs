@@ -106,9 +106,9 @@ void main()
 	//these are only light calculations
 	//we add the texture color later
 
-	float Ambient = MatPropertiesDiffAmbShinSpec.y;
-	float Diffuse = MatPropertiesDiffAmbShinSpec.x * cosTheta;
-	float SpecularColor = MatPropertiesDiffAmbShinSpec.w * pow(cosAlpha, MatPropertiesDiffAmbShinSpec.z);
+	float Ambient = MatPropertiesDiffAmbShinSpec.x;
+	float Diffuse = MatPropertiesDiffAmbShinSpec.y * cosTheta;
+	float SpecularColor = MatPropertiesDiffAmbShinSpec.z * pow(cosAlpha, MatPropertiesDiffAmbShinSpec.w);
 
 	//color with directional only
 	color = MaterialDiffuseColor * lightColor * lightPower * (Ambient + Diffuse + SpecularColor);

@@ -266,11 +266,17 @@ namespace Subdivision
 	void
 	SubdivisionApp::Draw(const Matrix4& ProjectionMatrix, const Matrix4& ViewMatrix)
 	{
+		Matrix4 ViewProjection = ViewMatrix*ProjectionMatrix;
+		Matrix4F View = ViewMatrix.toFloat();
+		GLuint currentShaderID = ShaderManager::Instance()->GetCurrentShaderID();
+		GLuint ViewMatrixHandle = glGetUniformLocation(currentShaderID, "V");
+		glUniformMatrix4fv(ViewMatrixHandle, 1, GL_FALSE, &View[0][0]);
+
 		objectsRendered = 0;
 		for (auto& obj : Scene::Instance()->objectsToRender)
 		{
 			if (FrustumManager::Instance()->isBoundingSphereInView(obj.second->GetPosition(), obj.second->radius)) {
-				obj.second->draw(ProjectionMatrix, ViewMatrix);
+				obj.second->draw(ViewProjection, currentShaderID);
 				objectsRendered++;
 			}
 		}

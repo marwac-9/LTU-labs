@@ -42,10 +42,10 @@ namespace Picking
 		void DrawGeometryPass(const mwm::Matrix4& ProjectionMatrix, const mwm::Matrix4& ViewMatrix);
 
 		void DrawLightPass(const mwm::Matrix4& ProjectionMatrix, const mwm::Matrix4& ViewMatrix, const mwm::Vector3& camPos);
-		void DrawPointLights(const mwm::Matrix4& ProjectionMatrix, const mwm::Matrix4& ViewMatrix, const mwm::Vector3& camPos);
-		void DrawDirectionalLights(const mwm::Matrix4& ProjectionMatrix, const mwm::Matrix4& ViewMatrix);
-		void StencilPass(Object* pointLight, const mwm::Matrix4& ProjectionMatrix, const mwm::Matrix4& ViewMatrix, const mwm::Vector3& camPos);
-		void PointLightPass(Object* pointLight, const mwm::Matrix4& ProjectionMatrix, const mwm::Matrix4& ViewMatrix, const mwm::Vector3& camPos);
+		void DrawPointLights(const mwm::Matrix4& ViewProjection);
+		void DrawDirectionalLights();
+		void StencilPass(Object* pointLight, const mwm::Matrix4& ViewProjection);
+		void PointLightPass(Object* pointLight, const mwm::Matrix4& ViewProjection);
 		void BlitToScreenPass();
 
 		void IntegrateAndUpdateBoxes(float timestep);

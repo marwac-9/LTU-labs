@@ -447,11 +447,17 @@ namespace Picking
     void
 	PickingApp::Draw(const Matrix4& ProjectionMatrix, const Matrix4& ViewMatrix)
     {
+		Matrix4 ViewProjection = ViewMatrix*ProjectionMatrix; 
+		Matrix4F View = ViewMatrix.toFloat();
+		GLuint currentShaderID = ShaderManager::Instance()->GetCurrentShaderID();
+		GLuint ViewMatrixHandle = glGetUniformLocation(currentShaderID, "V");
+		glUniformMatrix4fv(ViewMatrixHandle, 1, GL_FALSE, &View[0][0]);
+		
         objectsRendered = 0;
         for(auto& obj : Scene::Instance()->objectsToRender)
         {
 			if (FrustumManager::Instance()->isBoundingSphereInView(obj.second->GetPosition(), obj.second->radius)) {
-                obj.second->draw(ProjectionMatrix, ViewMatrix);
+				obj.second->draw(ViewProjection, currentShaderID);
                 objectsRendered++;
             }
         }
@@ -459,11 +465,14 @@ namespace Picking
 
 	void PickingApp::DrawGeometry(const Matrix4& ProjectionMatrix, const Matrix4& ViewMatrix)
 	{
+		Matrix4 ViewProjection = ViewMatrix*ProjectionMatrix;
+		GLuint currentShaderID = ShaderManager::Instance()->GetCurrentShaderID();
+
 		objectsRendered = 0;
 		for (auto& obj : Scene::Instance()->objectsToRender)
 		{
 			if (FrustumManager::Instance()->isBoundingSphereInView(obj.second->GetPosition(), obj.second->radius)) {
-				obj.second->drawGeometry(ProjectionMatrix, ViewMatrix);
+				obj.second->drawGeometry(ViewProjection, currentShaderID);
 				objectsRendered++;
 			}
 		}
@@ -674,14 +683,29 @@ namespace Picking
 
 		FBOManager::Instance()->BindGeometryBuffer(draw); // we draw now to the geometry buffer since it has the final color where the light is composited
 		//glClear(GL_COLOR_BUFFER_BIT);
+		GLuint pointLightS = ShaderManager::Instance()->shaderIDs["pointLight"];
+		ShaderManager::Instance()->SetCurrentShader(pointLightS);
+		GLuint screenSize = glGetUniformLocation(pointLightS, "screenSize");
+		glUniform2f(screenSize, (float)windowWidth, (float)windowHeight);
+		GLuint CameraPos = glGetUniformLocation(pointLightS, "CameraPos");
+		glUniform3fv(CameraPos, 1, &camPos.x);
 
-		DrawPointLights(ProjectionMatrix, ViewMatrix, camPos);
-		DrawDirectionalLights(ProjectionMatrix, ViewMatrix);
+		GLuint directionalLightS = ShaderManager::Instance()->shaderIDs["directionalLight"];
+		ShaderManager::Instance()->SetCurrentShader(directionalLightS);
+		GLuint screenSizeD = glGetUniformLocation(directionalLightS, "screenSize");
+		glUniform2f(screenSizeD, (float)windowWidth, (float)windowHeight);
+		GLuint CameraPosD = glGetUniformLocation(directionalLightS, "CameraPos");
+		glUniform3fv(CameraPosD, 1, &camPos.x);
+
+		Matrix4 ViewProjection = ViewMatrix*ProjectionMatrix;
+
+		DrawPointLights(ViewProjection);
+		DrawDirectionalLights();
 		DisableTextures();
 		FBOManager::Instance()->UnbindFrameBuffer(draw);
 	}
 
-	void PickingApp::DrawPointLights(const Matrix4& ProjectionMatrix, const Matrix4& ViewMatrix, const Vector3& camPos)
+	void PickingApp::DrawPointLights(const Matrix4& ViewProjection)
 	{
 		glEnable(GL_STENCIL_TEST);
 		int pointLightsNum = Scene::Instance()->pointLights.size();
@@ -689,18 +713,19 @@ namespace Picking
 		for (int i = 0; i < pointLightsNum; i++)
 		{
 			if (FrustumManager::Instance()->isBoundingSphereInView(Scene::Instance()->pointLights[i]->GetPosition(), Scene::Instance()->pointLights[i]->radius)) {
-				StencilPass(Scene::Instance()->pointLights[i], ProjectionMatrix, ViewMatrix, camPos); //sets up stencil pass
-				PointLightPass(Scene::Instance()->pointLights[i], ProjectionMatrix, ViewMatrix, camPos); //sets up point light pass	
+				StencilPass(Scene::Instance()->pointLights[i], ViewProjection); //sets up stencil pass
+				PointLightPass(Scene::Instance()->pointLights[i], ViewProjection); //sets up point light pass	
 				lightsRendered++;
 			}
 		}
 		glDisable(GL_STENCIL_TEST);
 	}
 
-	void PickingApp::StencilPass(Object* pointLight, const Matrix4& ProjectionMatrix, const Matrix4& ViewMatrix, const Vector3& camPos)
+	void PickingApp::StencilPass(Object* pointLight, const Matrix4& ViewProjection)
 	{
 		//enable stencil shader 
-		ShaderManager::Instance()->SetCurrentShader(ShaderManager::Instance()->shaderIDs["stencil"]);
+		GLuint currentShaderID = ShaderManager::Instance()->shaderIDs["stencil"];
+		ShaderManager::Instance()->SetCurrentShader(currentShaderID);
 
 		glDrawBuffer(GL_NONE); //don't write to geometry buffers
 
@@ -717,15 +742,15 @@ namespace Picking
 		glStencilOpSeparate(GL_BACK, GL_KEEP, GL_INCR_WRAP, GL_KEEP);
 		glStencilOpSeparate(GL_FRONT, GL_KEEP, GL_DECR_WRAP, GL_KEEP);
 
-		pointLight->drawLight(ProjectionMatrix, ViewMatrix, camPos);
+		pointLight->drawLight(ViewProjection, currentShaderID);
 	}
 
-	void PickingApp::PointLightPass(Object* pointLight, const Matrix4& ProjectionMatrix, const Matrix4& ViewMatrix, const Vector3& camPos)
+	void PickingApp::PointLightPass(Object* pointLight, const Matrix4& ViewProjection)
 	{
 		//enable drawing of final color in geometry buffer 
 		glDrawBuffer(GL_COLOR_ATTACHMENT4);
-
-		ShaderManager::Instance()->SetCurrentShader(ShaderManager::Instance()->shaderIDs["pointLight"]);
+		GLuint currentShaderID = ShaderManager::Instance()->shaderIDs["pointLight"];
+		ShaderManager::Instance()->SetCurrentShader(currentShaderID);
 		ActivateTextures();
 
 		glStencilFunc(GL_NOTEQUAL, 0, 0xFF);
@@ -739,20 +764,19 @@ namespace Picking
 		glEnable(GL_CULL_FACE);
 		glCullFace(GL_FRONT);
 
-		GLuint screenSize = glGetUniformLocation(ShaderManager::Instance()->GetCurrentShaderID(), "screenSize");
-		glUniform2f(screenSize, (float)windowWidth, (float)windowHeight);
-		pointLight->drawLight(ProjectionMatrix, ViewMatrix, camPos);
+		pointLight->drawLight(ViewProjection, currentShaderID);
 		
 		glCullFace(GL_BACK);
 		glDisable(GL_BLEND);
 	}
 
-	void PickingApp::DrawDirectionalLights(const Matrix4& ProjectionMatrix, const Matrix4& ViewMatrix)
+	void PickingApp::DrawDirectionalLights()
 	{
 		glDrawBuffer(GL_COLOR_ATTACHMENT4);
 		//set 
 		//directional shader
-		ShaderManager::Instance()->SetCurrentShader(ShaderManager::Instance()->shaderIDs["directionalLight"]);
+		GLuint currentShaderID = ShaderManager::Instance()->shaderIDs["directionalLight"];
+		ShaderManager::Instance()->SetCurrentShader(currentShaderID);
 		ActivateTextures();
 
 		glDisable(GL_DEPTH_TEST);
@@ -761,17 +785,13 @@ namespace Picking
 		glBlendEquation(GL_FUNC_ADD);
 		glBlendFunc(GL_ONE, GL_ONE);
 
-		GLuint screenSize = glGetUniformLocation(ShaderManager::Instance()->GetCurrentShaderID(), "screenSize");
-		glUniform2f(screenSize, (float)windowWidth, (float)windowHeight);
-
-		//lightinvdir
-		GLuint LightDir = glGetUniformLocation(ShaderManager::Instance()->GetCurrentShaderID(), "LightInvDirection_worldspace");
+		GLuint LightDir = glGetUniformLocation(currentShaderID, "LightInvDirection_worldspace");
 		glUniform3fv(LightDir, 1, &lightInvDir.x);
 		
 		int directionalLightsNum = Scene::Instance()->directionalLights.size();
 		for (int i = 0; i < directionalLightsNum; i++)
 		{
-			Scene::Instance()->directionalLights[i]->drawLight(Matrix4::identityMatrix(), Matrix4::identityMatrix(), Vector3());
+			Scene::Instance()->directionalLights[i]->drawLight(Matrix4::identityMatrix(), currentShaderID);
 			lightsRendered++;
 		}
 		glDisable(GL_BLEND);

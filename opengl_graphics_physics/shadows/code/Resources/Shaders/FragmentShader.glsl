@@ -16,10 +16,7 @@ uniform sampler2D myTextureSampler;
 uniform sampler2D shadowMapSampler;
 uniform mat4 MV;
 uniform vec3 LightPosition_worldspace;
-uniform float MaterialShininessValue;
-uniform float MaterialDiffuseIntensityValue;
-uniform float MaterialAmbientIntensityValue;
-uniform float MaterialSpecularIntensityValue;
+uniform vec4 MaterialProperties;
 uniform vec3 MaterialColorValue;
 
 float linstep(float low, float high, float v){
@@ -102,17 +99,10 @@ void main(){
 	//}
 	
 	//just directional light
-	float Ambient = MaterialAmbientIntensityValue;
-	float Diffuse = MaterialDiffuseIntensityValue * cosTheta;
-	float SpecularColor = MaterialSpecularIntensityValue * pow(cosAlpha, MaterialShininessValue);
+	float Ambient = MaterialProperties.x;
+	float Diffuse = MaterialProperties.y * cosTheta;
+	float SpecularColor = MaterialProperties.z * pow(cosAlpha, MaterialProperties.w);
 
 	color = MaterialDiffuseColor * LightColor * LightPower * (Ambient + (Diffuse + SpecularColor) * visibility);
-	//color with pointlight and directional
-	//color = 
-		// Ambient : simulates indirect lighting
-	//	MaterialAmbientColor * MaterialDiffuseIntensityValue+
-		// Diffuse : "color" of the object
-	//	visibility * MaterialDiffuseColor * LightColor * LightPower * cosTheta / (distance*distance) * MaterialDiffuseIntensityValue +
-		// Specular : reflective highlight, like a mirror
-	//	visibility * MaterialSpecularColor * LightColor * LightPower * pow(cosAlpha,5) / (distance*distance);
+
 }
