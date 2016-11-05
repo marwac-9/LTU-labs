@@ -7,7 +7,7 @@ The object inside is the subdivided half edge mesh also converted for rendering.
 
 ## Specific keys for this project
 Keys 1-3 will toggle between different subdivision meshes.  
-They are subdivided in real-time as you switch between scenes.  
+Meshes are subdivided in real-time as you switch between scenes.  
 Toggle wireframe/shaded mode with TAB key.  
 Press LCTRL+S to save the subdivided mesh to obj file.  
 
