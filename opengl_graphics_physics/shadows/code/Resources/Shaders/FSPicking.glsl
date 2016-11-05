@@ -1,14 +1,14 @@
 #version 330
 
-layout (location = 0) out vec4 FragColor;
+layout (location = 0) out uint FragColor;
 layout (location = 1) out vec3 worldPosition;
 
-uniform vec4 gObjectIndexVec4;
+uniform uint objectID;
 
 in vec3 worldPos;
 
 void main()
 {
-    FragColor = gObjectIndexVec4;
+	FragColor = objectID;
     worldPosition = worldPos;
 } 

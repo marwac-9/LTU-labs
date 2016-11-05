@@ -93,7 +93,7 @@ namespace Picking
 		float timeModifier = 0.f;
 		int objectsRendered = 0;
 		int lightsRendered = 0;
-		int pickedID = 0;
+		unsigned int pickedID = 0;
 		BoundingBox* boundingBox;
 		GLuint LightID;
 

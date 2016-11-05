@@ -74,7 +74,7 @@ namespace Picking
         Object* lastPickedObject = nullptr;
 		float timeModifier = 0.f;
 		int objectsRendered = 0;
-		int pickedID = 0;
+		unsigned int pickedID = 0;
 		BoundingBox* boundingBox;
 		GLuint LightID;
 		bool scene4loaded = false;

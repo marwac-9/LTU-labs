@@ -445,10 +445,10 @@ namespace Picking
 			window->GetCursorPos(&leftMouseX,&leftMouseY);
 
 			//read pixel from picking texture
-			unsigned char Pixel[4];
+			unsigned int Pixel;
 			//inverted y coordinate because glfw 0,0 starts at topleft while opengl texture 0,0 starts at bottomleft
-			FBOManager::Instance()->ReadPixelID((unsigned int)leftMouseX, this->windowHeight - (unsigned int)leftMouseY, Pixel);
-			pickedID = Pixel[0] + Pixel[1] * 256 + Pixel[2] * 256 * 256;
+			FBOManager::Instance()->ReadPixelID((unsigned int)leftMouseX, this->windowHeight - (unsigned int)leftMouseY, &Pixel);
+			pickedID = Pixel;
 
 			//std::cout << pickedID << std::endl;
 			if (lastPickedObject != nullptr) //reset previously picked object color

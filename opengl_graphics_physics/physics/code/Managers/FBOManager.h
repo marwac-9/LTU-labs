@@ -15,13 +15,13 @@ public:
 	void UpdateTextureBuffers(int windowWidth, int windowHeight);
 	void BindFrameBuffer(FrameBufferMode readWrite);
 	void UnbindFrameBuffer(FrameBufferMode readWrite);
-	void ReadPixelID(unsigned int x, unsigned int y, unsigned char* data);
+	void ReadPixelID(unsigned int x, unsigned int y, unsigned int* data);
 	void ReadWorldPos(unsigned int x, unsigned int y, float* data);
 	GLuint frameBufferHandle; //frame buffer handle
 	GLuint pickingTextureHandle; //picking texture for frame buffer
 	GLuint worldPosTextureHandle;
 	GLuint depthTextureHandle; //depth for frame buffer
-	void ReadPixelFromTexture(GLenum attachment, unsigned int x, unsigned int y, float* data);
+
 private:
 	FBOManager();
 	~FBOManager();

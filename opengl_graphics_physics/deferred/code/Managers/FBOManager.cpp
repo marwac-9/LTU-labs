@@ -21,7 +21,7 @@ FBOManager* FBOManager::Instance()
 void FBOManager::UpdateTextureBuffers(int windowWidth, int windowHeight)
 {
 	glBindTexture(GL_TEXTURE_2D, pickingTextureHandle);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, windowWidth, windowHeight, 0, GL_RGB, GL_FLOAT, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_R32UI, windowWidth, windowHeight, 0, GL_RED_INTEGER, GL_UNSIGNED_INT, NULL);
 
 	glBindTexture(GL_TEXTURE_2D, positionBufferHandle);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, windowWidth, windowHeight, 0, GL_RGB, GL_FLOAT, NULL);
@@ -130,7 +130,7 @@ void FBOManager::SetUpFrameBuffer(int windowWidth, int windowHeight)
 
 	glGenTextures(1, &pickingTextureHandle);
 	glBindTexture(GL_TEXTURE_2D, pickingTextureHandle);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, windowWidth, windowHeight, 0, GL_RGB, GL_FLOAT, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_R32UI, windowWidth, windowHeight, 0, GL_RED_INTEGER, GL_UNSIGNED_INT, NULL);
 	glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, pickingTextureHandle, 0);
 
 	// Create the texture object for the depth buffer
@@ -138,43 +138,6 @@ void FBOManager::SetUpFrameBuffer(int windowWidth, int windowHeight)
 	glBindTexture(GL_TEXTURE_2D, depthTextureHandle);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, windowWidth, windowHeight, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
 	glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthTextureHandle, 0);
-
-	// Disable reading to avoid problems with older GPUs
-	glReadBuffer(GL_NONE);
-	//no color buffer
-	glDrawBuffer(GL_NONE);
-	//glDrawBuffer(GL_COLOR_ATTACHMENT0);
-	//glDrawBuffer(GL_NONE);
-	// Verify that the FBO is correct
-	GLenum Status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-
-	if (Status != GL_FRAMEBUFFER_COMPLETE) {
-		printf("FB error, status: 0x%x\n", Status);
-		return;
-	}
-
-	// Restore the default framebuffer
-	glBindTexture(GL_TEXTURE_2D, 0);
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-}
-
-void FBOManager::SetUpBlurFrameBuffer(int windowWidth, int windowHeight)
-{
-	//set up blur frame buffer
-
-	// Create the FBO
-	glGenFramebuffers(1, &blurFrameBufferHandle);
-	glBindFramebuffer(GL_FRAMEBUFFER, blurFrameBufferHandle);
-
-	glGenTextures(1, &shadowMapBlurdHandle);
-	glBindTexture(GL_TEXTURE_2D, shadowMapBlurdHandle);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RG32F, windowWidth, windowHeight, 0, GL_RG, GL_FLOAT, 0);
-	//glGenerateMipmap(GL_TEXTURE_2D);
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glFramebufferTexture(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, shadowMapBlurdHandle, 0);
 
 	// Disable reading to avoid problems with older GPUs
 	glReadBuffer(GL_NONE);
@@ -235,30 +198,11 @@ void FBOManager::UnbindFrameBuffer(FrameBufferMode readWrite)
 	
 }
 
-void FBOManager::BindBlurFrameBuffer(FrameBufferMode readWrite)
-{
-	switch (readWrite)
-	{
-	case read:
-		glBindFramebuffer(GL_READ_FRAMEBUFFER, blurFrameBufferHandle);
-		break;
-	case draw:
-		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, blurFrameBufferHandle);
-		break;
-	case readDraw:
-		glBindFramebuffer(GL_FRAMEBUFFER, blurFrameBufferHandle);
-		break;
-	default:
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		break;
-	}
-}
-
-void FBOManager::ReadPixelID(unsigned int x, unsigned int y, unsigned char* data)
+void FBOManager::ReadPixelID(unsigned int x, unsigned int y, unsigned int* data)
 {
 	BindFrameBuffer(read);
 	glReadBuffer(GL_COLOR_ATTACHMENT0);
-	glReadPixels(x, y, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, data);
+	glReadPixels(x, y, 1, 1, GL_RED_INTEGER, GL_UNSIGNED_INT, data);
 	glReadBuffer(GL_NONE);
 	UnbindFrameBuffer(read);
 }
@@ -268,16 +212,6 @@ void FBOManager::ReadWorldPos(unsigned int x, unsigned int y, float* data)
 	BindGeometryBuffer(read);
 	glReadBuffer(GL_COLOR_ATTACHMENT0);
 	glReadPixels(x, y, 1, 1, GL_RGB, GL_FLOAT, data);
-	glReadBuffer(GL_NONE);
-	UnbindFrameBuffer(read);
-}
-
-void FBOManager::ReadPixelFromTexture(GLenum attachment, unsigned int x, unsigned int y, float* data){
-	BindFrameBuffer(read);
-	glReadBuffer(attachment);
-
-	//inverted y coordinate because glfw 0,0 starts at topleft while opengl texture 0,0 starts at bottomleft
-	glReadPixels(x, y, 1, 1, GL_RGB, GL_FLOAT, &data);
 	glReadBuffer(GL_NONE);
 	UnbindFrameBuffer(read);
 }
@@ -299,34 +233,6 @@ void FBOManager::BindGeometryBuffer(FrameBufferMode readWrite)
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		break;
 	}
-}
-
-void FBOManager::DrawShadowMap(int width, int height)
-{
-	//Quad render
-
-	ShaderManager::Instance()->SetCurrentShader(ShaderManager::Instance()->shaderIDs["depthPanel"]);
-	//Enable Scissor box to only the clear the color buffer and depth buffer for it
-	float fHeight = (float)height;
-	float fWidth = (float)width;
-	int y = (int)(fHeight - fHeight*0.20f);
-	int glWidth = (int)(fWidth *0.15f);
-	int glHeight = (int)(fHeight*0.20f);
-	glEnable(GL_SCISSOR_TEST);
-	glScissor(0, y, glWidth, glHeight);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	glDisable(GL_SCISSOR_TEST);
-	glViewport(0, y, glWidth, glHeight);
-
-	// Bind our texture in Texture Unit 0
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, shadowMapHandle);
-	// Set our "myTextureSampler" sampler to user Texture Unit 0
-	glUniform1i(shadowMapHandle, 0);
-
-	DebugDraw::Instance()->DrawQuad();
-	glBindTexture(GL_TEXTURE_2D, 0);
-	glViewport(0, 0, width, height);
 }
 
 void FBOManager::DrawGeometryMaps(int width, int height)

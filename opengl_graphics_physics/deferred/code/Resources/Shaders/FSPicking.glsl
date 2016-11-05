@@ -1,10 +1,10 @@
 #version 330
 
-layout (location = 0) out vec4 FragColor;
+layout (location = 0) out uint FragColor;
 
-uniform vec4 gObjectIndexVec4;
+uniform uint objectID;
 
 void main()
 {
-    FragColor = gObjectIndexVec4;
+	FragColor = objectID;
 } 

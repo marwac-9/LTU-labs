@@ -19,14 +19,13 @@ FBOManager* FBOManager::Instance()
 void FBOManager::UpdateTextureBuffers(int windowWidth, int windowHeight)
 {
 	glBindTexture(GL_TEXTURE_2D, pickingTextureHandle);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, windowWidth, windowHeight,
-		0, GL_RGB, GL_FLOAT, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_R32UI, windowWidth, windowHeight, 0, GL_RED_INTEGER, GL_UNSIGNED_INT, NULL);
+
 	glBindTexture(GL_TEXTURE_2D, worldPosTextureHandle);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, windowWidth, windowHeight,
-		0, GL_RGB, GL_FLOAT, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, windowWidth, windowHeight, 0, GL_RGB, GL_FLOAT, NULL);
+
 	glBindTexture(GL_TEXTURE_2D, depthTextureHandle);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, windowWidth, windowHeight,
-		0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, windowWidth, windowHeight, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
 }
 
 void FBOManager::SetUpFrameBuffer(int windowWidth, int windowHeight)
@@ -40,7 +39,7 @@ void FBOManager::SetUpFrameBuffer(int windowWidth, int windowHeight)
 	// Create the texture object for the primitive information buffer
 	glGenTextures(1, &pickingTextureHandle);
 	glBindTexture(GL_TEXTURE_2D, pickingTextureHandle);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, windowWidth, windowHeight, 0, GL_RGB, GL_FLOAT, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_R32UI, windowWidth, windowHeight, 0, GL_RED_INTEGER, GL_UNSIGNED_INT, NULL);
 	glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, pickingTextureHandle, 0);
 
 	// Create the texture object for the primitive information buffer
@@ -112,11 +111,11 @@ void FBOManager::UnbindFrameBuffer(FrameBufferMode readWrite)
 	
 }
 
-void FBOManager::ReadPixelID(unsigned int x, unsigned int y, unsigned char* data)
+void FBOManager::ReadPixelID(unsigned int x, unsigned int y, unsigned int* data)
 {
 	BindFrameBuffer(read);
 	glReadBuffer(GL_COLOR_ATTACHMENT0);
-	glReadPixels(x, y, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, data);
+	glReadPixels(x, y, 1, 1, GL_RED_INTEGER, GL_UNSIGNED_INT, data);
 	glReadBuffer(GL_NONE);
 	UnbindFrameBuffer(read);
 }
@@ -126,16 +125,6 @@ void FBOManager::ReadWorldPos(unsigned int x, unsigned int y, float* data)
 	BindFrameBuffer(read);
 	glReadBuffer(GL_COLOR_ATTACHMENT1);
 	glReadPixels(x, y, 1, 1, GL_RGB, GL_FLOAT, data);
-	glReadBuffer(GL_NONE);
-	UnbindFrameBuffer(read);
-}
-
-void FBOManager::ReadPixelFromTexture(GLenum attachment, unsigned int x, unsigned int y, float* data){
-	BindFrameBuffer(read);
-	glReadBuffer(attachment);
-
-	//inverted y coordinate because glfw 0,0 starts at topleft while opengl texture 0,0 starts at bottomleft
-	glReadPixels(x, y, 1, 1, GL_RGB, GL_FLOAT, &data);
 	glReadBuffer(GL_NONE);
 	UnbindFrameBuffer(read);
 }
