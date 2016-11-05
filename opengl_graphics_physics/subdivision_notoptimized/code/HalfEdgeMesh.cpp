@@ -396,7 +396,7 @@ void HalfEdgeMesh::ExportMeshToOBJ(HalfEdgeMesh* mesh, OBJ* newOBJ)
 		newOBJ->indexed_vertices.push_back(mesh->vertices.at(i)->pos);
 		newOBJ->indexed_uvs.push_back(mesh->vertices.at(i)->tex);
 		newOBJ->indexed_normals.push_back(mesh->vertices.at(i)->normal);
-		indexMap[mesh->vertices.at(i)] = i;
+		indexMap[mesh->vertices.at(i)] = (int)i;
 	}
 
 	for (size_t i = 0; i < mesh->faces.size(); i++){

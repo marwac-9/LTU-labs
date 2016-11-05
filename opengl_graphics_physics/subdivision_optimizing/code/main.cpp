@@ -19,10 +19,11 @@
 #include <chrono>
 #include <ctime>
 #include "PoolParty.h"
+#include <fstream>
 
 void Subdivide(HalfEdgeMesh* mesh, int count);
 HalfEdgeMesh* ConstructHMesh(Object* HalfMesh, int modelIndex);
-
+using namespace std;
 
 int
 main(int argc, const char** argv)
@@ -111,6 +112,8 @@ main(int argc, const char** argv)
 
 void Subdivide(HalfEdgeMesh* mesh, int count)
 {
+	ofstream myfile;
+	myfile.open("log.txt");
     for(int i = 0; i < count; ++i)
     {
 	std::chrono::time_point<std::chrono::high_resolution_clock> start, end;
@@ -120,6 +123,8 @@ void Subdivide(HalfEdgeMesh* mesh, int count)
 	std::chrono::duration<double> elapsed_seconds = end-start;
 	//std::time_t end_time = std::chrono::high_resolution_clock::to_time_t(end);
     
+	myfile << "\nPass " << i + 1 << " subdivided in: " << elapsed_seconds.count() << "s\n";
+
 	std::cout << "\nPass " << i+1 << " subdivided in: " << elapsed_seconds.count() << "s\n";
 
 #ifdef __linux__ 
@@ -138,6 +143,7 @@ void Subdivide(HalfEdgeMesh* mesh, int count)
 
 #endif	
     }
+	myfile.close();
 }
 
 HalfEdgeMesh* ConstructHMesh(Object* HalfMesh, int modelIndex)
