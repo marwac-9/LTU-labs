@@ -27,7 +27,7 @@ SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/bin")
 
 ADD_EXECUTABLE(shadows ${ALLSRCS})
 SET_TARGET_PROPERTIES(shadows PROPERTIES FOLDER "LABS")
-TARGET_LINK_LIBRARIES(shadows camera frustum graphics_storage shader_manager graphics_manager object physics_manager scene gl_window app)
+TARGET_LINK_LIBRARIES(shadows camera frustum shader_manager graphics_manager scene gl_window app)
 #ADD_DEPENDENCIES(shadows core render)
 
 

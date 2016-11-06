@@ -23,6 +23,7 @@
 #include "PhysicsManager.h"
 #include "Camera.h"
 #include "Frustum.h"
+#include "Render.h"
 
 using namespace mwm;
 using namespace Display;
@@ -276,7 +277,7 @@ namespace Subdivision
 		for (auto& obj : Scene::Instance()->objectsToRender)
 		{
 			if (FrustumManager::Instance()->isBoundingSphereInView(obj.second->GetPosition(), obj.second->radius)) {
-				obj.second->draw(ViewProjection, currentShaderID);
+				Render::draw(obj.second, ViewProjection, currentShaderID);
 				objectsRendered++;
 			}
 		}

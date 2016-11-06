@@ -23,6 +23,7 @@
 #include "FBOManager.h"
 #include "Camera.h"
 #include "Frustum.h"
+#include "Render.h"
 using namespace mwm;
 using namespace Display;
 namespace Picking
@@ -457,7 +458,7 @@ namespace Picking
         for(auto& obj : Scene::Instance()->objectsToRender)
         {
 			if (FrustumManager::Instance()->isBoundingSphereInView(obj.second->GetPosition(), obj.second->radius)) {
-				obj.second->draw(ViewProjection, currentShaderID);
+				Render::draw(obj.second, ViewProjection, currentShaderID);
                 objectsRendered++;
             }
         }
@@ -472,7 +473,7 @@ namespace Picking
 		for (auto& obj : Scene::Instance()->objectsToRender)
 		{
 			if (FrustumManager::Instance()->isBoundingSphereInView(obj.second->GetPosition(), obj.second->radius)) {
-				obj.second->drawGeometry(ViewProjection, currentShaderID);
+				Render::drawGeometry(obj.second, ViewProjection, currentShaderID);
 				objectsRendered++;
 			}
 		}
@@ -742,7 +743,7 @@ namespace Picking
 		glStencilOpSeparate(GL_BACK, GL_KEEP, GL_INCR_WRAP, GL_KEEP);
 		glStencilOpSeparate(GL_FRONT, GL_KEEP, GL_DECR_WRAP, GL_KEEP);
 
-		pointLight->drawLight(ViewProjection, currentShaderID);
+		Render::drawLight(pointLight, ViewProjection, currentShaderID);
 	}
 
 	void PickingApp::PointLightPass(Object* pointLight, const Matrix4& ViewProjection)
@@ -764,7 +765,7 @@ namespace Picking
 		glEnable(GL_CULL_FACE);
 		glCullFace(GL_FRONT);
 
-		pointLight->drawLight(ViewProjection, currentShaderID);
+		Render::drawLight(pointLight, ViewProjection, currentShaderID);
 		
 		glCullFace(GL_BACK);
 		glDisable(GL_BLEND);
@@ -788,10 +789,9 @@ namespace Picking
 		GLuint LightDir = glGetUniformLocation(currentShaderID, "LightInvDirection_worldspace");
 		glUniform3fv(LightDir, 1, &lightInvDir.x);
 		
-		int directionalLightsNum = Scene::Instance()->directionalLights.size();
-		for (int i = 0; i < directionalLightsNum; i++)
+		for (auto& directionalLight : Scene::Instance()->directionalLights)
 		{
-			Scene::Instance()->directionalLights[i]->drawLight(Matrix4::identityMatrix(), currentShaderID);
+			Render::drawLight(directionalLight, Matrix4::identityMatrix(), currentShaderID);
 			lightsRendered++;
 		}
 		glDisable(GL_BLEND);

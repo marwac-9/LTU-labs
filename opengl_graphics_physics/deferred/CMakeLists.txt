@@ -27,7 +27,7 @@ SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/bin")
 
 ADD_EXECUTABLE(deferred ${ALLSRCS})
 SET_TARGET_PROPERTIES(deferred PROPERTIES FOLDER "LABS")
-TARGET_LINK_LIBRARIES(deferred camera frustum graphics_storage graphics_manager object physics_manager scene gl_window app)
+TARGET_LINK_LIBRARIES(deferred camera frustum graphics_manager scene gl_window app)
 #ADD_DEPENDENCIES(deferred core render)
 
 

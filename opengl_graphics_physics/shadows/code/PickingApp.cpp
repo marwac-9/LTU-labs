@@ -23,6 +23,7 @@
 #include "FBOManager.h"
 #include "Camera.h"
 #include "Frustum.h"
+#include "Render.h"
 
 using namespace mwm;
 using namespace Display;
@@ -388,7 +389,6 @@ namespace Picking
 		glDrawBuffers(1, DrawBuffers);
 		//glViewport(0, 0, 2048, 2048);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		ShaderManager::Instance()->SetCurrentShader(ShaderManager::Instance()->shaderIDs["depth"]);
 		DrawDepth(depthProjectionMatrix, depthViewMatrix);
 		FBOManager::Instance()->UnbindFrameBuffer(draw);
 		
@@ -532,7 +532,7 @@ namespace Picking
 		for (auto& obj : Scene::Instance()->objectsToRender)
 		{
 			if (FrustumManager::Instance()->isBoundingSphereInView(obj.second->GetPosition(), obj.second->radius)) {
-				obj.second->draw(ViewProjection, currentShaderID);
+				Render::draw(obj.second, ViewProjection, currentShaderID);
 				objectsRendered++;
 			}
 		}
@@ -541,9 +541,12 @@ namespace Picking
 	void
 	PickingApp::DrawDepth(const Matrix4& ProjectionMatrix, const Matrix4& ViewMatrix)
 	{
+		Matrix4 ViewProjection = ViewMatrix*ProjectionMatrix;
+		GLuint currentShaderID = ShaderManager::Instance()->shaderIDs["depth"];
+		ShaderManager::Instance()->SetCurrentShader(currentShaderID);
 		for (auto& obj : Scene::Instance()->objectsToRender)
 		{
-			obj.second->drawDepth(ProjectionMatrix, ViewMatrix);
+			Render::drawDepth(obj.second, ViewProjection, currentShaderID);
 		}
 	}
 
