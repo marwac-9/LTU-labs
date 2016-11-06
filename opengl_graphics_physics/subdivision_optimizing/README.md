@@ -1,6 +1,6 @@
 # Subdivision - optimized
 
-Second approach at geometry subdivision. I utilized things like SSE for more complex calculations and memory pool allocator instead of "new".
+Second approach at geometry subdivision. I utilized things like SSE for more complex calculations, memory pool allocator instead of "new" for fast allocation and another much faster than std, vector container class.
 
 Run the application from command prompt using parameters two parameters: numberOfSubdivisions nameOfMeshToSubdivide.
 
