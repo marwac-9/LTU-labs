@@ -350,7 +350,7 @@ namespace Subdivision
 
 		HalfMesh->AssignMesh(newHMesh);
 		HalfMesh->AssignMaterial(GraphicsStorage::materials[0]);
-		HalfMesh->SetScale(4.0f, 4.0f, 4.0f);
+		HalfMesh->SetScale(Vector3(4.0f, 4.0f, 4.0f));
 		HalfMesh->mat->SetAmbientIntensity(0.5f);
 		HalfMesh->setRadius(4);
 

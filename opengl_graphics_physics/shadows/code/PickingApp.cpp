@@ -576,7 +576,7 @@ namespace Picking
     {
 		for(auto& obj : Scene::Instance()->objectsToRender)
 		{
-			obj.second->IntegrateRunge3(timestep, PhysicsManager::Instance()->gravity);
+			obj.second->IntegrateRunge(timestep, PhysicsManager::Instance()->gravity);
 			obj.second->UpdateBoundingBoxes(DebugDraw::Instance()->boundingBox);
 			obj.second->UpdateInertiaTensor();
 		}
@@ -589,13 +589,13 @@ namespace Picking
 		Clear();
 
 		Object* plane = Scene::Instance()->addPhysicObject("cube", Vector3(0.f, -10.f, 0.f));
-		plane->SetScale(25, 2, 25);
+		plane->SetScale(Vector3(25.f, 2.f, 25.f));
 		plane->SetMass(FLT_MAX);
 		plane->radius = 50.f;
 		plane->isKinematic = true;
 
 		Object* plank = Scene::Instance()->addPhysicObject("cube", plane->GetPosition() + Vector3(0.f, 10.f, 0.f));
-		plank->SetScale(3, 0.5, 1);
+		plank->SetScale(Vector3(3.f, 0.5f, 1.f));
 		Object* cube = Scene::Instance()->addPhysicObject("cube", plane->GetPosition() + Vector3(0.f, 3.f, 0.f));
 		cube->isKinematic = true;
 		cube->SetMass(FLT_MAX);	
@@ -608,7 +608,7 @@ namespace Picking
 		Clear();
 
 		Object* plane = Scene::Instance()->addPhysicObject("cube", Vector3(0.f, -10.f, 0.f));
-		plane->SetScale(25.f, 2.f, 25.f);
+		plane->SetScale(Vector3(25.f, 2.f, 25.f));
 		plane->SetMass(FLT_MAX);
 		plane->radius = 50.f;
 		plane->isKinematic = true;
@@ -627,7 +627,7 @@ namespace Picking
 		Clear();
 
 		Object* plane = Scene::Instance()->addPhysicObject("cube", Vector3(0.f, -20.f, 0.f));
-		plane->SetScale(25, 2, 25);
+		plane->SetScale(Vector3(25.f, 2.f, 25.f));
 		plane->SetMass(FLT_MAX);
 		plane->radius = 50.f;
 		plane->isKinematic = true;

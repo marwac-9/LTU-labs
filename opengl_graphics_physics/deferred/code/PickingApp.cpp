@@ -518,7 +518,7 @@ namespace Picking
     {
 		for(auto& obj : Scene::Instance()->objectsToRender)
 		{
-			obj.second->IntegrateRunge3(timestep, PhysicsManager::Instance()->gravity);
+			obj.second->IntegrateRunge(timestep, PhysicsManager::Instance()->gravity);
 			obj.second->UpdateBoundingBoxes(DebugDraw::Instance()->boundingBox);
 			obj.second->UpdateInertiaTensor();
 		}
@@ -545,7 +545,6 @@ namespace Picking
 		//sphere1->isKinematic = true;
 		//sphere1->SetMass(FLT_MAX);
 		//pointLight->node.addChild(&sphere1->node);
-
 		//pointLight->mat->SetSpecularColor(10, 10, 10);
 		lastPickedObject = pointLight;
 		//pointLight = Scene::Instance()->addPointLight(Vector3(8, 5, 10));
@@ -553,7 +552,7 @@ namespace Picking
 		
 
 		Object* plane = Scene::Instance()->addPhysicObject("cube", Vector3(0.f, -10.f, 0.f));
-		plane->SetScale(25, 2, 25);
+		plane->SetScale(Vector3(25.f, 2.f, 25.f));
 		plane->SetMass(FLT_MAX);
 		plane->radius = 50.f;
 		plane->isKinematic = true;
@@ -569,11 +568,11 @@ namespace Picking
 		Object* directionalLight = Scene::Instance()->addDirectionalLight(lightInvDir);
 		directionalLight->mat->SetDiffuseIntensity(0.5f);
 		Object* pointLight = Scene::Instance()->addPointLight(Vector3(4.f, 8.f, 4.f));
-		pointLight->SetScale(10, 10, 10);
+		pointLight->SetScale(Vector3(10.f, 10.f, 10.f));
 		lastPickedObject = pointLight;
 
 		Object* plane = Scene::Instance()->addPhysicObject("cube", Vector3(0.f, 0.f, 0.f));
-		plane->SetScale(25, 2, 25);
+		plane->SetScale(Vector3(25.f, 2.f, 25.f));
 		plane->SetMass(FLT_MAX);
 		plane->radius = 50.f;
 		plane->isKinematic = true;
@@ -597,7 +596,7 @@ namespace Picking
 		lastPickedObject = pointLight;
 
 		Object* plane = Scene::Instance()->addPhysicObject("cube", Vector3(0.f, -10.f, 0.f));
-		plane->SetScale(25, 2, 25);
+		plane->SetScale(Vector3(25.f, 2.f, 25.f));
 		plane->SetMass(FLT_MAX);
 		plane->radius = 50.f;
 		plane->isKinematic = true;
@@ -618,7 +617,7 @@ namespace Picking
 		Scene::Instance()->addRandomlyObjects("sphere", 500);
 
 		Object* plane = Scene::Instance()->addObject("cube");
-		plane->SetScale(25.f, 0.2f, 25.f);
+		plane->SetScale(Vector3(25.f, 0.2f, 25.f));
 		plane->SetMass(FLT_MAX);
 		plane->radius = 50.f;
 		plane->isKinematic = true;
@@ -837,7 +836,7 @@ namespace Picking
 			if (lastPickedObject->GetPosition().y < -17) planeDir = 1;
 			else if (lastPickedObject->GetPosition().y > 10) planeDir = -1;
 
-			lastPickedObject->Translate(0.f, 0.1f*planeDir, 0.f);
+			lastPickedObject->Translate(Vector3(0.f, 0.1f*planeDir, 0.f));
 		}
 		
 	}
@@ -868,7 +867,7 @@ namespace Picking
 	{
 		for (auto& obj : Scene::Instance()->pointLights)
 		{
-			obj->IntegrateRunge3(timestep, Vector3());
+			obj->IntegrateRunge(timestep, Vector3());
 		}
 	}
 

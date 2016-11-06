@@ -476,7 +476,7 @@ namespace Picking
     {
 		for(auto& obj : Scene::Instance()->objectsToRender)
 		{
-			obj.second->IntegrateRunge3(timestep, PhysicsManager::Instance()->gravity);
+			obj.second->IntegrateRunge(timestep, PhysicsManager::Instance()->gravity);
 			obj.second->UpdateBoundingBoxes(DebugDraw::Instance()->boundingBox);
 			obj.second->UpdateInertiaTensor();
 		}
@@ -494,7 +494,7 @@ namespace Picking
 
 		Object* plank = Scene::Instance()->addPhysicObject("cube", plane->GetPosition() + Vector3(0.f, 5.f, 0.f));
 		//plank->SetOrientation(Quaternion(0.7, Vector3(0, 1, 0)));
-		plank->SetScale(3, 0.5f, 3);
+		plank->SetScale(Vector3(3.f, 0.5f, 3.f));
 		Object* cube = Scene::Instance()->addPhysicObject("cube", plane->GetPosition() + Vector3(0.f, 2.f, 0.f));
 		cube->SetMass(1);
 		cube->isKinematic = true;
