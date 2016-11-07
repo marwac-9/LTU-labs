@@ -12,7 +12,8 @@ class Camera;
 enum loadedScene
 {
 	scene1Loaded,
-	scene4Loaded,
+	scene2Loaded,
+	scene3Loaded,
 	none
 };
 
@@ -47,6 +48,7 @@ namespace Picking
 		void StencilPass(Object* pointLight, const mwm::Matrix4& ViewProjection);
 		void PointLightPass(Object* pointLight, const mwm::Matrix4& ViewProjection);
 		void BlitToScreenPass();
+		void FireLightProjectile();
 
 		void IntegrateAndUpdateBoxes(float timestep);
 		void IntegrateLights(float timestep);
@@ -60,11 +62,10 @@ namespace Picking
 		void LoadScene1();
 		void LoadScene2();
 		void LoadScene3();
-		void LoadScene4();
 		void Vortex();
 		
 		void ActivateTextures();
-		void MoveObjectUpNDown();
+		void MovePlaneUpNDown();
 		void DisableTextures();
 		void DrawGeometry(const mwm::Matrix4& ProjectionMatrix, const mwm::Matrix4& ViewMatrix);
 		void SpawnSomeLights();
@@ -90,6 +91,7 @@ namespace Picking
 		mwm::Matrix4 ViewMatrix;
 		Camera* currentCamera;
         Object* lastPickedObject = nullptr;
+		Object* plane = nullptr;
 		float timeModifier = 0.f;
 		int objectsRendered = 0;
 		int lightsRendered = 0;

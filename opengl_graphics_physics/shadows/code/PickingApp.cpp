@@ -531,7 +531,7 @@ namespace Picking
 		objectsRendered = 0;
 		for (auto& obj : Scene::Instance()->objectsToRender)
 		{
-			if (FrustumManager::Instance()->isBoundingSphereInView(obj.second->GetPosition(), obj.second->radius)) {
+			if (FrustumManager::Instance()->isBoundingSphereInView(obj.second->GetWorldPosition(), obj.second->radius)) {
 				Render::draw(obj.second, ViewProjection, currentShaderID);
 				objectsRendered++;
 			}
@@ -561,7 +561,7 @@ namespace Picking
 		}
 		for (auto& obj : Scene::Instance()->objectsToRender)
 		{
-			if (FrustumManager::Instance()->isBoundingSphereInView(obj.second->GetPosition(), obj.second->radius))
+			if (FrustumManager::Instance()->isBoundingSphereInView(obj.second->GetWorldPosition(), obj.second->radius))
 			{
 				boundingBox->mat->SetColor(obj.second->obb.color);
 				boundingBox->Draw(Matrix4::scale(obj.second->GetMeshDimensions())*obj.second->node.TopDownTransform, ViewMatrix, ProjectionMatrix, wireframeShader);
@@ -594,9 +594,9 @@ namespace Picking
 		plane->radius = 50.f;
 		plane->isKinematic = true;
 
-		Object* plank = Scene::Instance()->addPhysicObject("cube", plane->GetPosition() + Vector3(0.f, 10.f, 0.f));
+		Object* plank = Scene::Instance()->addPhysicObject("cube", plane->GetLocalPosition() + Vector3(0.f, 10.f, 0.f));
 		plank->SetScale(Vector3(3.f, 0.5f, 1.f));
-		Object* cube = Scene::Instance()->addPhysicObject("cube", plane->GetPosition() + Vector3(0.f, 3.f, 0.f));
+		Object* cube = Scene::Instance()->addPhysicObject("cube", plane->GetLocalPosition() + Vector3(0.f, 3.f, 0.f));
 		cube->isKinematic = true;
 		cube->SetMass(FLT_MAX);	
 	}
@@ -616,7 +616,7 @@ namespace Picking
 		for (int i = 0; i < 10; i++)
 		{
 			Object* cube = Scene::Instance()->addPhysicObject("cube");
-			cube->SetPosition(Vector3(0, i * 2 + plane->GetPosition().y, 0));
+			cube->SetPosition(Vector3(0, i * 2 + plane->GetLocalPosition().y, 0));
 		}
 	}
 
@@ -650,7 +650,7 @@ namespace Picking
 		Clear();
 		for (int i = 0; i < 700; i++)
 		{
-			Object* sphere = Scene::Instance()->addRandomlyObject("sphere");
+			Object* sphere = Scene::Instance()->addRandomlyObject("sphere", Scene::Instance()->generateRandomIntervallVectorCubic(-20,20));
 			sphere->SetMass(FLT_MAX);
 			sphere->isKinematic = true;
 		}
@@ -669,8 +669,8 @@ namespace Picking
 	{
 		for (auto& obj : Scene::Instance()->objectsToRender)
 		{
-			Vector3 dir = obj.second->GetPosition() - Vector3(0.f,0.f,0.f);
-			obj.second->ApplyImpulse(dir*-20.f, obj.second->GetPosition());
+			Vector3 dir = obj.second->GetWorldPosition() - Vector3(0.f,0.f,0.f);
+			obj.second->ApplyImpulse(dir*-20.f, obj.second->GetWorldPosition());
 		}
 	}
 

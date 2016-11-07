@@ -84,6 +84,7 @@ namespace Picking
             if(button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
             {
                 isLeftMouseButtonPressed = true;
+				if(currentScene == scene3Loaded) FireLightProjectile();
             }
             if(button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE)
             {
@@ -119,8 +120,6 @@ namespace Picking
 		DebugDraw::Instance()->LoadPrimitives();
 
 		boundingBox = &DebugDraw::Instance()->boundingBox;
-		
-		LoadScene4();
 
 		float timeStep = 0.016f + timeModifier;
 		float dtInv = 1.f / timeStep;
@@ -133,9 +132,16 @@ namespace Picking
 
 		SetUpCamera(timeStep);
 
+		LoadScene2();
+		currentScene = scene2Loaded;
+
+		Matrix4 identityM = Matrix4::identityMatrix();
 		double fps_timer = 0;
-		Scene::Instance()->SceneObject->node.UpdateNodeMatrix(Matrix4::identityMatrix());
+		Scene::Instance()->SceneObject->node.UpdateNodeMatrix(identityM);
+		Scene::Instance()->MainPointLight->node.UpdateNodeMatrix(identityM);
+		Scene::Instance()->MainDirectionalLight->node.UpdateNodeMatrix(identityM);
 		timeCounter = 0.0;
+
         while (running)
         {
 			glDepthMask(GL_TRUE);
@@ -169,15 +175,11 @@ namespace Picking
 			{
 				case scene1Loaded:
 					if (currentTime - fps_timer >= 0.2f){
-						//SpawnSomeLights();
+						SpawnSomeLights(); //have to draw on plane
 					}
 					break;
-
-				case scene4Loaded:
-					if (currentTime - fps_timer >= 0.2f){
-						Vortex();
-					}
-					MoveObjectUpNDown();
+				case scene2Loaded:
+					MovePlaneUpNDown();
 					break;				
 			}
 			
@@ -185,23 +187,26 @@ namespace Picking
 			PhysicsManager::Instance()->NarrowTestSAT(dtInv);
 			
 			IntegrateAndUpdateBoxes(timeStep);
+			if (lightsPhysics) 
+			{
+				if (currentTime - fps_timer >= 0.2f && currentScene == scene2Loaded) Vortex();
+				IntegrateLights(timeStep);
+			}
 			
-			if (lightsPhysics) IntegrateLights(timeStep);
-			
-			Scene::Instance()->SceneObject->node.UpdateNodeMatrix(Matrix4::identityMatrix());
-			Scene::Instance()->MainPointLight->node.UpdateNodeMatrix(Matrix4::identityMatrix());
-			Scene::Instance()->MainDirectionalLight->node.UpdateNodeMatrix(Matrix4::identityMatrix());
+			Scene::Instance()->SceneObject->node.UpdateNodeMatrix(identityM);
+			Scene::Instance()->MainPointLight->node.UpdateNodeMatrix(identityM);
+			Scene::Instance()->MainDirectionalLight->node.UpdateNodeMatrix(identityM);
 			PassPickingTexture(ProjectionMatrix, ViewMatrix); //picking
 
 			DrawGeometryPass(ProjectionMatrix, ViewMatrix);
 
 			PickingTest();
-
-			if (debug) DrawDebug(ProjectionMatrix, ViewMatrix);
 			
 			DrawLightPass(ProjectionMatrix, ViewMatrix, currentCamera->GetPosition2());
 
 			BlitToScreenPass();
+
+			if (debug) DrawDebug(ProjectionMatrix, ViewMatrix);
 
 			DebugDraw::Instance()->DrawCrossHair(windowWidth, windowHeight);
 			
@@ -253,16 +258,16 @@ namespace Picking
 				}
 			}
 			else if (key == GLFW_KEY_1) {
+				currentScene = scene1Loaded;
 				LoadScene1();
 			}
 			else if (key == GLFW_KEY_2) {
+				currentScene = scene2Loaded;
 				LoadScene2();
 			}
 			else if (key == GLFW_KEY_3) {
+				currentScene = scene3Loaded;
 				LoadScene3();
-			}
-			else if (key == GLFW_KEY_4) {
-				LoadScene4();
 			}
 			else if (key == GLFW_KEY_BACKSPACE)
 			{
@@ -457,7 +462,7 @@ namespace Picking
         objectsRendered = 0;
         for(auto& obj : Scene::Instance()->objectsToRender)
         {
-			if (FrustumManager::Instance()->isBoundingSphereInView(obj.second->GetPosition(), obj.second->radius)) {
+			if (FrustumManager::Instance()->isBoundingSphereInView(obj.second->GetWorldPosition(), obj.second->radius)) {
 				Render::draw(obj.second, ViewProjection, currentShaderID);
                 objectsRendered++;
             }
@@ -472,7 +477,7 @@ namespace Picking
 		objectsRendered = 0;
 		for (auto& obj : Scene::Instance()->objectsToRender)
 		{
-			if (FrustumManager::Instance()->isBoundingSphereInView(obj.second->GetPosition(), obj.second->radius)) {
+			if (FrustumManager::Instance()->isBoundingSphereInView(obj.second->GetWorldPosition(), obj.second->radius)) {
 				Render::drawGeometry(obj.second, ViewProjection, currentShaderID);
 				objectsRendered++;
 			}
@@ -482,9 +487,6 @@ namespace Picking
 	void
 	PickingApp::DrawDebug(const Matrix4& ProjectionMatrix, const Matrix4& ViewMatrix)
 	{
-		FBOManager::Instance()->BindGeometryBuffer(draw);
-		GLenum DrawDebugBuffers[] = { GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT3 };
-		glDrawBuffers(2, DrawDebugBuffers);
 		glDepthMask(GL_TRUE);
 		glEnable(GL_DEPTH_TEST);
 		
@@ -499,7 +501,7 @@ namespace Picking
 
 		for (auto& obj : Scene::Instance()->objectsToRender)
 		{
-			if (FrustumManager::Instance()->isBoundingSphereInView(obj.second->GetPosition(), obj.second->radius))
+			if (FrustumManager::Instance()->isBoundingSphereInView(obj.second->GetWorldPosition(), obj.second->radius))
 			{
 				boundingBox->mat->SetColor(obj.second->obb.color);
 				boundingBox->Draw(Matrix4::scale(obj.second->GetMeshDimensions())*obj.second->node.TopDownTransform, ViewMatrix, ProjectionMatrix, wireframeShader);
@@ -507,10 +509,7 @@ namespace Picking
 				boundingBox->Draw(obj.second->aabb.model, ViewMatrix, ProjectionMatrix, wireframeShader);
 			}
 		}
-
 		glDepthMask(GL_FALSE);
-		ShaderManager::Instance()->SetCurrentShader(prevShader);
-		FBOManager::Instance()->UnbindFrameBuffer(draw);
 	}
 
     void 
@@ -527,20 +526,22 @@ namespace Picking
 	void 
 	PickingApp::LoadScene1()
 	{
-		currentScene = scene1Loaded;
 		//A plank suspended on a static box.	
 		Clear();
+		currentCamera->SetPosition(Vector3(0.f, 20.f, 60.f));
 
-		Object* sphere = Scene::Instance()->addPhysicObject("sphere", Vector3(0.f, -7.f, 0.f));
+		Object* sphere = Scene::Instance()->addPhysicObject("sphere", Vector3(0.f, 3.f, 0.f));
 		sphere->isKinematic = true;
 		sphere->SetMass(FLT_MAX);
+		sphere->mat->specularIntensity = 4.f;
+		sphere->mat->shininess = 10.f;
 
 		Object* directionalLight = Scene::Instance()->addDirectionalLight(lightInvDir);
 		directionalLight->mat->SetDiffuseIntensity(0.5f);
 		//directionalLight->mat->SetSpecularColor(0, 0, 0);
 		//directionalLight->mat->SetColor(0.5,0,0.5);
 		//directionalLight->mat->SetDiffuseIntensity(1.5f);
-		Object* pointLight = Scene::Instance()->addPointLight(Vector3(0.f, -7.f, 3.f));
+		Object* pointLight = Scene::Instance()->addPointLight(Vector3(2.f, 3.f, 3.f));
 		//Object* sphere1 = Scene::Instance()->addObject("sphere");
 		//sphere1->isKinematic = true;
 		//sphere1->SetMass(FLT_MAX);
@@ -551,64 +552,17 @@ namespace Picking
 		//pointLight->mat->SetColor(1, 1, 1);
 		
 
-		Object* plane = Scene::Instance()->addPhysicObject("cube", Vector3(0.f, -10.f, 0.f));
+		Object* plane = Scene::Instance()->addPhysicObject("cube", Vector3(0.f, -2.5f, 0.f));
 		plane->SetScale(Vector3(25.f, 2.f, 25.f));
 		plane->SetMass(FLT_MAX);
 		plane->radius = 50.f;
 		plane->isKinematic = true;
 	}
 
-	void 
-	PickingApp::LoadScene2()
+	void PickingApp::LoadScene2()
 	{
-		currentScene = scene1Loaded;
-		//A stack of boxes.
 		Clear();
-
-		Object* directionalLight = Scene::Instance()->addDirectionalLight(lightInvDir);
-		directionalLight->mat->SetDiffuseIntensity(0.5f);
-		Object* pointLight = Scene::Instance()->addPointLight(Vector3(4.f, 8.f, 4.f));
-		pointLight->SetScale(Vector3(10.f, 10.f, 10.f));
-		lastPickedObject = pointLight;
-
-		Object* plane = Scene::Instance()->addPhysicObject("cube", Vector3(0.f, 0.f, 0.f));
-		plane->SetScale(Vector3(25.f, 2.f, 25.f));
-		plane->SetMass(FLT_MAX);
-		plane->radius = 50.f;
-		plane->isKinematic = true;
-
-		for (int i = 0; i < 10; i++)
-		{
-			Object* cube = Scene::Instance()->addPhysicObject("spaceship");
-			cube->SetPosition(Vector3(0.f, i * 2 + plane->GetPosition().y, 0.f));
-		}
-	}
-
-	void 
-	PickingApp::LoadScene3()
-	{
-		currentScene = scene1Loaded;
-		//Boxes sliding of a static plane oriented at an angle.
-		Clear();
-		Object* directionalLight = Scene::Instance()->addDirectionalLight(lightInvDir);
-		//directionalLight->mat->SetDiffuseIntensity(0);
-		Object* pointLight = Scene::Instance()->addPointLight(Vector3(4.f, -5.f, 4.f));
-		lastPickedObject = pointLight;
-
-		Object* plane = Scene::Instance()->addPhysicObject("cube", Vector3(0.f, -10.f, 0.f));
-		plane->SetScale(Vector3(25.f, 2.f, 25.f));
-		plane->SetMass(FLT_MAX);
-		plane->radius = 50.f;
-		plane->isKinematic = true;
-		plane->SetOrientation(Quaternion(0.7f, Vector3(0.f, 0.f, 1.f)));
-
-		Scene::Instance()->addRandomlyPhysicObjects("cube", 50);
-	}
-
-	void PickingApp::LoadScene4()
-	{
-		currentScene = scene4Loaded;
-		Clear();
+		currentCamera->SetPosition(Vector3(0.f, 10.f, 60.f));
 
 		Object* directionalLight = Scene::Instance()->addDirectionalLight(lightInvDir);
 		directionalLight->mat->SetColor(0.2f, 0.2f, 0.2f);
@@ -621,7 +575,46 @@ namespace Picking
 		plane->SetMass(FLT_MAX);
 		plane->radius = 50.f;
 		plane->isKinematic = true;
-		lastPickedObject = plane;
+		this->plane = plane;
+	}
+
+	void PickingApp::LoadScene3()
+	{
+		Clear();
+		currentCamera->SetPosition(Vector3());
+
+		Object* directionalLight = Scene::Instance()->addDirectionalLight(lightInvDir);
+		directionalLight->mat->SetColor(0.2f, 0.2f, 0.2f);
+
+		float rS = 1.f;
+		for (int i = 0; i < 2000; i++)
+		{
+			Object* object = Scene::Instance()->addObject("sphere", Scene::Instance()->generateRandomIntervallVectorCubic(-80, 80));
+			rS = (float)(rand() % 3) + 1.f;
+			object->SetScale(Vector3(rS, rS, rS));
+			object->radius = rS;
+			//object->isKinematic = true;
+		}
+		lightsPhysics = true;
+		PhysicsManager::Instance()->gravity = Vector3();
+	}
+
+	void PickingApp::FireLightProjectile()
+	{
+		Object* pointLight = Scene::Instance()->addPointLight(currentCamera->GetPosition2()+currentCamera->getDirection()*3.f, Vector3(1.f, 1.f, 0.f));
+		pointLight->setCanSleep(false);
+		pointLight->SetScale(Vector3(10.f, 10.f, 10.f));
+		pointLight->ApplyImpulse(currentCamera->getDirection()*3000.f, pointLight->GetLocalPosition());
+		Object* sphere = Scene::Instance()->addChild(pointLight);
+		sphere->AssignMesh(GraphicsStorage::meshes["sphere"]);
+		Material* newMaterial = new Material();
+		newMaterial->AssignTexture(GraphicsStorage::textures.at(0));
+		GraphicsStorage::materials.push_back(newMaterial);
+		sphere->AssignMaterial(newMaterial);
+		
+		sphere->SetScale(Vector3(0.05f, 0.05f, 0.05f));
+		sphere->radius = sphere->radius*0.05f;
+		sphere->isKinematic = true;
 	}
 
 	void 
@@ -643,8 +636,8 @@ namespace Picking
 		*/
 		for (auto& obj : Scene::Instance()->pointLights)
 		{
-			Vector3 dir = obj->GetPosition() - Vector3(0.f, -10.f, 0.f);
-			obj->ApplyImpulse(dir.vectNormalize()*-2000.f, obj->GetPosition());
+			Vector3 dir = obj->GetWorldPosition() - Vector3(0.f, -10.f, 0.f);
+			obj->ApplyImpulse(dir.vectNormalize()*-2000.f, obj->GetWorldPosition());
 		}
 	}
 
@@ -712,7 +705,7 @@ namespace Picking
 		lightsRendered = 0;
 		for (int i = 0; i < pointLightsNum; i++)
 		{
-			if (FrustumManager::Instance()->isBoundingSphereInView(Scene::Instance()->pointLights[i]->GetPosition(), Scene::Instance()->pointLights[i]->radius)) {
+			if (FrustumManager::Instance()->isBoundingSphereInView(Scene::Instance()->pointLights[i]->GetWorldPosition(), Scene::Instance()->pointLights[i]->radius)) {
 				StencilPass(Scene::Instance()->pointLights[i], ViewProjection); //sets up stencil pass
 				PointLightPass(Scene::Instance()->pointLights[i], ViewProjection); //sets up point light pass	
 				lightsRendered++;
@@ -825,18 +818,19 @@ namespace Picking
 		FBOManager::Instance()->UnbindFrameBuffer(draw); //for drawing we are unbinding to the screen buffer
 		FBOManager::Instance()->BindGeometryBuffer(read); //and we read from the geometry buffer
 		glReadBuffer(GL_COLOR_ATTACHMENT4); //enable the final color texture buffer for reading
-		glBlitFramebuffer(0, 0, windowWidth, windowHeight, 0, 0, windowWidth, windowHeight, GL_COLOR_BUFFER_BIT, GL_LINEAR);
-		FBOManager::Instance()->UnbindFrameBuffer(read);
+		glBlitFramebuffer(0, 0, windowWidth, windowHeight, 0, 0, windowWidth, windowHeight, GL_COLOR_BUFFER_BIT, GL_LINEAR); 
+		glBlitFramebuffer(0, 0, windowWidth, windowHeight, 0, 0, windowWidth, windowHeight, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+		FBOManager::Instance()->UnbindFrameBuffer(readDraw);
 	}
 
-	void PickingApp::MoveObjectUpNDown()
+	void PickingApp::MovePlaneUpNDown()
 	{
-		if (lastPickedObject != nullptr)
+		if (plane != nullptr)
 		{
-			if (lastPickedObject->GetPosition().y < -17) planeDir = 1;
-			else if (lastPickedObject->GetPosition().y > 10) planeDir = -1;
+			if (plane->GetWorldPosition().y < -17) planeDir = 1;
+			else if (plane->GetWorldPosition().y > 10) planeDir = -1;
 
-			lastPickedObject->Translate(Vector3(0.f, 0.1f*planeDir, 0.f));
+			plane->Translate(Vector3(0.f, 0.1f*planeDir, 0.f));
 		}
 		
 	}
@@ -858,9 +852,18 @@ namespace Picking
 
 	void PickingApp::SpawnSomeLights()
 	{
-		Scene::Instance()->addPointLight(Scene::Instance()->generateRandomIntervallVector(-20, 20), Scene::Instance()->generateRandomIntervallVector(0, 255) / 155.f);
-		Scene::Instance()->addPointLight(Scene::Instance()->generateRandomIntervallVector(-20, 20), Scene::Instance()->generateRandomIntervallVector(0, 255) / 155.f);
-		Scene::Instance()->addPointLight(Scene::Instance()->generateRandomIntervallVector(-20, 20), Scene::Instance()->generateRandomIntervallVector(0, 255) / 155.f);
+		if (Scene::Instance()->pointLights.size() < 500)
+		{
+			Object* pointLight = Scene::Instance()->addPointLight(Scene::Instance()->generateRandomIntervallVectorFlat(-20, 20, 2), Scene::Instance()->generateRandomIntervallVectorCubic(0, 6000) / 6000.f);
+			Object* sphere = Scene::Instance()->addObject("sphere", pointLight->GetLocalPosition());
+			sphere->isKinematic = true;
+			sphere->SetScale(Vector3(0.1f, 0.1f, 0.1f));
+			sphere->setRadius(0.1f);
+			sphere->mat->diffuseIntensity = 2.f;
+			sphere->mat->ambientIntensity = 1.5f;
+			sphere->mat->specularIntensity = 4.f;
+			sphere->mat->shininess = 10.f;
+		}
 	}
 
 	void PickingApp::IntegrateLights(float timestep)

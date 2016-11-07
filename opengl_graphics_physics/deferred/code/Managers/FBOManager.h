@@ -23,7 +23,7 @@ public:
 	
 	GLuint frameBufferHandle; //frame buffer handle
 	GLuint pickingTextureHandle; //picking texture for frame buffer
-	GLuint depth2TextureHandle; //depth for gbuffer 
+	GLuint geoDepthTextureHandle; //depth for gbuffer 
 	GLuint depthTextureHandle; //depth for frame buffer 
 	GLuint shadowMapHandle;
 

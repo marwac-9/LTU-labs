@@ -445,7 +445,7 @@ namespace Picking
 		objectsRendered = 0;
 		for (auto& obj : Scene::Instance()->objectsToRender)
 		{
-			if (FrustumManager::Instance()->isBoundingSphereInView(obj.second->GetPosition(), obj.second->radius)) {
+			if (FrustumManager::Instance()->isBoundingSphereInView(obj.second->GetWorldPosition(), obj.second->radius)) {
 				Render::draw(obj.second, ViewProjection, currentShaderID);
 				objectsRendered++;
 			}
@@ -463,7 +463,7 @@ namespace Picking
 		}
 		for (auto& obj : Scene::Instance()->objectsToRender)
 		{
-			if (FrustumManager::Instance()->isBoundingSphereInView(obj.second->GetPosition(), obj.second->radius)) {
+			if (FrustumManager::Instance()->isBoundingSphereInView(obj.second->GetWorldPosition(), obj.second->radius)) {
 				boundingBox->mat->SetColor(obj.second->obb.color);
 				boundingBox->Draw(Matrix4::scale(obj.second->GetMeshDimensions())*obj.second->node.TopDownTransform, ViewMatrix, ProjectionMatrix, wireframeShader);
 				boundingBox->mat->SetColor(obj.second->aabb.color);
@@ -486,16 +486,15 @@ namespace Picking
 	{
 		//A plank suspended on a static box.	
 		Clear();
-		PhysicsManager::Instance()->gravity = Vector3(0.f, -9.f, 0.f);
 		Object* plane = Scene::Instance()->addPhysicObject("fatplane", Vector3(0.f, -10.f, 0.f));
 		plane->SetMass(FLT_MAX);
 		plane->radius = 50.f;
 		plane->isKinematic = true;
 
-		Object* plank = Scene::Instance()->addPhysicObject("cube", plane->GetPosition() + Vector3(0.f, 5.f, 0.f));
+		Object* plank = Scene::Instance()->addPhysicObject("cube", plane->GetLocalPosition() + Vector3(0.f, 5.f, 0.f));
 		//plank->SetOrientation(Quaternion(0.7, Vector3(0, 1, 0)));
 		plank->SetScale(Vector3(3.f, 0.5f, 3.f));
-		Object* cube = Scene::Instance()->addPhysicObject("cube", plane->GetPosition() + Vector3(0.f, 2.f, 0.f));
+		Object* cube = Scene::Instance()->addPhysicObject("cube", plane->GetLocalPosition() + Vector3(0.f, 2.f, 0.f));
 		cube->SetMass(1);
 		cube->isKinematic = true;
 		cube->massInverse = 0;
@@ -505,7 +504,6 @@ namespace Picking
 	{
 		//A stack of boxes.
 		Clear();
-		PhysicsManager::Instance()->gravity = Vector3(0.f, -9.f, 0.f);
 		Object* plane = Scene::Instance()->addPhysicObject("fatplane", Vector3(0.f, -10.f, 0.f));
 		plane->SetMass(FLT_MAX);
 		plane->radius = 50.f;
@@ -522,7 +520,6 @@ namespace Picking
 	{
 		//Boxes sliding of a static plane oriented at an angle.
 		Clear();
-		PhysicsManager::Instance()->gravity = Vector3(0.f, -9.f, 0.f);
 		Object* plane = Scene::Instance()->addPhysicObject("fatplane", Vector3(0.f, -20.f, 0.f));
 		plane->SetMass(FLT_MAX);
 		plane->radius = 50.f;
@@ -560,8 +557,8 @@ namespace Picking
 	{
 		for (auto& obj : Scene::Instance()->objectsToRender)
 		{
-			Vector3 dir = obj.second->GetPosition() - Vector3(0.f, 0.f, 0.f);
-			obj.second->ApplyImpulse(dir*-20.f, obj.second->GetPosition());
+			Vector3 dir = obj.second->GetWorldPosition() - Vector3(0.f, 0.f, 0.f);
+			obj.second->ApplyImpulse(dir*-20.f, obj.second->GetWorldPosition());
 		}
 	}
 

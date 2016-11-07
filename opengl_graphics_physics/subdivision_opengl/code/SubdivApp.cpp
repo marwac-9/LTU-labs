@@ -276,7 +276,7 @@ namespace Subdivision
 		objectsRendered = 0;
 		for (auto& obj : Scene::Instance()->objectsToRender)
 		{
-			if (FrustumManager::Instance()->isBoundingSphereInView(obj.second->GetPosition(), obj.second->radius)) {
+			if (FrustumManager::Instance()->isBoundingSphereInView(obj.second->GetWorldPosition(), obj.second->radius)) {
 				Render::draw(obj.second, ViewProjection, currentShaderID);
 				objectsRendered++;
 			}
