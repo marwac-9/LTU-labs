@@ -24,6 +24,7 @@
 #include "Camera.h"
 #include "Frustum.h"
 #include "Render.h"
+#include "CameraManager.h"
 
 using namespace mwm;
 using namespace Display;
@@ -74,7 +75,7 @@ namespace Picking
 			this->windowMidY = windowHeight / 2.0f;
             this->window->SetSize(this->windowWidth, this->windowHeight);
             float aspect = (float)this->windowWidth / (float)this->windowHeight;
-            this->ProjectionMatrix = Matrix4::OpenGLPersp(45.f, aspect, 0.1f, 100.f);
+			currentCamera->ProjectionMatrix = Matrix4::OpenGLPersp(45.f, aspect, 0.1f, 100.f);
 
 			FBOManager::Instance()->UpdateTextureBuffers(this->windowWidth, this->windowHeight);
 			currentCamera->UpdateSize(width, height);
@@ -123,8 +124,6 @@ namespace Picking
 		
 		LoadScene1();
 
-		float timeStep = 0.016f + timeModifier;
-		float dtInv = 1.f / timeStep;
         // For speed computation (FPS)
 		double lastTime = glfwGetTime();
 
@@ -132,7 +131,7 @@ namespace Picking
 		window->SetCursorPos(windowWidth/2.f, windowHeight/2.f+100); 
 		window->SetCursorMode(GLFW_CURSOR_DISABLED);
 
-		SetUpCamera(timeStep);
+		SetUpCamera();
 
 		double fps_timer = 0;
 		Scene::Instance()->SceneObject->node.UpdateNodeMatrix(Matrix4::identityMatrix());
@@ -142,39 +141,31 @@ namespace Picking
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             this->window->Update();
 
-            // Measure FPS
-            double currentTime = glfwGetTime();
-            double deltaTime = currentTime - lastTime;
+			// Measure FPS
+			Time::currentTime = glfwGetTime();
+			Time::deltaTime = Time::currentTime - lastTime;
 			
 			Monitor(this->window);
 
 			//is cursor window locked
-            if (altButtonToggle)
-            {
-				// Compute the view matrix from keyboard and mouse input
-                currentCamera->Update((float)deltaTime);
-            }
-            ViewMatrix = currentCamera->getViewMatrix();
-			FrustumManager::Instance()->ExtractPlanes(ProjectionMatrix, ViewMatrix);
+			if (altButtonToggle) CameraManager::Instance()->Update();
+			FrustumManager::Instance()->ExtractPlanes(CameraManager::Instance()->ViewProjection);
 			
-			timeStep = 0.016f + timeModifier;
-			dtInv = 1.f / timeStep;
-			if (paused) timeStep = 0.f, dtInv = 0;
+			Time::timeStep = 0.016 + Time::timeModifier;
+			if (Time::timeStep == 0.0) Time::dtInv = 0.0;
+			else Time::dtInv = 1.0 / Time::timeStep;
 
-			if (scene4loaded)
-			{
-				if (currentTime - fps_timer >= 0.2f){
-					Vortex();
-				}
-			}
+			if (paused) Time::timeStep = 0.0, Time::dtInv = 0.0;
+
+			if (scene4loaded) if (Time::currentTime - fps_timer >= 0.2) Vortex();
 			
 			PhysicsManager::Instance()->SortAndSweep();
-			PhysicsManager::Instance()->NarrowTestSAT(dtInv);
+			PhysicsManager::Instance()->NarrowTestSAT((float)Time::dtInv);
 			
-			IntegrateAndUpdateBoxes(timeStep);
+			IntegrateAndUpdateBoxes();
 			Scene::Instance()->SceneObject->node.UpdateNodeMatrix(Matrix4::identityMatrix());
 			
-			PassPickingTexture(ProjectionMatrix, ViewMatrix); //picking
+			PassPickingTexture(); //picking
 			PickingTest();
 
 			DrawDepthPass(); 
@@ -182,20 +173,21 @@ namespace Picking
 			//render to screen
 			//glViewport(0, 0, windowWidth, windowHeight);
 			//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); i clear screen above instead, fbo is cleared inside passes
-			DrawColorDebugPass(ProjectionMatrix, ViewMatrix); // color || debug
+			DrawColorDebugPass(); // color || debug
 			DebugDraw::Instance()->DrawCrossHair(windowWidth, windowHeight);
 			FBOManager::Instance()->DrawShadowMap(windowWidth, windowHeight);
-			if (currentTime - fps_timer >= 0.2f){ 
-				this->window->SetTitle("Objects rendered: " + std::to_string(objectsRendered) + " FPS: " + std::to_string(1.f / deltaTime) + " TimeStep: " + std::to_string(timeStep) + " PickedID: " + std::to_string(pickedID) + (paused ? " PAUSED" : ""));
-				fps_timer = currentTime;
+			if (Time::currentTime - fps_timer >= 0.2){
+				this->window->SetTitle("Objects rendered: " + std::to_string(objectsRendered) + " FPS: " + std::to_string(1.0 / Time::deltaTime) + " TimeStep: " + std::to_string(Time::timeStep) + " PickedID: " + std::to_string(pickedID) + (paused ? " PAUSED" : ""));
+				fps_timer = Time::currentTime;
 			}
             
             this->window->SwapBuffers();
 	    
-			lastTime = currentTime;
+			lastTime = Time::currentTime;
         }
         this->ClearBuffers();
 		GraphicsStorage::ClearMaterials();
+		GraphicsStorage::ClearOBJs();
         this->window->Close();
     }
 
@@ -335,7 +327,7 @@ namespace Picking
 			}
 			else if (key == GLFW_KEY_T)
 			{
-				timeModifier = 0.f;
+				Time::timeModifier = 0.0;
 			}
 			else if (key == GLFW_KEY_F5)
 			{
@@ -353,8 +345,8 @@ namespace Picking
     void
     PickingApp::Monitor(Display::Window* window)
     {
-		if (window->GetKey(GLFW_KEY_KP_ADD) == GLFW_PRESS) timeModifier += 0.0005f;
-		if (window->GetKey(GLFW_KEY_KP_SUBTRACT) == GLFW_PRESS) timeModifier -= 0.0005f;
+		if (window->GetKey(GLFW_KEY_KP_ADD) == GLFW_PRESS) Time::timeModifier += 0.0005;
+		if (window->GetKey(GLFW_KEY_KP_SUBTRACT) == GLFW_PRESS) Time::timeModifier -= 0.0005;
 		if (window->GetKey(GLFW_KEY_UP) == GLFW_PRESS) if (lastPickedObject) lastPickedObject->Translate(Vector3(0.f, 0.05f, 0.f));
 		if (window->GetKey(GLFW_KEY_DOWN) == GLFW_PRESS) if (lastPickedObject) lastPickedObject->Translate(Vector3(0.f, -0.05f, 0.f));
 		if (window->GetKey(GLFW_KEY_LEFT) == GLFW_PRESS) if (lastPickedObject) lastPickedObject->Translate(Vector3(0.05f, 0.f, 0.f));
@@ -396,7 +388,7 @@ namespace Picking
 	}
 
     void
-	PickingApp::DrawColorDebugPass(const Matrix4& Projection, const Matrix4& View)
+	PickingApp::DrawColorDebugPass()
     {
 		//we set shadowMap for color shader only once for all objects
 		ShaderManager::Instance()->SetCurrentShader(ShaderManager::Instance()->shaderIDs["color"]);
@@ -409,21 +401,21 @@ namespace Picking
 		if (debug)
 		{
 			ShaderManager::Instance()->SetCurrentShader(ShaderManager::Instance()->shaderIDs["color"]);
-			Draw(Projection, View);
+			Draw();
 			ShaderManager::Instance()->SetCurrentShader(ShaderManager::Instance()->shaderIDs["wireframe"]);
-			DrawDebug(Projection, View);
+			DrawDebug();
 		}
 		else
 		{
 			ShaderManager::Instance()->SetCurrentShader(ShaderManager::Instance()->shaderIDs["color"]);
-			Draw(Projection, View);
+			Draw();
 		}
 		glActiveTexture(GL_TEXTURE1);
 		glBindTexture(GL_TEXTURE_2D, 0);
     }
 
     void
-    PickingApp::PassPickingTexture(const Matrix4& Projection, const Matrix4& View)
+    PickingApp::PassPickingTexture()
     {
 		
 		FBOManager::Instance()->BindFrameBuffer(draw);
@@ -431,7 +423,7 @@ namespace Picking
 		glDrawBuffers(2, DrawBuffers);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		ShaderManager::Instance()->SetCurrentShader(ShaderManager::Instance()->shaderIDs["picking"]);
-		Draw(Projection, View);
+		Draw();
 		FBOManager::Instance()->UnbindFrameBuffer(draw);
     }
 
@@ -464,8 +456,8 @@ namespace Picking
 				FBOManager::Instance()->ReadWorldPos((unsigned int)leftMouseX, this->windowHeight - (unsigned int)leftMouseY, world_position.vect);
 				//Vector3 mouseInWorld = ConvertMousePosToWorld();
 
-				Vector3 impulse = (world_position - currentCamera->GetPosition()).vectNormalize();
-				this->lastPickedObject->ApplyImpulse(impulse, 20.f, world_position);
+				Vector3 impulse = (world_position - currentCamera->GetPosition2()).vectNormalize();
+				if (RigidBody* body = this->lastPickedObject->GetComponent<RigidBody>()) body->ApplyImpulse(impulse, 20.f, world_position);
 			}
         }
     }
@@ -480,9 +472,9 @@ namespace Picking
 		mouse_p0s[1] = (((float)windowHeight - (float)y) / windowHeight)*2.f - 1.f;
 		mouse_p0s[2] = -1.f;
 		mouse_p0s[3] = 1.f;
-
-		Vector4 my_mouse_in_world_space = this->ProjectionMatrix.inverse() * mouse_p0s;
-		my_mouse_in_world_space = this->ViewMatrix.inverse() * my_mouse_in_world_space;
+		
+		Vector4 my_mouse_in_world_space = currentCamera->ProjectionMatrix.inverse() * mouse_p0s;
+		my_mouse_in_world_space = currentCamera->getViewMatrix().inverse() * my_mouse_in_world_space;
 		my_mouse_in_world_space = my_mouse_in_world_space / my_mouse_in_world_space[3];
 
 		Vector3 my_mouse_in_world_space_vec3(my_mouse_in_world_space[0], my_mouse_in_world_space[1], my_mouse_in_world_space[2]);
@@ -514,16 +506,12 @@ namespace Picking
         this->window->GetWindowSize(&this->windowWidth, &this->windowHeight);
 		windowMidX = windowWidth / 2.0f;
 		windowMidY = windowHeight / 2.0f;
-        ProjectionMatrix = Matrix4::OpenGLPersp(45.0f, (float)this->windowWidth / (float)this->windowHeight, 0.1f, 200.0f);
-		DebugDraw::Instance()->Projection = &ProjectionMatrix;
-		DebugDraw::Instance()->View = &ViewMatrix;
     }
 
     void
-	PickingApp::Draw(const Matrix4& ProjectionMatrix, const Matrix4& ViewMatrix)
+	PickingApp::Draw()
     {
-		Matrix4 ViewProjection = ViewMatrix*ProjectionMatrix;
-		Matrix4F View = ViewMatrix.toFloat();
+		Matrix4F View = currentCamera->getViewMatrix().toFloat();
 		GLuint currentShaderID = ShaderManager::Instance()->GetCurrentShaderID();
 		GLuint ViewMatrixHandle = glGetUniformLocation(currentShaderID, "V");
 		glUniformMatrix4fv(ViewMatrixHandle, 1, GL_FALSE, &View[0][0]);
@@ -532,7 +520,7 @@ namespace Picking
 		for (auto& obj : Scene::Instance()->objectsToRender)
 		{
 			if (FrustumManager::Instance()->isBoundingSphereInView(obj.second->GetWorldPosition(), obj.second->radius)) {
-				Render::draw(obj.second, ViewProjection, currentShaderID);
+				Render::draw(obj.second, CameraManager::Instance()->ViewProjection, currentShaderID);
 				objectsRendered++;
 			}
 		}
@@ -551,34 +539,35 @@ namespace Picking
 	}
 
 	void
-	PickingApp::DrawDebug(const Matrix4& ProjectionMatrix, const Matrix4& ViewMatrix)
+	PickingApp::DrawDebug()
 	{
 		GLuint wireframeShader = ShaderManager::Instance()->shaderIDs["wireframe"];
 		for (auto& obj : PhysicsManager::Instance()->satOverlaps)
 		{
-			obj.ent1->aabb.color = Vector3(1.f, 0.f, 0.f);
-			obj.ent2->aabb.color = Vector3(1.f, 0.f, 0.f);
+			obj.rbody1->aabb.color = Vector3(1.f, 0.f, 0.f);
+			obj.rbody2->aabb.color = Vector3(1.f, 0.f, 0.f);
 		}
 		for (auto& obj : Scene::Instance()->objectsToRender)
 		{
 			if (FrustumManager::Instance()->isBoundingSphereInView(obj.second->GetWorldPosition(), obj.second->radius))
 			{
-				boundingBox->mat->SetColor(obj.second->obb.color);
-				boundingBox->Draw(Matrix4::scale(obj.second->GetMeshDimensions())*obj.second->node.TopDownTransform, ViewMatrix, ProjectionMatrix, wireframeShader);
-				boundingBox->mat->SetColor(obj.second->aabb.color);
-				boundingBox->Draw(obj.second->aabb.model, ViewMatrix, ProjectionMatrix, wireframeShader);
+				if (RigidBody* body = obj.second->GetComponent<RigidBody>())
+				{
+					boundingBox->mat->SetColor(body->obb.color);
+					boundingBox->Draw(Matrix4::scale(obj.second->GetMeshDimensions())*obj.second->node.TopDownTransform, currentCamera->getViewMatrix(), currentCamera->ProjectionMatrix, wireframeShader);
+					boundingBox->mat->SetColor(body->aabb.color);
+					boundingBox->Draw(body->aabb.model, currentCamera->getViewMatrix(), currentCamera->ProjectionMatrix, wireframeShader);
+				}
 			}
 		}
 	}
 
     void 
-	PickingApp::IntegrateAndUpdateBoxes(float timestep)
+	PickingApp::IntegrateAndUpdateBoxes()
     {
-		for(auto& obj : Scene::Instance()->objectsToRender)
+		for (auto& obj : Scene::Instance()->objectsToRender)
 		{
-			obj.second->IntegrateRunge(timestep, PhysicsManager::Instance()->gravity);
-			obj.second->UpdateBoundingBoxes(DebugDraw::Instance()->boundingBox);
-			obj.second->UpdateInertiaTensor();
+			obj.second->Update();
 		}
     }
 
@@ -589,16 +578,17 @@ namespace Picking
 		Clear();
 
 		Object* plane = Scene::Instance()->addPhysicObject("cube", Vector3(0.f, -10.f, 0.f));
+		RigidBody* body = plane->GetComponent<RigidBody>();
 		plane->SetScale(Vector3(25.f, 2.f, 25.f));
-		plane->SetMass(FLT_MAX);
-		plane->radius = 50.f;
-		plane->isKinematic = true;
+		body->SetMass(FLT_MAX);
+		body->isKinematic = true;
 
 		Object* plank = Scene::Instance()->addPhysicObject("cube", plane->GetLocalPosition() + Vector3(0.f, 10.f, 0.f));
 		plank->SetScale(Vector3(3.f, 0.5f, 1.f));
 		Object* cube = Scene::Instance()->addPhysicObject("cube", plane->GetLocalPosition() + Vector3(0.f, 3.f, 0.f));
-		cube->isKinematic = true;
-		cube->SetMass(FLT_MAX);	
+		body = cube->GetComponent<RigidBody>();
+		body->isKinematic = true;
+		body->SetMass(FLT_MAX);
 	}
 
 	void 
@@ -608,10 +598,10 @@ namespace Picking
 		Clear();
 
 		Object* plane = Scene::Instance()->addPhysicObject("cube", Vector3(0.f, -10.f, 0.f));
+		RigidBody* body = plane->GetComponent<RigidBody>();
 		plane->SetScale(Vector3(25.f, 2.f, 25.f));
-		plane->SetMass(FLT_MAX);
-		plane->radius = 50.f;
-		plane->isKinematic = true;
+		body->SetMass(FLT_MAX);
+		body->isKinematic = true;
 
 		for (int i = 0; i < 10; i++)
 		{
@@ -627,10 +617,10 @@ namespace Picking
 		Clear();
 
 		Object* plane = Scene::Instance()->addPhysicObject("cube", Vector3(0.f, -20.f, 0.f));
+		RigidBody* body = plane->GetComponent<RigidBody>();
 		plane->SetScale(Vector3(25.f, 2.f, 25.f));
-		plane->SetMass(FLT_MAX);
-		plane->radius = 50.f;
-		plane->isKinematic = true;
+		body->SetMass(FLT_MAX);
+		body->isKinematic = true;
 		plane->SetOrientation(Quaternion(0.7f, Vector3(0.f, 0.f, 1.f)));
 		
 		Scene::Instance()->addRandomlyPhysicObjects("cube", 50);
@@ -650,9 +640,7 @@ namespace Picking
 		Clear();
 		for (int i = 0; i < 700; i++)
 		{
-			Object* sphere = Scene::Instance()->addRandomlyObject("sphere", Scene::Instance()->generateRandomIntervallVectorCubic(-20,20));
-			sphere->SetMass(FLT_MAX);
-			sphere->isKinematic = true;
+			Object* sphere = Scene::Instance()->addObject("sphere", Scene::Instance()->generateRandomIntervallVectorCubic(-20,20));
 		}
 	}
 
@@ -669,8 +657,11 @@ namespace Picking
 	{
 		for (auto& obj : Scene::Instance()->objectsToRender)
 		{
-			Vector3 dir = obj.second->GetWorldPosition() - Vector3(0.f,0.f,0.f);
-			obj.second->ApplyImpulse(dir*-20.f, obj.second->GetWorldPosition());
+			if (RigidBody* body = obj.second->GetComponent<RigidBody>())
+			{
+				Vector3 dir = obj.second->GetWorldPosition() - Vector3(0.f, 0.f, 0.f);
+				body->ApplyImpulse(dir*-20.f, obj.second->GetWorldPosition());
+			}
 		}
 	}
 
@@ -685,11 +676,16 @@ namespace Picking
 	}
 
 	void
-	PickingApp::SetUpCamera(float timeStep)
+	PickingApp::SetUpCamera()
 	{
 		currentCamera = new Camera(Vector3(0.f, -3.f, 26.f), windowWidth, windowHeight);
-		currentCamera->Update(timeStep);
+		currentCamera->Update((float)Time::timeStep);
 		window->SetCursorPos(windowMidX, windowMidY);
+		CameraManager::Instance()->AddCamera("default", currentCamera);
+		CameraManager::Instance()->SetCurrentCamera("default");
+		currentCamera->ProjectionMatrix = Matrix4::OpenGLPersp(45.0f, (float)this->windowWidth / (float)this->windowHeight, 0.1f, 200.0f);
+		DebugDraw::Instance()->Projection = &currentCamera->ProjectionMatrix;
+		DebugDraw::Instance()->View = &currentCamera->getViewMatrix();
 	}
 
 	void

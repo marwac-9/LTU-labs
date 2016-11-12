@@ -26,19 +26,19 @@ namespace Picking
 
 	private:
 		void Clear();
-		void DrawPass2(const mwm::Matrix4& ProjectionMatrix, const mwm::Matrix4& ViewMatrix);
-		void PassPickingTexture(const mwm::Matrix4& ProjectionMatrix, const mwm::Matrix4& ViewMatrix);
+		void DrawPass2();
+		void PassPickingTexture();
         void PickingTest();
 
-		void Draw(const mwm::Matrix4& ProjectionMatrix, const mwm::Matrix4& ViewMatrix);
-		void DrawDebug(const mwm::Matrix4& ProjectionMatrix, const mwm::Matrix4& ViewMatrix);
-		void IntegrateAndUpdateBoxes(float timestep);
+		void Draw();
+		void DrawDebug();
+		void IntegrateAndUpdateBoxes();
         void InitGL();
         void ClearBuffers();
         void KeyCallback(int key, int scancode, int action, int mods);
 		void MouseCallback(double mouseX, double mouseY);
 		void Monitor(Display::Window* window);
-		void SetUpCamera(float timeStep);
+		void SetUpCamera();
 		mwm::Vector3 ConvertMousePosToWorld();
 		void LoadScene1();
 		void LoadScene2();
@@ -59,7 +59,6 @@ namespace Picking
 
         bool altButtonToggle = true;
         //camera type 1 == fps, 2 == tps 3 == monitoring camera
-        int cameraMode = 2;
 
         bool running = false;
 		bool debug = true;
@@ -73,11 +72,8 @@ namespace Picking
 		float windowMidX;
 		float windowMidY;
 
-		mwm::Matrix4 ProjectionMatrix;
-		mwm::Matrix4 ViewMatrix;
 		Camera* currentCamera;
         Object* lastPickedObject = nullptr;
-		float timeModifier = 0.f;
 		int objectsRendered = 0;
 		unsigned int pickedID = 0;
 		BoundingBox* boundingBox;

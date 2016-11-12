@@ -24,6 +24,7 @@
 #include "Camera.h"
 #include "Frustum.h"
 #include "Render.h"
+#include "CameraManager.h"
 
 using namespace mwm;
 using namespace Display;
@@ -75,8 +76,7 @@ namespace Subdivision
 			this->windowMidY = windowHeight / 2.0f;
 			this->window->SetSize(this->windowWidth, this->windowHeight);
 			float aspect = (float)this->windowWidth / (float)this->windowHeight;
-			this->ProjectionMatrix = Matrix4::OpenGLPersp(45.f, aspect, 0.1f, 100.f);
-
+			currentCamera->ProjectionMatrix = Matrix4::OpenGLPersp(45.f, aspect, 0.1f, 100.f);
 			currentCamera->UpdateSize(width, height);
 		});
 
@@ -109,7 +109,7 @@ namespace Subdivision
 		window->SetCursorPos(windowMidX, windowMidY + 100);
 		window->SetCursorMode(GLFW_CURSOR_DISABLED);
 
-		SetUpCamera(0.016f);
+		SetUpCamera();
 
 		double fps_timer = 0;
 
@@ -124,36 +124,32 @@ namespace Subdivision
 			this->window->Update();
 
 			// Measure FPS
-			double currentTime = glfwGetTime();
-			double deltaTime = currentTime - lastTime;
+			Time::currentTime = glfwGetTime();
+			Time::deltaTime = Time::currentTime - lastTime;
 
 			Monitor(this->window);
 
 			//is cursor window locked
-			if (altButtonToggle)
-			{
-				// Compute the view matrix from keyboard and mouse input
-				currentCamera->Update((float)deltaTime);
-			}
-			ViewMatrix = currentCamera->getViewMatrix();
-			FrustumManager::Instance()->ExtractPlanes(ProjectionMatrix, ViewMatrix);
+			if (altButtonToggle) CameraManager::Instance()->Update();
+			FrustumManager::Instance()->ExtractPlanes(CameraManager::Instance()->ViewProjection);
 			
 
 			Scene::Instance()->SceneObject->node.UpdateNodeMatrix(Matrix4::identityMatrix());
 
-			Draw(ProjectionMatrix, ViewMatrix);
+			Draw();
 
-			if (currentTime - fps_timer >= 0.2f){
-				this->window->SetTitle("Objects rendered: " + std::to_string(objectsRendered) + " FPS: " + std::to_string(1.f / deltaTime));
-				fps_timer = currentTime;
+			if (Time::currentTime - fps_timer >= 0.2){
+				this->window->SetTitle("Objects rendered: " + std::to_string(objectsRendered) + " FPS: " + std::to_string(1.0 / Time::deltaTime));
+				fps_timer = Time::currentTime;
 			}
 
 			this->window->SwapBuffers();
 
-			lastTime = currentTime;
+			lastTime = Time::currentTime;
 		}
 		this->ClearBuffers();
 		GraphicsStorage::ClearMaterials();
+		GraphicsStorage::ClearOBJs();
 		this->window->Close();
 	}
 
@@ -261,14 +257,12 @@ namespace Subdivision
 		this->window->GetWindowSize(&this->windowWidth, &this->windowHeight);
 		windowMidX = windowWidth / 2.0f;
 		windowMidY = windowHeight / 2.0f;
-		ProjectionMatrix = Matrix4::OpenGLPersp(45.0f, (float)this->windowWidth / (float)this->windowHeight, 0.1f, 200.0f);
 	}
 
 	void
-	SubdivisionApp::Draw(const Matrix4& ProjectionMatrix, const Matrix4& ViewMatrix)
+	SubdivisionApp::Draw()
 	{
-		Matrix4 ViewProjection = ViewMatrix*ProjectionMatrix;
-		Matrix4F View = ViewMatrix.toFloat();
+		Matrix4F View = currentCamera->getViewMatrix().toFloat();
 		GLuint currentShaderID = ShaderManager::Instance()->GetCurrentShaderID();
 		GLuint ViewMatrixHandle = glGetUniformLocation(currentShaderID, "V");
 		glUniformMatrix4fv(ViewMatrixHandle, 1, GL_FALSE, &View[0][0]);
@@ -277,7 +271,7 @@ namespace Subdivision
 		for (auto& obj : Scene::Instance()->objectsToRender)
 		{
 			if (FrustumManager::Instance()->isBoundingSphereInView(obj.second->GetWorldPosition(), obj.second->radius)) {
-				Render::draw(obj.second, ViewProjection, currentShaderID);
+				Render::draw(obj.second, CameraManager::Instance()->ViewProjection, currentShaderID);
 				objectsRendered++;
 			}
 		}
@@ -352,7 +346,6 @@ namespace Subdivision
 		HalfMesh->AssignMaterial(GraphicsStorage::materials[0]);
 		HalfMesh->SetScale(Vector3(4.0f, 4.0f, 4.0f));
 		HalfMesh->mat->SetAmbientIntensity(0.5f);
-		HalfMesh->setRadius(4);
 
 		Object* HalfMeshProxy = Scene::Instance()->addChild(HalfMesh);
 
@@ -362,7 +355,6 @@ namespace Subdivision
 
 		HalfMeshProxy->AssignMesh(proxyMesh);
 		HalfMeshProxy->AssignMaterial(GraphicsStorage::materials[0]);
-		HalfMeshProxy->setRadius(4);
 		printf("\nDONE\n");
 
 		for (int i = 0; i < 5; i++)
@@ -391,11 +383,16 @@ namespace Subdivision
 	}
 
 	void
-	SubdivisionApp::SetUpCamera(float timeStep)
+	SubdivisionApp::SetUpCamera()
 	{
 		currentCamera = new Camera(Vector3(0.f, 3.f, 16.f), windowWidth, windowHeight);
-		currentCamera->Update(timeStep);
+		currentCamera->Update((float)Time::timeStep);
 		window->SetCursorPos(windowMidX, windowMidY);
+		CameraManager::Instance()->AddCamera("default", currentCamera);
+		CameraManager::Instance()->SetCurrentCamera("default");
+		currentCamera->ProjectionMatrix = Matrix4::OpenGLPersp(45.0f, (float)this->windowWidth / (float)this->windowHeight, 0.1f, 200.0f);
+		DebugDraw::Instance()->Projection = &currentCamera->ProjectionMatrix;
+		DebugDraw::Instance()->View = &currentCamera->getViewMatrix();
 	}
 
 	void

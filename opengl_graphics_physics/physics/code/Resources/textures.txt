@@ -1,6 +1,6 @@
-Resources/textures/uvmap_2.dds 0
-Resources/textures/sun.dds 2 
-Resources/textures/mercury.dds 2
-Resources/textures/venus.dds 2
-Resources/textures/earth.dds 2
-Resources/textures/moon.dds 2
+Resources/textures/uvmap_2.dds
+Resources/textures/sun.dds
+Resources/textures/mercury.dds
+Resources/textures/venus.dds
+Resources/textures/earth.dds
+Resources/textures/moon.dds

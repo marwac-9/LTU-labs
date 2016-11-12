@@ -26,23 +26,23 @@ namespace Picking
     private:
 		void Clear();
 
-		void DrawColorDebugPass(const mwm::Matrix4& ProjectionMatrix, const mwm::Matrix4& ViewMatrix);
+		void DrawColorDebugPass();
 
-		void Draw(const mwm::Matrix4& ProjectionMatrix, const mwm::Matrix4& ViewMatrix);
-		void DrawDebug(const mwm::Matrix4& ProjectionMatrix, const mwm::Matrix4& ViewMatrix);
+		void Draw();
+		void DrawDebug();
 		void DrawDepth(const mwm::Matrix4& ProjectionMatrix, const mwm::Matrix4& ViewMatrix);
-		void PassPickingTexture(const mwm::Matrix4& ProjectionMatrix, const mwm::Matrix4& ViewMatrix);
+		void PassPickingTexture();
         void PickingTest();
 		
 		void DrawDepthPass();
 		void BlurShadowMap();
-		void IntegrateAndUpdateBoxes(float timestep);
+		void IntegrateAndUpdateBoxes();
         void InitGL();
         void ClearBuffers();
         void KeyCallback(int key, int scancode, int action, int mods);
 		void MouseCallback(double mouseX, double mouseY);
 		void Monitor(Display::Window* window);
-		void SetUpCamera(float timeStep);
+		void SetUpCamera();
 		mwm::Vector3 ConvertMousePosToWorld();
 		void LoadScene1();
 		void LoadScene2();
@@ -68,11 +68,8 @@ namespace Picking
 		float windowMidX;
 		float windowMidY;
 
-		mwm::Matrix4 ProjectionMatrix;
-		mwm::Matrix4 ViewMatrix;
 		Camera* currentCamera;
         Object* lastPickedObject = nullptr;
-		float timeModifier = 0.f;
 		int objectsRendered = 0;
 		unsigned int pickedID = 0;
 		BoundingBox* boundingBox;

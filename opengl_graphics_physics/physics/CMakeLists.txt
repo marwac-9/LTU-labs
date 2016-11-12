@@ -27,7 +27,7 @@ SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/bin")
 
 ADD_EXECUTABLE(physics ${ALLSRCS})
 SET_TARGET_PROPERTIES(physics PROPERTIES FOLDER "LABS")
-TARGET_LINK_LIBRARIES(physics camera frustum shader_manager graphics_manager scene gl_window app)
+TARGET_LINK_LIBRARIES(physics camera frustum shader_manager graphics_manager scene gl_window app time camera_manager)
 #ADD_DEPENDENCIES(physics mymathlib stb core render)
 
 

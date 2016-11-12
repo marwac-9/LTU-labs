@@ -31,13 +31,13 @@ namespace Subdivision
 		void Clear();
 		void ClearSubdivisionData();
 
-		void Draw(const mwm::Matrix4& ProjectionMatrix, const mwm::Matrix4& ViewMatrix);
+		void Draw();
 		void InitGL();
 		void ClearBuffers();
 		void KeyCallback(int key, int scancode, int action, int mods);
 		void MouseCallback(double mouseX, double mouseY);
 		void Monitor(Display::Window* window);
-		void SetUpCamera(float timeStep);
+		void SetUpCamera();
 		void LoadScene1();
 		void LoadScene2();
 		void LoadScene3();
@@ -55,8 +55,6 @@ namespace Subdivision
 		float windowMidX;
 		float windowMidY;
 
-		mwm::Matrix4 ProjectionMatrix;
-		mwm::Matrix4 ViewMatrix;
 		Camera* currentCamera;
 
 		int objectsRendered = 0;

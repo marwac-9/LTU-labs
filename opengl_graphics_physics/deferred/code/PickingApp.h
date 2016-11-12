@@ -4,7 +4,9 @@
 #include "app.h"
 #include "gl_window.h"
 #include "MyMathLib.h"
+#include <vector>
 
+class ParticleSystem;
 class BoundingBox;
 class Object;
 class Camera;
@@ -34,30 +36,30 @@ namespace Picking
     private:
 		void Clear();
 
-		void Draw(const mwm::Matrix4& ProjectionMatrix, const mwm::Matrix4& ViewMatrix);
-		void DrawDebug(const mwm::Matrix4& ProjectionMatrix, const mwm::Matrix4& ViewMatrix);
+		void Draw();
+		void DrawDebug();
 
-		void PassPickingTexture(const mwm::Matrix4& ProjectionMatrix, const mwm::Matrix4& ViewMatrix);
+		void PassPickingTexture();
         void PickingTest();
 
-		void DrawGeometryPass(const mwm::Matrix4& ProjectionMatrix, const mwm::Matrix4& ViewMatrix);
+		void DrawGeometryPass();
 
-		void DrawLightPass(const mwm::Matrix4& ProjectionMatrix, const mwm::Matrix4& ViewMatrix, const mwm::Vector3& camPos);
-		void DrawPointLights(const mwm::Matrix4& ViewProjection);
+		void DrawLightPass();
+		void DrawPointLights();
 		void DrawDirectionalLights();
-		void StencilPass(Object* pointLight, const mwm::Matrix4& ViewProjection);
-		void PointLightPass(Object* pointLight, const mwm::Matrix4& ViewProjection);
+		void StencilPass(Object* pointLight);
+		void PointLightPass(Object* pointLight);
 		void BlitToScreenPass();
 		void FireLightProjectile();
 
-		void IntegrateAndUpdateBoxes(float timestep);
-		void IntegrateLights(float timestep);
+		void IntegrateAndUpdateBoxes();
+		void IntegrateLights();
         void InitGL();
         void ClearBuffers();
         void KeyCallback(int key, int scancode, int action, int mods);
 		void MouseCallback(double mouseX, double mouseY);
 		void Monitor(Display::Window* window);
-		void SetUpCamera(float timeStep);
+		void SetUpCamera();
 		mwm::Vector3 ConvertMousePosToWorld();
 		void LoadScene1();
 		void LoadScene2();
@@ -67,13 +69,13 @@ namespace Picking
 		void ActivateTextures();
 		void MovePlaneUpNDown();
 		void DisableTextures();
-		void DrawGeometry(const mwm::Matrix4& ProjectionMatrix, const mwm::Matrix4& ViewMatrix);
+		void DrawGeometry();
 		void SpawnSomeLights();
 		void LoadShaders();
 		bool altButtonToggle = true;
         //camera type 1 == fps, 2 == tps 3 == monitoring camera
         int cameraMode = 1;
-
+		Camera* currentCamera;
         bool running = false;
 		bool debug = false;
 		bool paused = false;
@@ -87,12 +89,9 @@ namespace Picking
 		float windowMidY;
 		bool wireframe = false;
 		bool lightsPhysics = false;
-		mwm::Matrix4 ProjectionMatrix;
-		mwm::Matrix4 ViewMatrix;
-		Camera* currentCamera;
+
         Object* lastPickedObject = nullptr;
 		Object* plane = nullptr;
-		float timeModifier = 0.f;
 		int objectsRendered = 0;
 		int lightsRendered = 0;
 		unsigned int pickedID = 0;
@@ -102,6 +101,6 @@ namespace Picking
 		loadedScene currentScene = none;
 		mwm::Vector3 lightInvDir = mwm::Vector3(-1.f, 1.f, 1.f);
 		float planeDir = -1;
-		double timeCounter;
+		std::vector<ParticleSystem*> particleSystems;
 	};
 } // namespace Example

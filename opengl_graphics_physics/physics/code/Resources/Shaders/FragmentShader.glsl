@@ -15,7 +15,7 @@ uniform sampler2D myTextureSampler;
 uniform mat4 MV;
 uniform vec3 LightPosition_worldspace;
 uniform vec4 MaterialProperties;
-uniform vec3 MaterialColorValue;
+uniform vec3 MaterialColor;
 
 
 
@@ -27,7 +27,7 @@ void main(){
 	float LightPower = 1.f;
 	
 	// Material properties
-	vec3 MaterialDiffuseColor = texture2D( myTextureSampler, UV ).rgb + MaterialColorValue;
+	vec3 MaterialDiffuseColor = texture2D(myTextureSampler, UV).rgb + MaterialColor;
 	// Distance to the light
 	float distance = length( LightPosition_worldspace - Position_worldspace );
 
