@@ -20,8 +20,9 @@ Uses 4 textures:
   - glossiness/shininess
 
 ## Key-bindings
-- 1-5 - Changing scenes.
-- **Backspace** - Toggle physics for lights in scene 4
+- 1-3 - Changing scenes.
+- LMB in scene 3 will shoot point lights, remember you can pause with P
+- **Backspace** - Toggle physics for lights in scene 2
 - WASD - Camera movement.
 - LShift - Descend
 - Spacebar - Ascend
