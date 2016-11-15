@@ -33,7 +33,7 @@ SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/bin")
 ADD_EXECUTABLE(ai1_statemachine ${CODE} ${UI})
 
 SET_TARGET_PROPERTIES(ai1_statemachine PROPERTIES FOLDER "LABS")
-TARGET_LINK_LIBRARIES(ai1_statemachine Qt5::Widgets mymathlib dirent)
+TARGET_LINK_LIBRARIES(ai1_statemachine Qt5::Widgets mymathlib dirent vector)
 
 #MESSAGE( STATUS "CMAKE_BINARY_DIR:         " ${FORMS} )
 ADD_CUSTOM_COMMAND(TARGET ai1_statemachine PRE_BUILD

@@ -15,6 +15,7 @@
 #include <vector>
 #include <string>
 #include <list>
+#include "Vector.h"
 
 class HalfEdgeMesh2D;
 
@@ -35,8 +36,8 @@ public slots:
 private:
 	Ui::Ai_Lab2_qtv2Class ui;
 	void addAllTriangles();
-	void drawfaces(const std::vector<Face*> &faces, QColor &color);
-	void drawgoals(const std::vector<Face*> &faces, QColor &color);
+	void drawfaces(const cop4530::Vector<Face*> &faces, QColor &color);
+	void drawgoals(const cop4530::Vector<Face*> &faces, QColor &color);
 	void clearMap();
 	void drawfaces(const std::list<Face*> &faces, QColor &color);
 	void drawPathFaces(const std::vector<Face*>& faces, QColor &color);

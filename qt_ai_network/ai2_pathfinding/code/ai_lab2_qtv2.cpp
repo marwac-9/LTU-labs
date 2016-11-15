@@ -15,6 +15,7 @@
 #include <time.h>
 #include <set>
 
+using namespace cop4530;
 using namespace mwm;
 
 Ai_Lab2_qtv2::Ai_Lab2_qtv2(QWidget *parent)
@@ -66,7 +67,7 @@ Ai_Lab2_qtv2::~Ai_Lab2_qtv2()
 
 void Ai_Lab2_qtv2::addAllTriangles()
 {
-	for (size_t i = 0; i < mesh->faces.size(); i++)
+	for (int i = 0; i < mesh->faces.size(); i++)
 	{
 		Face* curFace = mesh->faces.at(i);
 		QPolygonF polygon = buildPolygon(curFace);
@@ -77,18 +78,18 @@ void Ai_Lab2_qtv2::addAllTriangles()
 	}
 }
 
-void Ai_Lab2_qtv2::drawfaces(const std::vector<Face*> &path, QColor& color)
+void Ai_Lab2_qtv2::drawfaces(const Vector<Face*> &path, QColor& color)
 {
-	for (size_t i = 0; i < path.size(); i++)
+	for (int i = 0; i < path.size(); i++)
 	{
 		QGraphicsPolygonItem* PolygonItem = drawface(path.at(i), color);
 		polygons.push_back(PolygonItem);
 	}
 }
 
-void Ai_Lab2_qtv2::drawgoals(const std::vector<Face*> &path, QColor& color)
+void Ai_Lab2_qtv2::drawgoals(const Vector<Face*> &path, QColor& color)
 {
-	for (size_t i = 0; i < path.size(); i++)
+	for (int i = 0; i < path.size(); i++)
 	{
 		QGraphicsPolygonItem* PolygonItem = drawface(path.at(i), color);
 		goals.push_back(PolygonItem);
@@ -320,12 +321,12 @@ void Ai_Lab2_qtv2::calculateAndDrawPath()
 	QElapsedTimer timer;
 	std::vector<Face*> finalpath;
 	Vector2 goal;
-	std::vector<std::vector<Face*>> paths;
+	Vector<std::vector<Face*>> paths;
 	
 	if (ui.radioAStar->isChecked())
 	{
 		timer.start();
-		for (size_t i = 0; i < mesh->goals.size(); i++)
+		for (int i = 0; i < mesh->goals.size(); i++)
 		{
 			Face* startFace = mesh->findNode(mesh->startFacePos);
 			Face* endFace = mesh->findNode(mesh->goalsPos.at(i));
@@ -338,7 +339,7 @@ void Ai_Lab2_qtv2::calculateAndDrawPath()
 		
 		std::set<Face*> goalsSet;
 		Face* startFace = mesh->findNode(mesh->startFacePos);
-		for (size_t i = 0; i < mesh->goals.size(); i++)
+		for (int i = 0; i < mesh->goals.size(); i++)
 		{
 			Face* endFace = mesh->findNode(mesh->goalsPos.at(i));
 			goalsSet.insert(endFace);
@@ -351,7 +352,7 @@ void Ai_Lab2_qtv2::calculateAndDrawPath()
 	{
 		std::set<Face*> goalsSet;
 		Face* startFace = mesh->findNode(mesh->startFacePos);
-		for (size_t i = 0; i < mesh->goals.size(); i++)
+		for (int i = 0; i < mesh->goals.size(); i++)
 		{
 			Face* endFace = mesh->findNode(mesh->goalsPos.at(i));
 			goalsSet.insert(endFace);
@@ -363,7 +364,7 @@ void Ai_Lab2_qtv2::calculateAndDrawPath()
 	else if (ui.radioDepth->isChecked())
 	{
 		timer.start();
-		for (size_t i = 0; i < mesh->goals.size(); i++)
+		for (int i = 0; i < mesh->goals.size(); i++)
 		{
 			Face* startFace = mesh->findNode(mesh->startFacePos);
 			Face* endFace = mesh->findNode(mesh->goalsPos.at(i));
@@ -374,7 +375,7 @@ void Ai_Lab2_qtv2::calculateAndDrawPath()
 	else if (ui.radioTurnLeft->isChecked())
 	{
 		timer.start();
-		for (size_t i = 0; i < mesh->goals.size(); i++)
+		for (int i = 0; i < mesh->goals.size(); i++)
 		{
 			Face* startFace = mesh->findNode(mesh->startFacePos);
 			Face* endFace = mesh->findNode(mesh->goalsPos.at(i));
@@ -385,7 +386,7 @@ void Ai_Lab2_qtv2::calculateAndDrawPath()
 	else if (ui.radioRandom->isChecked())
 	{
 		timer.start();
-		for (size_t i = 0; i < mesh->goals.size(); i++)
+		for (int i = 0; i < mesh->goals.size(); i++)
 		{
 			Face* startFace = mesh->findNode(mesh->startFacePos);
 			Face* endFace = mesh->findNode(mesh->goalsPos.at(i));
@@ -397,7 +398,7 @@ void Ai_Lab2_qtv2::calculateAndDrawPath()
 	{
 		float mini = 999999999.0f;
 		std::vector<float> lengths;
-		for (size_t i = 0; i < paths.size(); i++)
+		for (int i = 0; i < paths.size(); i++)
 		{
 			float length = calculatePathLength(paths.at(i));
 			lengths.push_back(length);
@@ -411,7 +412,7 @@ void Ai_Lab2_qtv2::calculateAndDrawPath()
 			finalpath = paths.at(index);
 			//we make sure the node at the end of path(which is in the front of the container) is one of the goals and then we assign goal to that node position
 			//needed for dijkstra as it only does one search while others do number of goals searches and return more paths 
-			for (size_t z = 0; z < mesh->goals.size(); z++)
+			for (int z = 0; z < mesh->goals.size(); z++)
 			{
 				Face* goalTest = mesh->findNode(mesh->goalsPos.at(z));
 				if (goalTest == finalpath.front())

@@ -1,5 +1,6 @@
 #pragma once
 #include <vector>
+#include "Vector.h"
 
 class Face;
 class Edge;
@@ -18,5 +19,5 @@ private:
 public:
 	Random(){}
 	~Random(){}
-	std::vector<Face*> RandomSearch(std::vector<Face*>&, Face*, Face*);
+	std::vector<Face*> RandomSearch(cop4530::Vector<Face*>&, Face*, Face*);
 };

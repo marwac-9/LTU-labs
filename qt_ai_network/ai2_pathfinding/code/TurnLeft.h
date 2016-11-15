@@ -1,5 +1,6 @@
 #pragma once
 #include <vector>
+#include "Vector.h"
 
 class Face;
 class Edge;
@@ -18,5 +19,5 @@ private:
 public:
 	TurnLeft(){}
 	~TurnLeft(){}
-	std::vector<Face*> TurnLeftSearch(std::vector<Face*>&, Face*, Face*);
+	std::vector<Face*> TurnLeftSearch(cop4530::Vector<Face*>&, Face*, Face*);
 };

@@ -3,7 +3,9 @@
 #include "Edge.h"
 #include "MyMathLib.h"
 
-std::vector<Face*> TurnLeft::TurnLeftSearch(std::vector<Face*> &allNodes, Face* start, Face* end) {
+using namespace cop4530;
+
+std::vector<Face*> TurnLeft::TurnLeftSearch(Vector<Face*> &allNodes, Face* start, Face* end) {
 
 	visitedNodes = std::vector<Edge*>();
 	Face* currentNode = start;
