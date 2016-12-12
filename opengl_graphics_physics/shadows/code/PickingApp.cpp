@@ -576,7 +576,6 @@ namespace Picking
 		plane->SetScale(Vector3(200.f, 1.f, 200.f));
 		body->SetMass(FLT_MAX);
 		body->isKinematic = true;
-		//plane->mat->SetShininess(1.f);
 		plane->mat->SetSpecularIntensity(1.f);
 
 		Object* plank = Scene::Instance()->addPhysicObject("cube", plane->GetLocalPosition() + Vector3(0.f, 10.f, 0.f));
@@ -587,8 +586,6 @@ namespace Picking
 		body->SetMass(FLT_MAX);
 
 		Object* sphere = Scene::Instance()->addPhysicObject("sphere", plane->GetLocalPosition() + Vector3(0.f, 10.f, 30.f));
-		//sphere->mat->SetShininess(1.f);
-		sphere->mat->SetAmbientIntensity(0.2f);
 		sphere->mat->SetSpecularIntensity(1.f);
 		sphere->SetScale(Vector3(10.f, 10.f, 10.f));
 		body = sphere->GetComponent<RigidBody>();
