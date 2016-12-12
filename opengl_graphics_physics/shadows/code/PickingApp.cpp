@@ -380,12 +380,17 @@ namespace Picking
 	PickingApp::DrawColorDebugPass()
     {
 		//we set shadowMap for color shader only once for all objects
-		ShaderManager::Instance()->SetCurrentShader(ShaderManager::Instance()->shaderIDs["color"]);
-		GLuint ShadowMapHandle = glGetUniformLocation(ShaderManager::Instance()->GetCurrentShaderID(), "shadowMapSampler");
+		GLuint colorShader = ShaderManager::Instance()->shaderIDs["color"];
+		ShaderManager::Instance()->SetCurrentShader(colorShader);
+		GLuint ShadowMapHandle = glGetUniformLocation(colorShader, "shadowMapSampler");
 		//depth texture
 		glActiveTexture(GL_TEXTURE1);
 		glBindTexture(GL_TEXTURE_2D, FBOManager::Instance()->shadowMapHandle);
 		glUniform1i(ShadowMapHandle, 1);
+
+		GLuint CameraPos = glGetUniformLocation(colorShader, "CameraPos");
+		Vector3 camPos = currentCamera->GetPosition2();
+		glUniform3fv(CameraPos, 1, &camPos.x);
 
 		if (debug)
 		{
@@ -568,16 +573,28 @@ namespace Picking
 
 		Object* plane = Scene::Instance()->addPhysicObject("cube", Vector3(0.f, -10.f, 0.f));
 		RigidBody* body = plane->GetComponent<RigidBody>();
-		plane->SetScale(Vector3(25.f, 2.f, 25.f));
+		plane->SetScale(Vector3(200.f, 1.f, 200.f));
 		body->SetMass(FLT_MAX);
 		body->isKinematic = true;
+		//plane->mat->SetShininess(1.f);
+		plane->mat->SetSpecularIntensity(1.f);
 
 		Object* plank = Scene::Instance()->addPhysicObject("cube", plane->GetLocalPosition() + Vector3(0.f, 10.f, 0.f));
 		plank->SetScale(Vector3(3.f, 0.5f, 1.f));
-		Object* cube = Scene::Instance()->addPhysicObject("cube", plane->GetLocalPosition() + Vector3(0.f, 3.f, 0.f));
+		Object* cube = Scene::Instance()->addPhysicObject("cube", plane->GetLocalPosition() + Vector3(0.f, 2.f, 0.f));
 		body = cube->GetComponent<RigidBody>();
 		body->isKinematic = true;
 		body->SetMass(FLT_MAX);
+
+		Object* sphere = Scene::Instance()->addPhysicObject("sphere", plane->GetLocalPosition() + Vector3(0.f, 10.f, 30.f));
+		//sphere->mat->SetShininess(1.f);
+		sphere->mat->SetAmbientIntensity(0.2f);
+		sphere->mat->SetSpecularIntensity(1.f);
+		sphere->SetScale(Vector3(10.f, 10.f, 10.f));
+		body = sphere->GetComponent<RigidBody>();
+		body->isKinematic = true;
+		body->SetMass(FLT_MAX);
+
 	}
 
 	void 
