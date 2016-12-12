@@ -358,7 +358,7 @@ namespace Picking
 		//this projection and view work as directional light
 
 		//left right bottom top near far
-		float left = -40, right = 40, bottom = -40, top = 40, near = -30, far = 40;
+		float left = -100, right = 100, bottom = -100, top = 100, near = -100, far = 200;
 		Matrix4 depthProjectionMatrix = Matrix4::orthographic(near, far, left, right, top, bottom);
 
 		//eye target up
@@ -523,6 +523,8 @@ namespace Picking
 	void
 	PickingApp::DrawDepth(const Matrix4& ProjectionMatrix, const Matrix4& ViewMatrix)
 	{
+		//Matrix4 model = Matrix4::translate(CameraManager::Instance()->GetCurrentCamera()->GetPosition2());
+		//Matrix4 ViewProjection = model*ViewMatrix*ProjectionMatrix;
 		Matrix4 ViewProjection = ViewMatrix*ProjectionMatrix;
 		GLuint currentShaderID = ShaderManager::Instance()->shaderIDs["depth"];
 		ShaderManager::Instance()->SetCurrentShader(currentShaderID);
@@ -591,7 +593,6 @@ namespace Picking
 		body = sphere->GetComponent<RigidBody>();
 		body->isKinematic = true;
 		body->SetMass(FLT_MAX);
-
 	}
 
 	void 
