@@ -238,7 +238,7 @@ namespace Subdivision
 	{
 
 		// grey background
-		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+		glClearColor(0.f, 0.f, 0.f, 1.0f);
 
 		// Enable depth test
 		glEnable(GL_DEPTH_TEST);
@@ -282,6 +282,7 @@ namespace Subdivision
 	{
 		Scene::Instance()->Clear();
 		PhysicsManager::Instance()->Clear();
+		GraphicsStorage::ClearMaterials();
 		ClearSubdivisionData();
 	}
 
@@ -343,8 +344,12 @@ namespace Subdivision
 		newOBJ->CalculateDimensions();
 
 		HalfMesh->AssignMesh(newHMesh);
-		HalfMesh->AssignMaterial(GraphicsStorage::materials[0]);
+		Material* newMaterial = new Material();
+		newMaterial->AssignTexture(GraphicsStorage::textures.at(0));
+		GraphicsStorage::materials.push_back(newMaterial);
+		HalfMesh->AssignMaterial(newMaterial);
 		HalfMesh->SetScale(Vector3(4.0f, 4.0f, 4.0f));
+		HalfMesh->SetPosition(Vector3(0.f, 0.f, -10.f));
 		HalfMesh->mat->SetAmbientIntensity(0.5f);
 
 		Object* HalfMeshProxy = Scene::Instance()->addChild(HalfMesh);
@@ -354,7 +359,11 @@ namespace Subdivision
 		dynamicMeshes.push_back(proxyMesh);
 
 		HalfMeshProxy->AssignMesh(proxyMesh);
-		HalfMeshProxy->AssignMaterial(GraphicsStorage::materials[0]);
+		Material* newMaterialProxy = new Material();
+		newMaterialProxy->SetColor(Vector3(1.f, 0.f, 0.f));
+		newMaterialProxy->AssignTexture(GraphicsStorage::textures.at(0));
+		GraphicsStorage::materials.push_back(newMaterialProxy);
+		HalfMeshProxy->AssignMaterial(newMaterialProxy);
 		printf("\nDONE\n");
 
 		for (int i = 0; i < 5; i++)

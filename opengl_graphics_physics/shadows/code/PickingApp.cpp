@@ -196,43 +196,32 @@ namespace Picking
 	{
 		ShaderManager::Instance()->SetCurrentShader(ShaderManager::Instance()->shaderIDs["blur"]);
 		GLuint scaleUniform = glGetUniformLocation(ShaderManager::Instance()->GetCurrentShaderID(), "scaleUniform");
-		GLuint ShadowMapSamplerHandle = glGetUniformLocation(ShaderManager::Instance()->GetCurrentShaderID(), "shadowMapSampler");
 
 		for (int i = 0; i < 2; i++){
 
 			FBOManager::Instance()->BindBlurFrameBuffer(draw);
-			GLenum DrawBlurBuffers[] = { GL_COLOR_ATTACHMENT0 };
-			glDrawBuffers(1, DrawBlurBuffers);
-			//glViewport(0, 0, 2048, 2048);
+			glDrawBuffer(GL_COLOR_ATTACHMENT0);
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 			glUniform2f(scaleUniform, 1.0f / (float)windowWidth, 0.0f); //horizontally
 
 			//Bind shadow map to be blurred
 			glActiveTexture(GL_TEXTURE0);
 			glBindTexture(GL_TEXTURE_2D, FBOManager::Instance()->shadowMapHandle);
-			glUniform1i(ShadowMapSamplerHandle, 0);
-
-			DebugDraw::Instance()->DrawQuad(); 
-			FBOManager::Instance()->UnbindFrameBuffer(draw);
 			
-
+			DebugDraw::Instance()->DrawQuad(); 
 
 			FBOManager::Instance()->BindFrameBuffer(draw);
-			GLenum DrawShadowBuffers[] = { GL_COLOR_ATTACHMENT2 };
-			glDrawBuffers(1, DrawShadowBuffers);
-			//glViewport(0, 0, 2048, 2048);
+			glDrawBuffer(GL_COLOR_ATTACHMENT2);
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 			glUniform2f(scaleUniform, 0.0f, 1.0f / (float)windowHeight); //vertically
 
 			//Bind shadow map to be blurredblurred
 			glActiveTexture(GL_TEXTURE0);
 			glBindTexture(GL_TEXTURE_2D, FBOManager::Instance()->shadowMapBlurdHandle);
-			glUniform1i(ShadowMapSamplerHandle, 0);
 
 			DebugDraw::Instance()->DrawQuad();
-			FBOManager::Instance()->UnbindFrameBuffer(draw);
-
 		}
+		FBOManager::Instance()->UnbindFrameBuffer(draw);
 	}
 
     void
@@ -486,7 +475,7 @@ namespace Picking
     {
 
         // grey background
-        glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+        glClearColor(0.f, 0.f, 0.f, 1.0f);
 
         // Enable depth test
         glEnable(GL_DEPTH_TEST);
@@ -649,6 +638,7 @@ namespace Picking
 	{
 		Scene::Instance()->Clear();
 		PhysicsManager::Instance()->Clear();
+		GraphicsStorage::ClearMaterials();
 		lastPickedObject = nullptr;
 	}
 

@@ -50,7 +50,6 @@ namespace Picking
 		void StencilPass(Object* pointLight);
 		void PointLightPass(Object* pointLight);
 		void BlitToScreenPass();
-		void FireLightProjectile();
 
 		void IntegrateAndUpdateBoxes();
 		void IntegrateLights();
@@ -101,6 +100,5 @@ namespace Picking
 		loadedScene currentScene = none;
 		mwm::Vector3 lightInvDir = mwm::Vector3(-1.f, 1.f, 1.f);
 		float planeDir = -1;
-		std::vector<ParticleSystem*> particleSystems;
 	};
 } // namespace Example

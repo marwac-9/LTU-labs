@@ -521,6 +521,7 @@ namespace Picking
 	{
 		Scene::Instance()->Clear();
 		PhysicsManager::Instance()->Clear();
+		GraphicsStorage::ClearMaterials();
 		lastPickedObject = nullptr;
 	}
 

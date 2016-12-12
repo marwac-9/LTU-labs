@@ -24,7 +24,6 @@
 #include "Camera.h"
 #include "Frustum.h"
 #include "Render.h"
-#include "ParticleSystem.h"
 #include "RigidBody.h"
 #include "CameraManager.h"
 
@@ -88,7 +87,6 @@ namespace Picking
             if(button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
             {
                 isLeftMouseButtonPressed = true;
-				if(currentScene == scene3Loaded) FireLightProjectile();
             }
             if(button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE)
             {
@@ -201,13 +199,6 @@ namespace Picking
 			DrawLightPass();
 
 			BlitToScreenPass();
-			
-			GLuint particleShader = ShaderManager::Instance()->shaderIDs["particle"];
-			ShaderManager::Instance()->SetCurrentShader(particleShader);
-			for (auto& pSystem : particleSystems)
-			{
-				pSystem->Draw(CameraManager::Instance()->ViewProjection, particleShader, CameraManager::Instance()->up, CameraManager::Instance()->right);
-			}
 
 			if (debug) DrawDebug();
 
@@ -388,13 +379,14 @@ namespace Picking
 				if (std::find(Scene::Instance()->pointLights.begin(), Scene::Instance()->pointLights.end(), lastPickedObject) == Scene::Instance()->pointLights.end()) //if it's not light
 				{
 					lastPickedObject->mat->color = Vector3(0.f, 0.f, 0.f);
+					lastPickedObject->mat->SetDiffuseIntensity(1.f);
 				}
 			}  
 			if(Scene::Instance()->objectsToRender.find(pickedID) != Scene::Instance()->objectsToRender.end())
 			{
 				lastPickedObject = Scene::Instance()->objectsToRender[pickedID];
-				lastPickedObject->mat->color = Vector3(2.f,1.f,0.f);
-			
+				lastPickedObject->mat->color = Vector3(0.5f, 0.25f, 0.f);
+				lastPickedObject->mat->SetDiffuseIntensity(3.f);
 				Vector3 world_position;
 				FBOManager::Instance()->ReadWorldPos((unsigned int)leftMouseX, this->windowHeight - (unsigned int)leftMouseY, world_position.vect);
 				//Vector3 mouseInWorld = ConvertMousePosToWorld();
@@ -429,7 +421,7 @@ namespace Picking
     {
 
         // grey background
-        glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+        glClearColor(0.f, 0.f, 0.f, 1.0f);
 
         // Enable depth test
         glEnable(GL_DEPTH_TEST);
@@ -547,7 +539,8 @@ namespace Picking
 		sphere->mat->shininess = 10.f;
 
 		Object* directionalLight = Scene::Instance()->addDirectionalLight(lightInvDir);
-		directionalLight->mat->SetDiffuseIntensity(0.5f);		
+		directionalLight->mat->SetColor(1.f, 1.f, 1.f);
+		directionalLight->mat->SetDiffuseIntensity(0.5f);
 
 		Object* plane = Scene::Instance()->addObject("cube", Vector3(0.f, -2.5f, 0.f));
 		body = new RigidBody(plane);
@@ -566,7 +559,8 @@ namespace Picking
 		currentCamera->SetPosition(Vector3(0.f, 10.f, 60.f));
 
 		Object* directionalLight = Scene::Instance()->addDirectionalLight(lightInvDir);
-		directionalLight->mat->SetColor(0.2f, 0.2f, 0.2f);
+		directionalLight->mat->SetColor(1.f, 1.f, 1.f);
+		directionalLight->mat->SetDiffuseIntensity(0.5f);
 
 		for (int i = 0; i < 300; i++)
 		{
@@ -591,7 +585,7 @@ namespace Picking
 		currentCamera->SetPosition(Vector3());
 
 		Object* directionalLight = Scene::Instance()->addDirectionalLight(lightInvDir);
-		directionalLight->mat->SetColor(0.2f, 0.2f, 0.2f);
+		directionalLight->mat->SetDiffuseIntensity(0.5f);
 
 		float rS = 1.f;
 		for (int i = 0; i < 500; i++)
@@ -609,29 +603,12 @@ namespace Picking
 		PhysicsManager::Instance()->gravity = Vector3();
 	}
 
-	void PickingApp::FireLightProjectile()
-	{
-		Object* pointLight = Scene::Instance()->addPointLight(currentCamera->GetPosition2()+currentCamera->getDirection()*3.f, Vector3(1.f, 1.f, 0.f));
-		
-		RigidBody* body = new RigidBody(pointLight);
-		pointLight->AddComponent(body);
-		body->SetCanSleep(false);
-		pointLight->SetScale(Vector3(10.f, 10.f, 10.f));
-		body->ApplyImpulse(currentCamera->getDirection()*4000.f, pointLight->GetLocalPosition());
-		
-		ParticleSystem* pSystem = new ParticleSystem(3000, 80);
-		pSystem->SetTexture(GraphicsStorage::textures.back()->TextureID);
-		pointLight->AddComponent(pSystem);
-		particleSystems.push_back(pSystem);
-
-	}
-
 	void 
 	PickingApp::Clear()
 	{
-		particleSystems.clear();
 		Scene::Instance()->Clear();
 		PhysicsManager::Instance()->Clear();
+		GraphicsStorage::ClearMaterials();
 		lastPickedObject = nullptr;
 	}
 
@@ -656,26 +633,28 @@ namespace Picking
 
 	void PickingApp::DrawGeometryPass()
 	{
-		//start frame
-		FBOManager::Instance()->BindGeometryBuffer(draw);
-		glDrawBuffer(GL_COLOR_ATTACHMENT4);
-		glClear(GL_COLOR_BUFFER_BIT);
-
 		//bind for geometry pass
 		FBOManager::Instance()->BindGeometryBuffer(draw);
 
+		glDrawBuffer(GL_COLOR_ATTACHMENT4);
+		glClear(GL_COLOR_BUFFER_BIT);		
+
 		GLenum DrawBuffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3 };
 		glDrawBuffers(4, DrawBuffers);
-		//glViewport(0, 0, 2048, 2048);
+
 		glDepthMask(GL_TRUE);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glEnable(GL_DEPTH_TEST);
+
 		//glDisable(GL_BLEND);
 		ShaderManager::Instance()->SetCurrentShader(ShaderManager::Instance()->shaderIDs["geometry"]);
+
 		DrawGeometry();
+
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, 0);
 		glDepthMask(GL_FALSE);
+
 		//glDisable(GL_DEPTH_TEST);
 		FBOManager::Instance()->UnbindFrameBuffer(draw); //we don't have to unbind we work all the way with the buffer but i prefer to do it anyway and enable when needed
 	}
@@ -918,7 +897,6 @@ namespace Picking
 		ShaderManager::Instance()->AddShader("pointLight", GraphicsManager::LoadShaders("Resources/Shaders/VSPointLight.glsl", "Resources/Shaders/FSPointLight.glsl"));
 		ShaderManager::Instance()->AddShader("directionalLight", GraphicsManager::LoadShaders("Resources/Shaders/VSDirectionalLight.glsl", "Resources/Shaders/FSDirectionalLight.glsl"));
 		ShaderManager::Instance()->AddShader("stencil", GraphicsManager::LoadShaders("Resources/Shaders/VSStencil.glsl", "Resources/Shaders/FSStencil.glsl"));
-		ShaderManager::Instance()->AddShader("particle", GraphicsManager::LoadShaders("Resources/Shaders/VSParticle.glsl", "Resources/Shaders/FSParticle.glsl"));
 	}
 
 	

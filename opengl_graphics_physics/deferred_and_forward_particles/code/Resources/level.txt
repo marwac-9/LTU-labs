@@ -1,0 +1,7 @@
+/objectName, meshID, materialID
+/Sun 4 1
+/Mercury 4 2 
+/Venus 4 3
+/Earth 4 4
+/Moon 4 5
+/SpaceShip 1 0
