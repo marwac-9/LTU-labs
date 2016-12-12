@@ -1,5 +1,7 @@
 
-# Deferred Shading
+# Deferred Shading, HDR, Particles
+This time particles are rendered into the HDR buffer so they are affected by tone mapping.
+Separate Framebuffer for Light and Post rendering.
 
 ## Features
 - directional lights
@@ -7,6 +9,8 @@
 - physics(see physics project for more details)
 - lights treated as objects meaning that physics can be easily applied(to activate press Backspace and switch to scene 4)
 - per-pixel picking
+- particles
+- HDR
 
 ## Implementation
 Uses 4 textures:
