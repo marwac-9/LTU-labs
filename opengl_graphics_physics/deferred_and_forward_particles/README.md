@@ -1,5 +1,6 @@
 
-# Deferred Shading
+# Deferred Shading & Particles
+Mixing Deferred Shading and Forward Rendering
 
 ## Features
 - directional lights
@@ -7,6 +8,7 @@
 - physics(see physics project for more details)
 - lights treated as objects meaning that physics can be easily applied(to activate press Backspace and switch to scene 4)
 - per-pixel picking
+- particles
 
 ## Implementation
 Uses 4 textures:
