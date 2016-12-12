@@ -16,6 +16,9 @@ Each project builds to its own bin folder copying over the required resources so
   - Shadow Mapping
   - Per-pixel picking
   - Geometry Subdivision
+  - Particles
+  - HDR
+  - Bloom
   
 ## Network
   - Socket programming for Windows & Linux
