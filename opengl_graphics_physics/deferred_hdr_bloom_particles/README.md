@@ -1,5 +1,6 @@
 
-# Deferred Shading
+# Deferred Shading, HDR, Bloom, Particles
+Next step: adding Bloom post effect to the mix with HDR rendering.
 
 ## Features
 - directional lights
@@ -7,6 +8,9 @@
 - physics(see physics project for more details)
 - lights treated as objects meaning that physics can be easily applied(to activate press Backspace and switch to scene 4)
 - per-pixel picking
+- particles
+- HDR
+- Bloom
 
 ## Implementation
 Uses 4 textures:
