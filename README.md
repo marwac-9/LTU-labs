@@ -1,5 +1,6 @@
 # LTU-labs
-Almost everything I have bashed on the keyboard the during game development studies at LTU
+Almost everything I have bashed on the keyboard the during game development studies at LTU.  
+I continue working on this repository, refining the code and adding :bangbang:new projects.
 
 Each project builds to its own bin folder copying over the required resources so the working directory has to be set accordingly for each project to run debug.
 
@@ -16,9 +17,9 @@ Each project builds to its own bin folder copying over the required resources so
   - Shadow Mapping
   - Per-pixel picking
   - Geometry Subdivision
-  - Particles
-  - HDR
-  - Bloom
+  - :bangbang:Particles
+  - :bangbang:HDR
+  - :bangbang:Bloom
   
 ## Network
   - Socket programming for Windows & Linux
