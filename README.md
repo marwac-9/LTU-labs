@@ -14,9 +14,11 @@ Each project builds to its own bin folder copying over the required resources so
   
 > ### Graphics
   - Deferred Shading
-  - Shadow Mapping
+  - Shadow Mapping, VSM
   - Per-pixel picking
   - Geometry Subdivision
+  - Scene graph
+  - Math lib
   - ⚠Particles
   - ⚠HDR
   - ⚠Bloom
