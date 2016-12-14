@@ -18,7 +18,7 @@ Each project builds to its own bin folder copying over the required resources so
   - Per-pixel picking
   - Geometry Subdivision
   - Scene graph
-  - Math lib
+  - Double & Single Precision Math lib
   - ⚠Particles
   - ⚠HDR
   - ⚠Bloom
