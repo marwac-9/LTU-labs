@@ -11,6 +11,7 @@ Separate Framebuffer for Light and Post rendering.
 - per-pixel picking
 - particles
 - HDR
+- scene-graph
 
 ## Implementation
 Uses 4 textures:
