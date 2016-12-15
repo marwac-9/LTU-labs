@@ -1,6 +1,6 @@
 
-# Deferred Shading, HDR, Bloom, Particles
-Next step: adding Bloom post effect to the mix with HDR rendering.
+# Deferred Shading, HDR, Bloom, Particles, Scene-Graph
+A project to show off the scene graph.
 
 ## Features
 - directional lights
@@ -11,6 +11,7 @@ Next step: adding Bloom post effect to the mix with HDR rendering.
 - particles
 - HDR
 - Bloom
+- Scene-Graph
 
 ## Implementation
 Uses 4 textures:
