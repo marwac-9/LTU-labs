@@ -9,7 +9,7 @@ Mixing Deferred Shading and Forward Rendering
 - lights treated as objects meaning that physics can be easily applied(to activate press Backspace and switch to scene 4)
 - per-pixel picking
 - particles
-- Scene-Graph
+- scene-graph
 
 ## Implementation
 Uses 4 textures:
