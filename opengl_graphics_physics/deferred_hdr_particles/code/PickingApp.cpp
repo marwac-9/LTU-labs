@@ -630,11 +630,10 @@ namespace Picking
 		}
 
 		Object* plane = Scene::Instance()->addObject("cube");
-		//plane->mat->SetSpecularIntensity(0.5f);
 		plane->SetScale(Vector3(25.f, 0.2f, 25.f));
 		this->plane = plane;
 
-		Object* pointLight = Scene::Instance()->addPointLight(Vector3(0.f, 10.f, 0.f));
+		Object* pointLight = Scene::Instance()->addPointLight(Vector3(0.f, 0.f, 0.f));
 		pointLight->SetScale(Vector3(20.f, 20.f, 20.f));
 		pointLight->mat->SetColor(Vector3(1.f, 0.f, 0.f));
 		pointLight->mat->SetDiffuseIntensity(10.f);

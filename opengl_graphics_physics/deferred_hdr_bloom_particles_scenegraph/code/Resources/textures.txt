@@ -1,0 +1,12 @@
+Resources/textures/uvmap_2.dds
+Resources/textures/sun.dds
+Resources/textures/mercury.dds
+Resources/textures/venus.dds
+Resources/textures/earth.dds
+Resources/textures/moon.dds
+Resources/textures/particle.dds
+Resources/textures/particle2.dds
+Resources/textures/particle3.dds
+Resources/textures/wood.dds
+Resources/textures/particle4.dds
+Resources/textures/particle5.dds

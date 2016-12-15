@@ -3,21 +3,14 @@
 //
 
 #include "PickingApp.h"
-#include <cstring>
-#include <time.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <iostream>
 #include "GraphicsManager.h"
 #include "GraphicsStorage.h"
 #include "Node.h"
 #include "Material.h"
 #include "Mesh.h"
 #include "OBJ.h"
-#include <fstream>
 #include "Scene.h"
 #include "ShaderManager.h"
-#include <string>
 #include "DebugDraw.h"
 #include "PhysicsManager.h"
 #include "FBOManager.h"
@@ -27,6 +20,14 @@
 #include "ParticleSystem.h"
 #include "RigidBody.h"
 #include "CameraManager.h"
+#include <string>
+#include <algorithm>
+#include <cstring>
+#include <stdlib.h>
+#include <stdio.h>
+#include <iostream>
+#include <fstream>
+#include <time.h>
 
 using namespace mwm;
 using namespace Display;
@@ -178,7 +179,7 @@ namespace Picking
 					break;
 				case scene2Loaded:
 					//MovePlaneUpNDown();
-					break;				
+					break;		
 			}
 			
 			PhysicsManager::Instance()->SortAndSweep();
@@ -203,6 +204,8 @@ namespace Picking
 			DrawLightPass();
 
 			DrawParticles();
+
+			DrawLinesToSceneGraphChildren();
 
 			BlurLight();
 
@@ -542,14 +545,6 @@ namespace Picking
 		for(auto& obj : Scene::Instance()->objectsToRender)
 		{
 			obj.second->Update();
-			/*
-			if (RigidBody* body = obj.second->GetComponent<RigidBody>())
-			{
-				body->IntegrateRunge(timestep, PhysicsManager::Instance()->gravity);
-				body->UpdateBoundingBoxes(DebugDraw::Instance()->boundingBox);
-				body->UpdateInertiaTensor();
-			}
-			*/
 		}
     }
 
@@ -617,7 +612,7 @@ namespace Picking
 
 		Object* directionalLight = Scene::Instance()->addDirectionalLight(lightInvDir);
 		directionalLight->mat->SetDiffuseIntensity(0.2f);
-
+		/*
 		for (int i = 0; i < 300; i++)
 		{
 			Object* pointLight = Scene::Instance()->addPointLight(Scene::Instance()->generateRandomIntervallVectorCubic(-20, 20));
@@ -625,23 +620,47 @@ namespace Picking
 			RigidBody* body = new RigidBody(pointLight);
 			pointLight->AddComponent(body);
 		}
-
-		for (int i = 0; i < 300; i++)
+		*/
+		for (int i = 0; i < 30; i++)
 		{
-			Object* sphere = Scene::Instance()->addObject("sphere", Scene::Instance()->generateRandomIntervallVectorCubic(-20, 20));
-			//sphere->mat->SetDiffuseIntensity(10.3f);
+			Vector3 pos = Scene::Instance()->generateRandomIntervallVectorCubic(-100, 100) / 2.f;
+			float len = pos.vectLengthSSE();
+			Object* sphere = Scene::Instance()->addObject("cube", pos);
+			for (int j = 0; j < 7; j++)
+			{
+				Object* child = Scene::Instance()->addChild(sphere);
+				Vector3 childPos = Scene::Instance()->generateRandomIntervallVectorCubic(-len, len) / 4.f;
+				float childLen = childPos.vectLengt();
+				child->SetPosition(childPos);
+				child->AssignMesh(GraphicsStorage::meshes["icosphere"]);
+				Material* newMaterial = new Material();
+				newMaterial->AssignTexture(GraphicsStorage::textures.at(0));
+				GraphicsStorage::materials.push_back(newMaterial);
+				child->AssignMaterial(newMaterial);
+				for (int k = 0; k < 5; k++)
+				{
+					Object* childOfChild = Scene::Instance()->addChild(child);
+					Vector3 childOfChildPos = Scene::Instance()->generateRandomIntervallVectorCubic(-childLen, childLen) / 1.5f;
+					childOfChild->SetPosition(childOfChildPos);
+					childOfChild->AssignMesh(GraphicsStorage::meshes["sphere"]);
+					Material* newMaterial2 = new Material();
+					newMaterial2->AssignTexture(GraphicsStorage::textures.at(0));
+					GraphicsStorage::materials.push_back(newMaterial2);
+					childOfChild->AssignMaterial(newMaterial2);
+				}
+			}
 		}
 
-		Object* plane = Scene::Instance()->addObject("cube");
+		//Object* plane = Scene::Instance()->addObject("cube");
 		//plane->mat->SetSpecularIntensity(0.5f);
-		plane->SetScale(Vector3(25.f, 0.2f, 25.f));
-		this->plane = plane;
+		//plane->SetScale(Vector3(25.f, 0.2f, 25.f));
+		//this->plane = plane;
 
 		Object* pointLight = Scene::Instance()->addPointLight(Vector3(0.f, 0.f, 0.f));
 		pointLight->SetScale(Vector3(20.f, 20.f, 20.f));
 		pointLight->mat->SetColor(Vector3(1.f, 0.f, 0.f));
 		pointLight->mat->SetDiffuseIntensity(10.f);
-
+		
 		ParticleSystem* pSystem = new ParticleSystem(100000, 1000);
 		pSystem->SetTexture(GraphicsStorage::textures[10]->TextureID);
 		pSystem->SetLifeTime(5.0f);
@@ -649,6 +668,7 @@ namespace Picking
 		pointLight->AddComponent(pSystem);
 		particleSystems.push_back(pSystem);
 		lightsPhysics = true;
+		
 	}
 
 	void PickingApp::LoadScene3()
@@ -1110,4 +1130,35 @@ namespace Picking
 		
 		FBOManager::Instance()->UnbindFrameBuffer(draw);
 	}
+
+	void
+	PickingApp::DrawChildren(const Vector3& parentPos, Node* child)
+	{
+		Vector3 childPos = child->TopDownTransform.getPosition();
+		DebugDraw::Instance()->DrawLine(childPos - parentPos, parentPos, 1.f);
+		for (auto& childOfChild : child->children)
+		{
+			DrawChildren(child->TopDownTransform.getPosition(), childOfChild);
+		}
+	}
+
+	void PickingApp::DrawLinesToSceneGraphChildren()
+	{
+		glDepthMask(GL_TRUE);
+		glEnable(GL_DEPTH_TEST);
+		FBOManager::Instance()->BindFrameBuffer(draw, FBOManager::Instance()->lightAndPostFrameBufferHandle); //we bind the lightandposteffect buffer for drawing
+		GLenum DrawBuffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
+		glDrawBuffers(2, DrawBuffers);
+
+		DebugDraw::Instance()->line.mat->SetColor(Vector3(0.f, 1.5f, 1.5f));
+		Vector3 scenePos = Scene::Instance()->SceneObject->GetWorldPosition();
+		for (auto& child : Scene::Instance()->SceneObject->node.children)
+		{
+			DrawChildren(scenePos, child);
+		}
+
+		FBOManager::Instance()->UnbindFrameBuffer(draw);
+		glDepthMask(GL_FALSE);
+	}
+
 } // namespace Example

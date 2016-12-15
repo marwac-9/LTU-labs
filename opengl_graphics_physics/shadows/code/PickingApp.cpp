@@ -363,7 +363,7 @@ namespace Picking
 
 		//eye target up
 		Matrix4 depthViewMatrix = Matrix4::lookAt(lightInvDir, Vector3(0.f, 0.f, 0.f), Vector3(0.f, 1.f, 0.f));
-
+		depthViewMatrix = Matrix4::translate(Vector3(-1.f, 0.f, -1.f)*(CameraManager::Instance()->GetCurrentCamera()->GetPosition2() + Vector3(0.f, -3.f, 26.f)))*depthViewMatrix;
 
 		FBOManager::Instance()->BindFrameBuffer(draw);
 		GLenum DrawBuffers[] = { GL_COLOR_ATTACHMENT2 };
@@ -588,6 +588,34 @@ namespace Picking
 		body->SetMass(FLT_MAX);
 
 		Object* sphere = Scene::Instance()->addPhysicObject("sphere", plane->GetLocalPosition() + Vector3(0.f, 10.f, 30.f));
+		sphere->mat->SetSpecularIntensity(1.f);
+		sphere->SetScale(Vector3(10.f, 10.f, 10.f));
+		body = sphere->GetComponent<RigidBody>();
+		body->isKinematic = true;
+		body->SetMass(FLT_MAX);
+
+		sphere = Scene::Instance()->addPhysicObject("sphere", plane->GetLocalPosition() + Vector3(60.f, 10.f, 60.f));
+		sphere->mat->SetSpecularIntensity(1.f);
+		sphere->SetScale(Vector3(10.f, 10.f, 10.f));
+		body = sphere->GetComponent<RigidBody>();
+		body->isKinematic = true;
+		body->SetMass(FLT_MAX);
+
+		sphere = Scene::Instance()->addPhysicObject("sphere", plane->GetLocalPosition() + Vector3(100.f, 10.f, 0.f));
+		sphere->mat->SetSpecularIntensity(1.f);
+		sphere->SetScale(Vector3(10.f, 10.f, 10.f));
+		body = sphere->GetComponent<RigidBody>();
+		body->isKinematic = true;
+		body->SetMass(FLT_MAX);
+
+		sphere = Scene::Instance()->addPhysicObject("sphere", plane->GetLocalPosition() + Vector3(150.f, 10.f, 0.f));
+		sphere->mat->SetSpecularIntensity(1.f);
+		sphere->SetScale(Vector3(10.f, 10.f, 10.f));
+		body = sphere->GetComponent<RigidBody>();
+		body->isKinematic = true;
+		body->SetMass(FLT_MAX);
+
+		sphere = Scene::Instance()->addPhysicObject("sphere", plane->GetLocalPosition() + Vector3(200.f, 10.f, 0.f));
 		sphere->mat->SetSpecularIntensity(1.f);
 		sphere->SetScale(Vector3(10.f, 10.f, 10.f));
 		body = sphere->GetComponent<RigidBody>();
