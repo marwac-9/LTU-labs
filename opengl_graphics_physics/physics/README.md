@@ -14,6 +14,7 @@ Impulse based physics engine presentation.
 - Unlimited stacking
 - Advanced debug rendering(F5) of: contact points, collision normals, clip planes, active/sleeping objects, collision detection
 - Per-pixel picking
+- Scene-Graph
 
 ## Key-bindings
 - 1-5 - Changing scenes.
