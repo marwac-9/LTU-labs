@@ -11,6 +11,7 @@ Next step: adding Bloom post effect to the mix with HDR rendering.
 - particles
 - HDR
 - Bloom
+- Scene-Graph
 
 ## Implementation
 Uses 4 textures:
