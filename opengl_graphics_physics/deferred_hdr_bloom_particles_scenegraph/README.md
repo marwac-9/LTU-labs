@@ -11,7 +11,7 @@ A project to show off the scene graph.
 - particles
 - HDR
 - Bloom
-- Scene-Graph
+- scene-graph
 
 ## Implementation
 Uses 4 textures:
