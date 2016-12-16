@@ -18,6 +18,7 @@
 #include "Frustum.h"
 #include "Render.h"
 #include "ParticleSystem.h"
+#include "LineSystem.h"
 #include "RigidBody.h"
 #include "CameraManager.h"
 #include <string>
@@ -205,7 +206,33 @@ namespace Picking
 
 			DrawParticles();
 
-			DrawLinesToSceneGraphChildren();
+			DrawFastLines();
+			/*
+			glDepthMask(GL_TRUE);
+			glEnable(GL_DEPTH_TEST);
+			FBOManager::Instance()->BindFrameBuffer(draw, FBOManager::Instance()->lightAndPostFrameBufferHandle); //we bind the lightandposteffect buffer for drawing
+			GLenum DrawBuffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
+			glDrawBuffers(2, DrawBuffers);
+
+			DebugDraw::Instance()->line.mat->SetColor(Vector3(0.f, 1.5f, 1.5f));
+			Vector3 scenePos = Scene::Instance()->SceneObject->GetWorldPosition();
+			for (int i = 0; i < 1500; i++)
+			{
+				DebugDraw::Instance()->DrawLine(Scene::Instance()->generateRandomIntervallVectorCubic(-20, 20), scenePos, 1.f);
+			}
+			*/
+			/*
+			
+			for (auto& child : Scene::Instance()->SceneObject->node.children)
+			{
+				DrawChildren(scenePos, child);
+			}
+			*/
+			/*
+			FBOManager::Instance()->UnbindFrameBuffer(draw);
+			glDepthMask(GL_FALSE);
+			*/
+			//DrawLinesToSceneGraphChildren();
 
 			BlurLight();
 
@@ -612,54 +639,76 @@ namespace Picking
 
 		Object* directionalLight = Scene::Instance()->addDirectionalLight(lightInvDir);
 		directionalLight->mat->SetDiffuseIntensity(0.2f);
-		/*
-		for (int i = 0; i < 300; i++)
-		{
-			Object* pointLight = Scene::Instance()->addPointLight(Scene::Instance()->generateRandomIntervallVectorCubic(-20, 20));
-			pointLight->mat->SetDiffuseIntensity(0.3f);
-			RigidBody* body = new RigidBody(pointLight);
-			pointLight->AddComponent(body);
-		}
-		*/
+
+		Object* pointLight = Scene::Instance()->addPointLight(Vector3(0.f, 0.f, 0.f));
+		pointLight->SetScale(Vector3(20.f, 20.f, 20.f));
+		pointLight->mat->SetColor(Vector3(1.f, 0.f, 0.f));
+		pointLight->mat->SetDiffuseIntensity(10.f);
+
+		LineSystem* lSystem = new LineSystem(2000);
+		lineSystems.push_back(lSystem);
+		pointLight->AddComponent(lSystem);
+
 		for (int i = 0; i < 30; i++)
 		{
-			Vector3 pos = Scene::Instance()->generateRandomIntervallVectorCubic(-100, 100) / 2.f;
+			Vector3 pos = Scene::Instance()->generateRandomIntervallVectorCubic(-100, 100);
 			float len = pos.vectLengthSSE();
 			Object* sphere = Scene::Instance()->addObject("cube", pos);
-			for (int j = 0; j < 7; j++)
+
+			FastLine* line = lineSystems.front()->GetLine();
+			Scene::Instance()->SceneObject->node.addChild(&line->nodeA);
+			sphere->node.addChild(&line->nodeB);
+			line->colorA = Vector4(6.f, 0.f, 0.f, 1.f);
+			line->colorB = Vector4(3.f, 3.f, 0.f, 1.f);
+			line->lifeTime = 1.f;
+
+			for (int j = 0; j < 5; j++)
 			{
+				
 				Object* child = Scene::Instance()->addChild(sphere);
-				Vector3 childPos = Scene::Instance()->generateRandomIntervallVectorCubic(-len, len) / 4.f;
-				float childLen = childPos.vectLengt();
+				Vector3 childPos = Scene::Instance()->generateRandomIntervallVectorCubic(-len, len) / 2.f;
+				float childLen = childPos.vectLengthSSE();
 				child->SetPosition(childPos);
 				child->AssignMesh(GraphicsStorage::meshes["icosphere"]);
 				Material* newMaterial = new Material();
 				newMaterial->AssignTexture(GraphicsStorage::textures.at(0));
 				GraphicsStorage::materials.push_back(newMaterial);
 				child->AssignMaterial(newMaterial);
+
+				FastLine* line = lineSystems.front()->GetLine();
+				sphere->node.addChild(&line->nodeA);
+				child->node.addChild(&line->nodeB);
+				line->colorA = Vector4(1.f, 0.f, 0.f, 1.f);
+				line->colorB = Vector4(0.f, 1.f, 0.f, 1.f);
+				line->lifeTime = 1.f;
+
 				for (int k = 0; k < 5; k++)
 				{
 					Object* childOfChild = Scene::Instance()->addChild(child);
-					Vector3 childOfChildPos = Scene::Instance()->generateRandomIntervallVectorCubic(-childLen, childLen) / 1.5f;
+					Vector3 childOfChildPos = Scene::Instance()->generateRandomIntervallVectorCubic(-childLen, childLen) / 3.f;
 					childOfChild->SetPosition(childOfChildPos);
 					childOfChild->AssignMesh(GraphicsStorage::meshes["sphere"]);
 					Material* newMaterial2 = new Material();
 					newMaterial2->AssignTexture(GraphicsStorage::textures.at(0));
 					GraphicsStorage::materials.push_back(newMaterial2);
 					childOfChild->AssignMaterial(newMaterial2);
+
+					FastLine* line = lineSystems.front()->GetLine();
+					child->node.addChild(&line->nodeA);
+					childOfChild->node.addChild(&line->nodeB);
+					line->colorA = Vector4(6.f, 0.f, 0.f, 1.f);
+					line->colorB = Vector4(0.f, 0.f, 24.f, 1.f);
+					line->lifeTime = 1.f;
 				}
+			
 			}
 		}
+		
 
 		//Object* plane = Scene::Instance()->addObject("cube");
 		//plane->mat->SetSpecularIntensity(0.5f);
 		//plane->SetScale(Vector3(25.f, 0.2f, 25.f));
 		//this->plane = plane;
-
-		Object* pointLight = Scene::Instance()->addPointLight(Vector3(0.f, 0.f, 0.f));
-		pointLight->SetScale(Vector3(20.f, 20.f, 20.f));
-		pointLight->mat->SetColor(Vector3(1.f, 0.f, 0.f));
-		pointLight->mat->SetDiffuseIntensity(10.f);
 		
 		ParticleSystem* pSystem = new ParticleSystem(100000, 1000);
 		pSystem->SetTexture(GraphicsStorage::textures[10]->TextureID);
@@ -667,6 +716,7 @@ namespace Picking
 		pSystem->SetColor(Vector4(1.f, 0.f, 0.f, 0.2f));
 		pointLight->AddComponent(pSystem);
 		particleSystems.push_back(pSystem);
+
 		lightsPhysics = true;
 		
 	}
@@ -674,15 +724,26 @@ namespace Picking
 	void PickingApp::LoadScene3()
 	{
 		Clear();
-		currentCamera->SetPosition(Vector3());
+		currentCamera->SetPosition(Vector3(0.f, 10.f, 60.f));
 
 		Object* directionalLight = Scene::Instance()->addDirectionalLight(lightInvDir);
 		directionalLight->mat->SetDiffuseIntensity(0.2f);
 
+		Object* pointLight = Scene::Instance()->addPointLight(Vector3(0.f, 0.f, 0.f));
+		pointLight->SetScale(Vector3(20.f, 20.f, 20.f));
+		pointLight->mat->SetColor(Vector3(1.f, 0.f, 0.f));
+		pointLight->mat->SetDiffuseIntensity(10.f);
+
+		LineSystem* lSystem = new LineSystem(2000);
+		lineSystems.push_back(lSystem);
+		pointLight->AddComponent(lSystem);
+
 		float rS = 1.f;
-		for (int i = 0; i < 500; i++)
+		for (int i = 0; i < 300; i++)
 		{
-			Object* object = Scene::Instance()->addObject("icosphere", Scene::Instance()->generateRandomIntervallVectorCubic(-80, 80));
+			Vector3 pos = Scene::Instance()->generateRandomIntervallVectorCubic(-80, 80);
+			float len = pos.vectLengthSSE();
+			Object* object = Scene::Instance()->addObject("icosphere", pos);
 			//object->mat->SetDiffuseIntensity(10.3f);
 			RigidBody* body = new RigidBody(object);
 			object->AddComponent(body);
@@ -690,6 +751,13 @@ namespace Picking
 			rS = (float)(rand() % 5) + 1.f;
 			object->SetScale(Vector3(rS, rS, rS));
 			body->SetCanSleep(false);
+
+			FastLine* line = lineSystems.front()->GetLine();
+			Scene::Instance()->SceneObject->node.addChild(&line->nodeA);
+			object->node.addChild(&line->nodeB);
+			line->colorA = Vector4(6.f, 0.f, 0.f, 1.f);
+			line->colorB = Vector4(3.f, 3.f, 0.f, 1.f);
+			line->lifeTime = 1.f;
 		}
 		
 		lightsPhysics = true;
@@ -712,7 +780,7 @@ namespace Picking
 		pointLight->AddComponent(pSystem);
 		pSystem->SetTexture(GraphicsStorage::textures[11]->TextureID);
 		pSystem->SetDirection(Vector3(0.f, 0.f, 0.f));
-		pSystem->SetColor(Vector4(50.f, 0.f, 0.f, 0.4f));
+		pSystem->SetColor(Vector4(50.f, 0.f, 0.f, 0.2f));
 		pSystem->SetSize(0.2f);
 
 		particleSystems.push_back(pSystem);
@@ -723,6 +791,7 @@ namespace Picking
 	PickingApp::Clear()
 	{
 		particleSystems.clear();
+		lineSystems.clear();
 		Scene::Instance()->Clear();
 		PhysicsManager::Instance()->Clear();
 		GraphicsStorage::ClearMaterials();
@@ -1025,6 +1094,7 @@ namespace Picking
 		ShaderManager::Instance()->AddShader("stencil", GraphicsManager::LoadShaders("Resources/Shaders/VSStencil.glsl", "Resources/Shaders/FSStencil.glsl"));
 		ShaderManager::Instance()->AddShader("particle", GraphicsManager::LoadShaders("Resources/Shaders/VSParticle.glsl", "Resources/Shaders/FSParticle.glsl"));
 		ShaderManager::Instance()->AddShader("hdrBloom", GraphicsManager::LoadShaders("Resources/Shaders/VSHDRBloom.glsl", "Resources/Shaders/FSHDRBloom.glsl"));
+		ShaderManager::Instance()->AddShader("fastLine", GraphicsManager::LoadShaders("Resources/Shaders/VSFastLine.glsl", "Resources/Shaders/FSFastLine.glsl"));
 	}
 
 	void PickingApp::DrawHDR()
@@ -1103,7 +1173,7 @@ namespace Picking
 		
 		GLuint scaleUniform = glGetUniformLocation(ShaderManager::Instance()->GetCurrentShaderID(), "scaleUniform");
 
-		for (int i = 0; i < 10; i++){
+		for (int i = 0; i < 5; i++){
 			glBindFramebuffer(GL_DRAW_FRAMEBUFFER, FBOManager::Instance()->blurFrameBufferHandle[1]);
 			glDrawBuffer(GL_COLOR_ATTACHMENT0);
 
@@ -1159,6 +1229,50 @@ namespace Picking
 
 		FBOManager::Instance()->UnbindFrameBuffer(draw);
 		glDepthMask(GL_FALSE);
+	}
+
+	void PickingApp::DrawFastLines()
+	{
+		glDepthMask(GL_TRUE);
+		glEnable(GL_DEPTH_TEST);
+		FBOManager::Instance()->BindFrameBuffer(draw, FBOManager::Instance()->lightAndPostFrameBufferHandle); //we bind the lightandposteffect buffer for drawing
+		GLenum DrawBuffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
+		glDrawBuffers(2, DrawBuffers);
+		
+		GLuint fastLineShader = ShaderManager::Instance()->shaderIDs["fastLine"];
+		ShaderManager::Instance()->SetCurrentShader(fastLineShader);
+		for (auto& lSystem : lineSystems) 
+		{
+			lSystem->Draw(CameraManager::Instance()->ViewProjection, fastLineShader, 1.f);
+		}
+
+		FBOManager::Instance()->UnbindFrameBuffer(draw);
+		glDepthMask(GL_FALSE);
+	}
+
+	void PickingApp::GenerateFastLines()
+	{
+		LineSystem* lSystem = lineSystems.front();
+
+		Vector3 scenePos = Scene::Instance()->SceneObject->GetWorldPosition();
+
+		for (auto& child : Scene::Instance()->SceneObject->node.children)
+		{
+			GenerateFastLineChildren(scenePos, child);
+		}
+	}
+
+	void PickingApp::GenerateFastLineChildren(const Vector3& parentPos, Node* child)
+	{
+		Vector3 childPos = child->TopDownTransform.getPosition();
+		FastLine* line = lineSystems.front()->GetLine();
+		line->nodeA.position = parentPos;
+		line->nodeB.position = childPos;
+		line->lifeTime = 1.f;
+		for (auto& childOfChild : child->children)
+		{
+			GenerateFastLineChildren(child->TopDownTransform.getPosition(), childOfChild);
+		}
 	}
 
 } // namespace Example

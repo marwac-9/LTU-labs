@@ -7,6 +7,7 @@
 #include <vector>
 
 class ParticleSystem;
+class LineSystem;
 class BoundingBox;
 class Object;
 class Camera;
@@ -112,5 +113,9 @@ namespace Picking
 		mwm::Vector3 lightInvDir = mwm::Vector3(-1.f, 1.f, 1.f);
 		float planeDir = -1;
 		std::vector<ParticleSystem*> particleSystems;
+		std::vector<LineSystem*> lineSystems;
+		void DrawFastLines();
+		void GenerateFastLines();
+		void GenerateFastLineChildren(const mwm::Vector3& parentPos, Node* child);
 	};
 } // namespace Example
