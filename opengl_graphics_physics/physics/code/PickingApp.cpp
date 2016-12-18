@@ -114,8 +114,6 @@ namespace Picking
 
         FBOManager::Instance()->SetUpFrameBuffer(this->windowWidth, this->windowHeight);
 
-        Object* Scene = Scene::Instance()->build();
-
 		GraphicsManager::LoadAllAssets();
 
 		DebugDraw::Instance()->LoadPrimitives();

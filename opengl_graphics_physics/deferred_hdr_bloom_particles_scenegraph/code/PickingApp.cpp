@@ -122,8 +122,6 @@ namespace Picking
 		FBOManager::Instance()->SetUpLightAndPostFrameBuffer(this->windowWidth, this->windowHeight);
 		FBOManager::Instance()->SetUpBlurFrameBuffer(this->windowWidth, this->windowHeight);
 
-        Object* Scene = Scene::Instance()->build();
-
 		GraphicsManager::LoadAllAssets();
 
 		DebugDraw::Instance()->LoadPrimitives();

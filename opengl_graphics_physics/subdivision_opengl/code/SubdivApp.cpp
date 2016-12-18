@@ -98,7 +98,6 @@ namespace Subdivision
 		InitGL();
 		GraphicsManager::LoadAllAssets();
 
-		Object* Scene = Scene::Instance()->build();
 		LoadScene1();
 		Scene::Instance()->SceneObject->node.UpdateNodeMatrix(Matrix4::identityMatrix());
 
