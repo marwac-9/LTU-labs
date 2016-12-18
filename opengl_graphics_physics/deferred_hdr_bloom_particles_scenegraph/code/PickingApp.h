@@ -8,6 +8,7 @@
 
 class ParticleSystem;
 class LineSystem;
+class BoundingBoxSystem;
 class BoundingBox;
 class Object;
 class Camera;
@@ -36,15 +37,12 @@ namespace Picking
         /// run app
         void Run();
 
-		void DrawLinesToSceneGraphChildren();
-
-		void DrawChildren(const mwm::Vector3& parentPos, Node* child);
-
 	private:
 		void Clear();
 
 		void Draw();
 		void DrawDebug();
+		void DrawDebugInstanced();
 
 		void PassPickingTexture();
         void PickingTest();
@@ -114,8 +112,9 @@ namespace Picking
 		float planeDir = -1;
 		std::vector<ParticleSystem*> particleSystems;
 		std::vector<LineSystem*> lineSystems;
-		void DrawFastLines();
+		std::vector<BoundingBoxSystem*> bbSystems;
+		void DrawFastLineSystems();
 		void GenerateFastLines();
-		void GenerateFastLineChildren(const mwm::Vector3& parentPos, Node* child);
+		void GenerateAndDrawFastLineChildren(const mwm::Vector3& parentPos, Node* child);
 	};
 } // namespace Example
