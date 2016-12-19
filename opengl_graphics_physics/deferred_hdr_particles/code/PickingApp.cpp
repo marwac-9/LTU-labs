@@ -136,11 +136,11 @@ namespace Picking
 		LoadScene2();
 		currentScene = scene2Loaded;
 
-		Matrix4 identityM = Matrix4::identityMatrix();
 		double fps_timer = 0;
-		Scene::Instance()->SceneObject->node.UpdateNodeMatrix(identityM);
-		Scene::Instance()->MainPointLight->node.UpdateNodeMatrix(identityM);
-		Scene::Instance()->MainDirectionalLight->node.UpdateNodeMatrix(identityM);
+		Node initNode = Node();
+		Scene::Instance()->SceneObject->node.UpdateNodeTransform(initNode);
+		Scene::Instance()->MainPointLight->node.UpdateNodeTransform(initNode);
+		Scene::Instance()->MainDirectionalLight->node.UpdateNodeTransform(initNode);
 
         while (running)
         {
@@ -188,9 +188,9 @@ namespace Picking
 				if (Time::currentTime - fps_timer >= 0.2 && currentScene == scene2Loaded) Vortex();
 			}
 			
-			Scene::Instance()->SceneObject->node.UpdateNodeMatrix(identityM);
-			Scene::Instance()->MainPointLight->node.UpdateNodeMatrix(identityM);
-			Scene::Instance()->MainDirectionalLight->node.UpdateNodeMatrix(identityM);
+			Scene::Instance()->SceneObject->node.UpdateNodeTransform(initNode);
+			Scene::Instance()->MainPointLight->node.UpdateNodeTransform(initNode);
+			Scene::Instance()->MainDirectionalLight->node.UpdateNodeTransform(initNode);
 			PassPickingTexture(); //picking
 
 			DrawGeometryPass();

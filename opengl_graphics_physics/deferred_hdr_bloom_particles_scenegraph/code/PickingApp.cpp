@@ -140,11 +140,11 @@ namespace Picking
 		LoadScene2();
 		currentScene = scene2Loaded;
 
-		Matrix4 identityM = Matrix4::identityMatrix();
 		double fps_timer = 0;
-		Scene::Instance()->SceneObject->node.UpdateNodeMatrix(identityM);
-		Scene::Instance()->MainPointLight->node.UpdateNodeMatrix(identityM);
-		Scene::Instance()->MainDirectionalLight->node.UpdateNodeMatrix(identityM);
+		Node initNode = Node();
+		Scene::Instance()->SceneObject->node.UpdateNodeTransform(initNode);
+		Scene::Instance()->MainPointLight->node.UpdateNodeTransform(initNode);
+		Scene::Instance()->MainDirectionalLight->node.UpdateNodeTransform(initNode);
 
 		//glfwSwapInterval(0); //unlock fps
 
@@ -166,23 +166,10 @@ namespace Picking
 			//is cursor window locked
 			if (altButtonToggle) CameraManager::Instance()->Update();
 			FrustumManager::Instance()->ExtractPlanes(CameraManager::Instance()->ViewProjection);
-
 			
 			Time::timeStep = 0.016 + Time::timeModifier;
 			Time::dtInv = 1.0 / Time::timeStep;
 			if (paused) Time::timeStep = 0.0, Time::dtInv = 0;
-
-			switch (currentScene)
-			{
-				case scene1Loaded:
-					if (Time::currentTime - fps_timer >= 0.2){
-						//SpawnSomeLights(); //have to draw on plane
-					}
-					break;
-				case scene2Loaded:
-					//MovePlaneUpNDown();
-					break;		
-			}
 			
 			PhysicsManager::Instance()->SortAndSweep();
 			PhysicsManager::Instance()->NarrowTestSAT((float)Time::dtInv);
@@ -190,9 +177,9 @@ namespace Picking
 			UpdateComponents();
 			UpdateLightsComponents();
 			
-			Scene::Instance()->SceneObject->node.UpdateNodeMatrix(identityM);
-			Scene::Instance()->MainPointLight->node.UpdateNodeMatrix(identityM);
-			Scene::Instance()->MainDirectionalLight->node.UpdateNodeMatrix(identityM);
+			Scene::Instance()->SceneObject->node.UpdateNodeTransform(initNode);
+			Scene::Instance()->MainPointLight->node.UpdateNodeTransform(initNode);
+			Scene::Instance()->MainDirectionalLight->node.UpdateNodeTransform(initNode);
 			PassPickingTexture(); //picking
 
 			DrawGeometryPass();

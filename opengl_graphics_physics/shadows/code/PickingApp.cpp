@@ -132,7 +132,8 @@ namespace Picking
 		SetUpCamera();
 
 		double fps_timer = 0;
-		Scene::Instance()->SceneObject->node.UpdateNodeMatrix(Matrix4::identityMatrix());
+		Node initNode = Node();
+		Scene::Instance()->SceneObject->node.UpdateNodeTransform(initNode);
 
         while (running)
         {
@@ -161,7 +162,7 @@ namespace Picking
 			PhysicsManager::Instance()->NarrowTestSAT((float)Time::dtInv);
 			
 			UpdateComponents();
-			Scene::Instance()->SceneObject->node.UpdateNodeMatrix(Matrix4::identityMatrix());
+			Scene::Instance()->SceneObject->node.UpdateNodeTransform(initNode);
 			
 			PassPickingTexture(); //picking
 			PickingTest();

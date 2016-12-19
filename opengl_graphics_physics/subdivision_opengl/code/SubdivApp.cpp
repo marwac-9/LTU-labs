@@ -99,8 +99,7 @@ namespace Subdivision
 		GraphicsManager::LoadAllAssets();
 
 		LoadScene1();
-		Scene::Instance()->SceneObject->node.UpdateNodeMatrix(Matrix4::identityMatrix());
-
+		
 		// For speed computation (FPS)
 		double lastTime = glfwGetTime();
 
@@ -111,6 +110,8 @@ namespace Subdivision
 		SetUpCamera();
 
 		double fps_timer = 0;
+		Node initNode = Node();
+		Scene::Instance()->SceneObject->node.UpdateNodeTransform(initNode);
 
 		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 		wireframe = true;
@@ -133,7 +134,7 @@ namespace Subdivision
 			FrustumManager::Instance()->ExtractPlanes(CameraManager::Instance()->ViewProjection);
 			
 
-			Scene::Instance()->SceneObject->node.UpdateNodeMatrix(Matrix4::identityMatrix());
+			Scene::Instance()->SceneObject->node.UpdateNodeTransform(initNode);
 
 			Draw();
 
