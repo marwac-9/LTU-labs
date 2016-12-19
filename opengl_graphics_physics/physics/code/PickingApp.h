@@ -32,7 +32,7 @@ namespace Picking
 
 		void Draw();
 		void DrawDebug();
-		void IntegrateAndUpdateBoxes();
+		void UpdateComponents();
         void InitGL();
         void ClearBuffers();
         void KeyCallback(int key, int scancode, int action, int mods);

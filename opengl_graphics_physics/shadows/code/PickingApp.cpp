@@ -160,7 +160,7 @@ namespace Picking
 			PhysicsManager::Instance()->SortAndSweep();
 			PhysicsManager::Instance()->NarrowTestSAT((float)Time::dtInv);
 			
-			IntegrateAndUpdateBoxes();
+			UpdateComponents();
 			Scene::Instance()->SceneObject->node.UpdateNodeMatrix(Matrix4::identityMatrix());
 			
 			PassPickingTexture(); //picking
@@ -557,11 +557,13 @@ namespace Picking
 	}
 
     void 
-	PickingApp::IntegrateAndUpdateBoxes()
+	PickingApp::UpdateComponents()
     {
+		Scene::Instance()->SceneObject->Update();
 		for (auto& obj : Scene::Instance()->objectsToRender)
 		{
 			obj.second->Update();
+			obj.second->CalculateRadius();
 		}
     }
 

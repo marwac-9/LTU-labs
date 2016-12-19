@@ -52,8 +52,8 @@ namespace Picking
 		void BlitToScreenPass();
 		void FireLightProjectile();
 
-		void IntegrateAndUpdateBoxes();
-		void IntegrateLights();
+		void UpdateComponents();
+		void UpdateLightsComponents();
         void InitGL();
         void ClearBuffers();
         void KeyCallback(int key, int scancode, int action, int mods);

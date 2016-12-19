@@ -182,11 +182,11 @@ namespace Picking
 			PhysicsManager::Instance()->SortAndSweep();
 			PhysicsManager::Instance()->NarrowTestSAT((float)Time::dtInv);
 			
-			IntegrateAndUpdateBoxes();
+			UpdateComponents();
+			UpdateLightsComponents();
 			if (lightsPhysics) 
 			{
 				if (Time::currentTime - fps_timer >= 0.2 && currentScene == scene2Loaded) Vortex();
-				IntegrateLights();
 			}
 			
 			Scene::Instance()->SceneObject->node.UpdateNodeMatrix(identityM);
@@ -535,19 +535,13 @@ namespace Picking
 	}
 
     void 
-	PickingApp::IntegrateAndUpdateBoxes()
+	PickingApp::UpdateComponents()
     {
+		Scene::Instance()->SceneObject->Update();
 		for(auto& obj : Scene::Instance()->objectsToRender)
 		{
 			obj.second->Update();
-			/*
-			if (RigidBody* body = obj.second->GetComponent<RigidBody>())
-			{
-				body->IntegrateRunge(timestep, PhysicsManager::Instance()->gravity);
-				body->UpdateBoundingBoxes(DebugDraw::Instance()->boundingBox);
-				body->UpdateInertiaTensor();
-			}
-			*/
+			obj.second->CalculateRadius();
 		}
     }
 
@@ -958,11 +952,12 @@ namespace Picking
 		}
 	}
 
-	void PickingApp::IntegrateLights()
+	void PickingApp::UpdateLightsComponents()
 	{
 		for (auto& obj : Scene::Instance()->pointLights)
 		{
 			obj->Update();
+			obj->CalculateRadius();
 		}
 	}
 

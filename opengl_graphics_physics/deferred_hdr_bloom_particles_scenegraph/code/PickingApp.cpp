@@ -187,12 +187,8 @@ namespace Picking
 			PhysicsManager::Instance()->SortAndSweep();
 			PhysicsManager::Instance()->NarrowTestSAT((float)Time::dtInv);
 			
-			IntegrateAndUpdateBoxes();
-			if (lightsPhysics) 
-			{
-				//if (Time::currentTime - fps_timer >= 0.2 && currentScene == scene2Loaded) Vortex();
-				IntegrateLights();
-			}
+			UpdateComponents();
+			UpdateLightsComponents();
 			
 			Scene::Instance()->SceneObject->node.UpdateNodeMatrix(identityM);
 			Scene::Instance()->MainPointLight->node.UpdateNodeMatrix(identityM);
@@ -537,15 +533,6 @@ namespace Picking
 					boundingBox->Draw(Matrix4::scale(obj.second->GetMeshDimensions())*obj.second->node.TopDownTransform, currentCamera->getViewMatrix(), currentCamera->ProjectionMatrix, wireframeShader);
 					boundingBox->mat->SetColor(body->aabb.color);
 					boundingBox->Draw(body->aabb.model, currentCamera->getViewMatrix(), currentCamera->ProjectionMatrix, wireframeShader);
-
-					boundingBox->mat->SetColor(body->aabb.color);
-					boundingBox->Draw(body->aabb.model, currentCamera->getViewMatrix(), currentCamera->ProjectionMatrix, wireframeShader);
-					boundingBox->mat->SetColor(body->aabb.color);
-					boundingBox->Draw(body->aabb.model, currentCamera->getViewMatrix(), currentCamera->ProjectionMatrix, wireframeShader);
-					boundingBox->mat->SetColor(body->aabb.color);
-					boundingBox->Draw(body->aabb.model, currentCamera->getViewMatrix(), currentCamera->ProjectionMatrix, wireframeShader);
-					boundingBox->mat->SetColor(body->aabb.color);
-					boundingBox->Draw(body->aabb.model, currentCamera->getViewMatrix(), currentCamera->ProjectionMatrix, wireframeShader);
 				}
 			}
 		}
@@ -553,12 +540,13 @@ namespace Picking
 	}
 
     void 
-	PickingApp::IntegrateAndUpdateBoxes()
+	PickingApp::UpdateComponents()
     {
 		Scene::Instance()->SceneObject->Update();
 		for(auto& obj : Scene::Instance()->objectsToRender)
 		{
 			obj.second->Update();
+			obj.second->CalculateRadius();
 		}
     }
 
@@ -636,7 +624,7 @@ namespace Picking
 		lineSystems.push_back(new LineSystem(3000));
 
 		LineSystem* lSystem = lineSystems.front();
-
+		float rS = 1.f;
 		for (int i = 0; i < 60; i++)
 		{
 			Vector3 pos = Scene::Instance()->generateRandomIntervallVectorCubic(-100, 100);
@@ -649,11 +637,14 @@ namespace Picking
 			line->colorA = Vector4(6.f, 0.f, 0.f, 1.f);
 			line->colorB = Vector4(3.f, 3.f, 0.f, 1.f);
 
-			for (int j = 0; j < 5; j++)
+			//rS = ((rand() % 30) + 1.f) / 15.f;
+			//sphere->SetScale(Vector3(rS, rS, rS));
+
+			for (int j = 0; j < 3; j++)
 			{
 				
 				Object* child = Scene::Instance()->addChild(sphere);
-				Vector3 childPos = Scene::Instance()->generateRandomIntervallVectorCubic((int)-len, (int)len) / 2.f;
+				Vector3 childPos = Scene::Instance()->generateRandomIntervallVectorCubic((int)-len, (int)len) / 4.f;
 				float childLen = childPos.vectLengthSSE();
 				child->SetPosition(childPos);
 				child->AssignMesh(GraphicsStorage::meshes["icosphere"]);
@@ -668,10 +659,13 @@ namespace Picking
 				line->colorA = Vector4(1.f, 0.f, 0.f, 1.f);
 				line->colorB = Vector4(0.f, 1.f, 0.f, 1.f);
 
+				//rS = ((rand() % 35) + 1.f) / 15.f;
+				//child->SetScale(Vector3(rS, rS, rS));
+
 				for (int k = 0; k < 5; k++)
 				{
 					Object* childOfChild = Scene::Instance()->addChild(child);
-					Vector3 childOfChildPos = Scene::Instance()->generateRandomIntervallVectorCubic((int)-childLen, (int)childLen) / 3.f;
+					Vector3 childOfChildPos = Scene::Instance()->generateRandomIntervallVectorCubic((int)-childLen, (int)childLen) / 2.f;
 					childOfChild->SetPosition(childOfChildPos);
 					childOfChild->AssignMesh(GraphicsStorage::meshes["sphere"]);
 					Material* newMaterial2 = new Material();
@@ -684,6 +678,9 @@ namespace Picking
 					childOfChild->node.addChild(&line->nodeB);
 					line->colorA = Vector4(6.f, 0.f, 0.f, 1.f);
 					line->colorB = Vector4(0.f, 0.f, 24.f, 1.f);
+
+					//rS = ((rand() % 45) + 1.f) / 15.f;
+					//childOfChild->SetScale(Vector3(rS, rS, rS));
 				}
 			
 			}
@@ -1051,7 +1048,7 @@ namespace Picking
 	}
 
 	void
-	PickingApp::IntegrateLights()
+	PickingApp::UpdateLightsComponents()
 	{
 		for (auto& obj : Scene::Instance()->pointLights)
 		{

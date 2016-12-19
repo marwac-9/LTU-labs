@@ -55,8 +55,8 @@ namespace Picking
 		void DrawHDR();
 		void BlurLight();
 
-		void IntegrateAndUpdateBoxes();
-		void IntegrateLights();
+		void UpdateComponents();
+		void UpdateLightsComponents();
         void InitGL();
         void ClearBuffers();
         void KeyCallback(int key, int scancode, int action, int mods);

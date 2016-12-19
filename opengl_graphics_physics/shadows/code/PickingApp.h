@@ -36,7 +36,7 @@ namespace Picking
 		
 		void DrawDepthPass();
 		void BlurShadowMap();
-		void IntegrateAndUpdateBoxes();
+		void UpdateComponents();
         void InitGL();
         void ClearBuffers();
         void KeyCallback(int key, int scancode, int action, int mods);
