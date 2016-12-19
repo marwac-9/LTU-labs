@@ -98,7 +98,7 @@ namespace Picking
 		float windowMidY;
 		bool wireframe = false;
 		bool lightsPhysics = false;
-
+		bool drawLines = true;
         Object* lastPickedObject = nullptr;
 		Object* plane = nullptr;
 		int objectsRendered = 0;

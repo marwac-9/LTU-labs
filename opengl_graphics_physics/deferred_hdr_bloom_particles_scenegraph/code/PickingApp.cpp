@@ -209,7 +209,7 @@ namespace Picking
 
 			//GenerateFastLines();
 
-			DrawFastLineSystems();
+			if (drawLines) DrawFastLineSystems();
 
 			BlurLight();
 
@@ -325,25 +325,14 @@ namespace Picking
 				std::cout << "Last Mesh Saved" << std::endl;
 			}
 			else if (key == GLFW_KEY_O) {
-				if (debug)
-				{
-					debug = false;			
-				}
-				else
-				{
-					debug = true;
-				}
+				if (debug) debug = false;
+				else debug = true;
+
 			}
 			else if (key == GLFW_KEY_P)
 			{
-				if (paused)
-				{
-					paused = false;
-				}
-				else
-				{
-					paused = true;
-				}
+				if (paused) paused = false;
+				else paused = true;
 			}
 			else if (key == GLFW_KEY_T)
 			{
@@ -360,6 +349,12 @@ namespace Picking
 				Object* cube = Scene::Instance()->addPhysicObject("cube", Vector3(0.f, 8.f, 0.f));
 				cube->SetPosition(Vector3(0.f, (float)Scene::Instance()->idCounter * 2.f - 10.f + 0.001f, 0.f));
 			}
+			else if (key == GLFW_KEY_L)
+			{
+				if (drawLines) drawLines = false;
+				else drawLines = true;
+			}
+
 		}
     }
 
@@ -695,9 +690,9 @@ namespace Picking
 		}
 		
 
-		Object* plane = Scene::Instance()->addObject("cube");
+		Object* plane = Scene::Instance()->addObject("sphere");
 		plane->mat->SetSpecularIntensity(0.5f);
-		plane->SetScale(Vector3(10.f, 0.2f, 10.f));
+		plane->SetScale(Vector3(10.f, 0.5f, 10.f));
 		this->plane = plane;
 		
 		ParticleSystem* pSystem = new ParticleSystem(100000, 2000);
