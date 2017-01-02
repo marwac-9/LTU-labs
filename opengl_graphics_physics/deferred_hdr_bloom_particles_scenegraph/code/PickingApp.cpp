@@ -981,13 +981,13 @@ namespace Picking
 	void
 	PickingApp::BlitToScreenPass()
 	{
-		FBOManager::Instance()->UnbindFrameBuffer(draw); //for drawing we are unbinding to the screen buffer
+		//FBOManager::Instance()->UnbindFrameBuffer(draw); //for drawing we are unbinding to the screen buffer
 		FBOManager::Instance()->BindFrameBuffer(read, FBOManager::Instance()->lightAndPostFrameBufferHandle);  //and we read from the light buffer
 
 		//glReadBuffer(GL_COLOR_ATTACHMENT4); //enable the final color texture buffer for reading
 		//glBlitFramebuffer(0, 0, windowWidth, windowHeight, 0, 0, windowWidth, windowHeight, GL_COLOR_BUFFER_BIT, GL_LINEAR); 
 		glBlitFramebuffer(0, 0, windowWidth, windowHeight, 0, 0, windowWidth, windowHeight, GL_DEPTH_BUFFER_BIT, GL_NEAREST); //we need to blit depth only
-		FBOManager::Instance()->UnbindFrameBuffer(readDraw);
+		//FBOManager::Instance()->UnbindFrameBuffer(readDraw);
 	}
 
 	void
