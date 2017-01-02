@@ -146,7 +146,7 @@ namespace Picking
 		Scene::Instance()->MainPointLight->node.UpdateNodeTransform(initNode);
 		Scene::Instance()->MainDirectionalLight->node.UpdateNodeTransform(initNode);
 
-		//glfwSwapInterval(0); //unlock fps
+		glfwSwapInterval(0); //unlock fps
 
         while (running)
         {
@@ -679,7 +679,7 @@ namespace Picking
 		plane->SetScale(Vector3(10.f, 0.5f, 10.f));
 		this->plane = plane;
 		
-		ParticleSystem* pSystem = new ParticleSystem(100000, 2000);
+		ParticleSystem* pSystem = new ParticleSystem(50000, 2000);
 		pSystem->SetTexture(GraphicsStorage::textures[10]->TextureID);
 		pSystem->SetLifeTime(5.0f);
 		pSystem->SetColor(Vector4(1.f, 0.f, 0.f, 0.2f));
@@ -1122,12 +1122,12 @@ namespace Picking
 	PickingApp::BlurLight()
 	{
 		//blit bright color texture to blur frame buffer
-		FBOManager::Instance()->BindFrameBuffer(read, FBOManager::Instance()->lightAndPostFrameBufferHandle);  //and we read from the light buffer
-		glReadBuffer(GL_COLOR_ATTACHMENT1); //enable the bright color texture buffer for reading
-		FBOManager::Instance()->BindFrameBuffer(draw, FBOManager::Instance()->blurFrameBufferHandle[0]); //for drawing we are binding to blurFrameBuffer 0
-		glBlitFramebuffer(0, 0, windowWidth, windowHeight, 0, 0, windowWidth, windowHeight, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+		//FBOManager::Instance()->BindFrameBuffer(read, FBOManager::Instance()->lightAndPostFrameBufferHandle);  //and we read from the light buffer
+		//glReadBuffer(GL_COLOR_ATTACHMENT1); //enable the bright color texture buffer for reading
+		//FBOManager::Instance()->BindFrameBuffer(draw, FBOManager::Instance()->blurFrameBufferHandle[0]); //for drawing we are binding to blurFrameBuffer 0
+		//glBlitFramebuffer(0, 0, windowWidth, windowHeight, 0, 0, windowWidth, windowHeight, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 
-		FBOManager::Instance()->UnbindFrameBuffer(readDraw); //we unbind to screen but during blur we bind to two blur buffers
+		//FBOManager::Instance()->UnbindFrameBuffer(readDraw); //we unbind to screen but during blur we bind to two blur buffers
 
 		ShaderManager::Instance()->SetCurrentShader(ShaderManager::Instance()->shaderIDs["blur"]);
 		/*
@@ -1160,8 +1160,30 @@ namespace Picking
 		*/
 		
 		GLuint scaleUniform = glGetUniformLocation(ShaderManager::Instance()->GetCurrentShaderID(), "scaleUniform");
+		
+		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, FBOManager::Instance()->blurFrameBufferHandle[0]);
+		glDrawBuffer(GL_COLOR_ATTACHMENT0);
 
-		for (int i = 0; i < 5; i++){
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glUniform2f(scaleUniform, 1.0f / (float)windowWidth, 0.0f); //horizontally
+
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, FBOManager::Instance()->brightLightBufferHandle);
+
+		DebugDraw::Instance()->DrawQuad();
+
+		FBOManager::Instance()->BindFrameBuffer(draw, FBOManager::Instance()->blurFrameBufferHandle[1]); //final blur result is stored in the blurFrameBufferHandle 0
+		glDrawBuffer(GL_COLOR_ATTACHMENT0);
+
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glUniform2f(scaleUniform, 0.0f, 1.0f / (float)windowHeight); //vertically
+
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, FBOManager::Instance()->blurBufferHandle[0]);
+
+		DebugDraw::Instance()->DrawQuad();
+
+		for (int i = 0; i < 4; i++){
 			glBindFramebuffer(GL_DRAW_FRAMEBUFFER, FBOManager::Instance()->blurFrameBufferHandle[1]);
 			glDrawBuffer(GL_COLOR_ATTACHMENT0);
 
