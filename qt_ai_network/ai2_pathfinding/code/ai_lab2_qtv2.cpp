@@ -199,7 +199,10 @@ void Ai_Lab2_qtv2::loadSelectedMap()
 	mesh = new HalfEdgeMesh2D();
 	QString mapPath = mapPaths.at(current);
 	std::string mapstd = mapPath.toStdString();
+	QElapsedTimer timer;
+	timer.start();
 	mesh->Construct(mapstd.c_str());
+	ui.doubleGenerationTime->setValue(timer.elapsed());
 	if (ui.checkBoxQuad->isChecked())
 	{
 		mesh->quadrangulate();

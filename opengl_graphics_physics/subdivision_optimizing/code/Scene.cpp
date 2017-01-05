@@ -24,7 +24,7 @@ Object* Scene::build()
 	return SceneObject;
 }
 
-Object* Scene::addChild(Object* parentObject)
+Object* Scene::addChildTo(Object* parentObject)
 {
 	//bind
 	Object* child = new Object();

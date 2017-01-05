@@ -13,6 +13,7 @@ class BoundingBox;
 class Object;
 class Camera;
 class Node;
+class FastLine;
 
 enum loadedScene
 {
@@ -115,6 +116,6 @@ namespace Picking
 		std::vector<BoundingBoxSystem*> bbSystems;
 		void DrawFastLineSystems();
 		void GenerateFastLines();
-		void GenerateAndDrawFastLineChildren(const mwm::Vector3& parentPos, Node* child);
+		void GenerateAndDrawFastLineChildren(Node* parentPos, Node* child);
 	};
 } // namespace Example

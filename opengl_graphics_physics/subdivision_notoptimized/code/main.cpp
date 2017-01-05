@@ -30,7 +30,7 @@ main(int argc, const char** argv)
 {
 	
     Object* Scene = Scene::Instance()->build();
-    Object* HalfMeshObj = Scene::Instance()->addChild(Scene);
+    Object* HalfMeshObj = Scene::Instance()->addChildTo(Scene);
 
     //load all objs
     printf("\nLOADING OBJs\n");

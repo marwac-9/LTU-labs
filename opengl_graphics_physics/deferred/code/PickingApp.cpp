@@ -534,7 +534,7 @@ namespace Picking
 		directionalLight->mat->SetColor(1.f, 1.f, 1.f);
 		directionalLight->mat->SetDiffuseIntensity(0.5f);
 
-		Object* plane = Scene::Instance()->addObject("cube", Vector3(0.f, -2.5f, 0.f));
+		Object* plane = Scene::Instance()->addObjectToScene("cube", Vector3(0.f, -2.5f, 0.f));
 		body = new RigidBody(plane);
 		plane->AddComponent(body);
 		plane->SetScale(Vector3(25.f, 2.f, 25.f));
@@ -563,10 +563,10 @@ namespace Picking
 
 		for (int i = 0; i < 300; i++)
 		{
-			Object* sphere = Scene::Instance()->addObject("sphere", Scene::Instance()->generateRandomIntervallVectorCubic(-20, 20));
+			Object* sphere = Scene::Instance()->addObjectToScene("sphere", Scene::Instance()->generateRandomIntervallVectorCubic(-20, 20));
 		}
 
-		Object* plane = Scene::Instance()->addObject("cube");
+		Object* plane = Scene::Instance()->addObjectToScene("cube");
 		plane->SetScale(Vector3(25.f, 0.2f, 25.f));
 		this->plane = plane;
 		PhysicsManager::Instance()->gravity = Vector3();
@@ -583,7 +583,7 @@ namespace Picking
 		float rS = 1.f;
 		for (int i = 0; i < 500; i++)
 		{
-			Object* object = Scene::Instance()->addObject("icosphere", Scene::Instance()->generateRandomIntervallVectorCubic(-80, 80));
+			Object* object = Scene::Instance()->addObjectToScene("icosphere", Scene::Instance()->generateRandomIntervallVectorCubic(-80, 80));
 			RigidBody* body = new RigidBody(object);
 			object->AddComponent(body);
 			PhysicsManager::Instance()->RegisterRigidBody(body);
@@ -839,7 +839,7 @@ namespace Picking
 		if (Scene::Instance()->pointLights.size() < 500)
 		{
 			Object* pointLight = Scene::Instance()->addPointLight(Scene::Instance()->generateRandomIntervallVectorFlat(-20, 20, Scene::y), Scene::Instance()->generateRandomIntervallVectorCubic(0, 6000) / 6000.f);
-			Object* sphere = Scene::Instance()->addObject("sphere", pointLight->GetLocalPosition());
+			Object* sphere = Scene::Instance()->addObjectToScene("sphere", pointLight->GetLocalPosition());
 			sphere->SetScale(Vector3(0.1f, 0.1f, 0.1f));
 			sphere->mat->diffuseIntensity = 2.f;
 			sphere->mat->ambientIntensity = 1.5f;

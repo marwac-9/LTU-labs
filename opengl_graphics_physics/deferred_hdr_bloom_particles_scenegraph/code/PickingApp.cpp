@@ -146,7 +146,7 @@ namespace Picking
 		Scene::Instance()->MainPointLight->node.UpdateNodeTransform(initNode);
 		Scene::Instance()->MainDirectionalLight->node.UpdateNodeTransform(initNode);
 
-		glfwSwapInterval(0); //unlock fps
+		//glfwSwapInterval(0); //unlock fps
 
         while (running)
         {
@@ -177,6 +177,15 @@ namespace Picking
 			UpdateComponents();
 			UpdateLightsComponents();
 			
+			if (Time::currentTime - fps_timer >= 0.2){
+				int pI = rand() % Scene::Instance()->objectsToRender.size();
+				std::map<unsigned int, Object*>::iterator it = Scene::Instance()->objectsToRender.begin();
+				std::advance(it, pI);
+
+				Object* parent = it->second;
+				Scene::Instance()->addObjectTo(parent, "icosphere", Scene::Instance()->generateRandomIntervallVectorCubic(-3,3));
+			}
+
 			Scene::Instance()->SceneObject->node.UpdateNodeTransform(initNode);
 			Scene::Instance()->MainPointLight->node.UpdateNodeTransform(initNode);
 			Scene::Instance()->MainDirectionalLight->node.UpdateNodeTransform(initNode);
@@ -190,7 +199,7 @@ namespace Picking
 
 			DrawParticles();
 
-			//GenerateFastLines();
+			GenerateFastLines();
 
 			if (drawLines) DrawFastLineSystems();
 
@@ -337,7 +346,6 @@ namespace Picking
 				if (drawLines) drawLines = false;
 				else drawLines = true;
 			}
-
 		}
     }
 
@@ -552,7 +560,7 @@ namespace Picking
 		sphere->mat->SetSpecularIntensity(4.f);
 		sphere->mat->SetShininess(10.f);
 
-		Object* tunnel = Scene::Instance()->addObject("tunnel", Vector3(0.f, 0.f, 25.f));
+		Object* tunnel = Scene::Instance()->addObjectToScene("tunnel", Vector3(0.f, 0.f, 25.f));
 		Material* newMaterial = new Material();
 		newMaterial->AssignTexture(GraphicsStorage::textures.at(9));
 		GraphicsStorage::materials.push_back(newMaterial);
@@ -616,11 +624,17 @@ namespace Picking
 		{
 			Vector3 pos = Scene::Instance()->generateRandomIntervallVectorCubic(-100, 100);
 			float len = pos.vectLengthSSE();
-			Object* sphere = Scene::Instance()->addObject("cube", pos);
+			Object* sphere = Scene::Instance()->addObjectToScene("cube", pos);
 
+			//it is better if we can attach the node to the object
+			//to do that we simply set the pointer of the node of line to the object we want to follow
+			//this will work for get lines but not for the generated ones,
+			//generated ones set the position
 			FastLine* line = lSystem->GetLine();
-			Scene::Instance()->SceneObject->node.addChild(&line->nodeA);
-			sphere->node.addChild(&line->nodeB);
+
+			line->AttachEndA(&Scene::Instance()->SceneObject->node);
+			line->AttachEndB(&sphere->node);
+
 			line->colorA = Vector4(6.f, 0.f, 0.f, 1.f);
 			line->colorB = Vector4(3.f, 3.f, 0.f, 1.f);
 
@@ -629,20 +643,15 @@ namespace Picking
 
 			for (int j = 0; j < 3; j++)
 			{
-				
-				Object* child = Scene::Instance()->addChild(sphere);
 				Vector3 childPos = Scene::Instance()->generateRandomIntervallVectorCubic((int)-len, (int)len) / 4.f;
 				float childLen = childPos.vectLengthSSE();
-				child->SetPosition(childPos);
-				child->AssignMesh(GraphicsStorage::meshes["icosphere"]);
-				Material* newMaterial = new Material();
-				newMaterial->AssignTexture(GraphicsStorage::textures.at(0));
-				GraphicsStorage::materials.push_back(newMaterial);
-				child->AssignMaterial(newMaterial);
+				Object* child = Scene::Instance()->addObjectTo(sphere, "icosphere", childPos);
 
 				FastLine* line = lSystem->GetLine();
-				sphere->node.addChild(&line->nodeA);
-				child->node.addChild(&line->nodeB);
+
+				line->AttachEndA(&sphere->node);
+				line->AttachEndB(&child->node);
+
 				line->colorA = Vector4(1.f, 0.f, 0.f, 1.f);
 				line->colorB = Vector4(0.f, 1.f, 0.f, 1.f);
 
@@ -651,18 +660,14 @@ namespace Picking
 
 				for (int k = 0; k < 5; k++)
 				{
-					Object* childOfChild = Scene::Instance()->addChild(child);
 					Vector3 childOfChildPos = Scene::Instance()->generateRandomIntervallVectorCubic((int)-childLen, (int)childLen) / 2.f;
-					childOfChild->SetPosition(childOfChildPos);
-					childOfChild->AssignMesh(GraphicsStorage::meshes["sphere"]);
-					Material* newMaterial2 = new Material();
-					newMaterial2->AssignTexture(GraphicsStorage::textures.at(0));
-					GraphicsStorage::materials.push_back(newMaterial2);
-					childOfChild->AssignMaterial(newMaterial2);
+					Object* childOfChild = Scene::Instance()->addObjectTo(child, "sphere", childOfChildPos);
 
 					FastLine* line = lSystem->GetLine();
-					child->node.addChild(&line->nodeA);
-					childOfChild->node.addChild(&line->nodeB);
+
+					line->AttachEndA(&child->node);
+					line->AttachEndB(&childOfChild->node);
+
 					line->colorA = Vector4(6.f, 0.f, 0.f, 1.f);
 					line->colorB = Vector4(0.f, 0.f, 24.f, 1.f);
 
@@ -674,7 +679,7 @@ namespace Picking
 		}
 		
 
-		Object* plane = Scene::Instance()->addObject("sphere");
+		Object* plane = Scene::Instance()->addObjectToScene("sphere");
 		plane->mat->SetSpecularIntensity(0.5f);
 		plane->SetScale(Vector3(10.f, 0.5f, 10.f));
 		this->plane = plane;
@@ -713,7 +718,7 @@ namespace Picking
 		{
 			Vector3 pos = Scene::Instance()->generateRandomIntervallVectorCubic(-80, 80);
 			float len = pos.vectLengthSSE();
-			Object* object = Scene::Instance()->addObject("icosphere", pos);
+			Object* object = Scene::Instance()->addObjectToScene("icosphere", pos);
 			//object->mat->SetDiffuseIntensity(10.3f);
 			RigidBody* body = new RigidBody(object);
 			object->AddComponent(body);
@@ -723,8 +728,12 @@ namespace Picking
 			body->SetCanSleep(false);
 
 			FastLine* line = lSystem->GetLine();
-			Scene::Instance()->SceneObject->node.addChild(&line->nodeA);
-			object->node.addChild(&line->nodeB);
+			//Scene::Instance()->SceneObject->node.addChild(&line->nodeA);
+			//object->node.addChild(&line->nodeB);
+
+			line->AttachEndA(&Scene::Instance()->SceneObject->node);
+			line->AttachEndB(&object->node);
+
 			line->colorA = Vector4(6.f, 0.f, 0.f, 1.f);
 			line->colorB = Vector4(3.f, 3.f, 0.f, 1.f);
 		}
@@ -1025,7 +1034,7 @@ namespace Picking
 		if (Scene::Instance()->pointLights.size() < 500)
 		{
 			Object* pointLight = Scene::Instance()->addPointLight(Scene::Instance()->generateRandomIntervallVectorFlat(-20, 20, Scene::y), Scene::Instance()->generateRandomIntervallVectorCubic(0, 6000) / 6000.f);
-			Object* sphere = Scene::Instance()->addObject("sphere", pointLight->GetLocalPosition());
+			Object* sphere = Scene::Instance()->addObjectToScene("sphere", pointLight->GetLocalPosition());
 			sphere->SetScale(Vector3(0.1f, 0.1f, 0.1f));
 			sphere->mat->diffuseIntensity = 2.f;
 			sphere->mat->ambientIntensity = 1.5f;
@@ -1235,24 +1244,21 @@ namespace Picking
 	void
 	PickingApp::GenerateFastLines()
 	{
-		Vector3 scenePos = Scene::Instance()->SceneObject->GetWorldPosition();
-
 		for (auto& child : Scene::Instance()->SceneObject->node.children)
 		{
-			GenerateAndDrawFastLineChildren(scenePos, child);
+			GenerateAndDrawFastLineChildren(&Scene::Instance()->SceneObject->node, child);
 		}
 	}
 
 	void
-	PickingApp::GenerateAndDrawFastLineChildren(const Vector3& parentPos, Node* child)
+	PickingApp::GenerateAndDrawFastLineChildren(Node* parent, Node* child)
 	{
-		Vector3 childPos = child->TopDownTransform.getPosition();
 		FastLine* line = lineSystems.front()->GetLineOnce();
-		line->nodeA.position = parentPos;
-		line->nodeB.position = childPos;
+		line->AttachEndA(parent);
+		line->AttachEndB(child);
 		for (auto& childOfChild : child->children)
 		{
-			GenerateAndDrawFastLineChildren(child->TopDownTransform.getPosition(), childOfChild);
+			GenerateAndDrawFastLineChildren(child, childOfChild);
 		}
 	}
 

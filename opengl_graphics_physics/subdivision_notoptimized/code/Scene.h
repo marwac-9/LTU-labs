@@ -7,7 +7,7 @@ class Scene
 public:
     static Scene* Instance();
     int idCounter;
-	Object* addChild(Object* parentNodeGR);
+	Object* addChildTo(Object* parentNodeGR);
 	std::map<int, Object*> objectsToRender;
 	Object* SceneObject;
     Object* LastAddedObject;

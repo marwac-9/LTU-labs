@@ -673,7 +673,7 @@ namespace Picking
 		Clear();
 		for (int i = 0; i < 700; i++)
 		{
-			Object* sphere = Scene::Instance()->addObject("sphere", Scene::Instance()->generateRandomIntervallVectorCubic(-20,20));
+			Object* sphere = Scene::Instance()->addObjectToScene("sphere", Scene::Instance()->generateRandomIntervallVectorCubic(-20,20));
 		}
 	}
 

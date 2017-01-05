@@ -25,6 +25,7 @@
 #include "Frustum.h"
 #include "Render.h"
 #include "CameraManager.h"
+#include <chrono>
 
 using namespace mwm;
 using namespace Display;
@@ -330,55 +331,66 @@ namespace Subdivision
 	void
 	SubdivisionApp::Subdivide(OBJ* objToSubdivide)
 	{
-		Object* HalfMesh = Scene::Instance()->addChild(Scene::Instance()->SceneObject); //Object added to scene for rendering
+		Object* ObjectHalfMesh = Scene::Instance()->addChildTo(Scene::Instance()->SceneObject); //Object added to scene for rendering
 		
-		printf("\nCreating half edge mesh\n");
+		printf("\nConstructing half edge mesh\n");
 		HalfEdgeMesh* newHMesh = new HalfEdgeMesh();
-		OBJ* newOBJ = new OBJ();
-		dynamicOBJs.push_back(newOBJ);
-		dynamicHEMeshes.push_back(newHMesh);
+		OBJ* constructedOBJ = new OBJ();
+		dynamicOBJs.push_back(constructedOBJ);
 
 		newHMesh->Construct(*objToSubdivide);
-		HalfEdgeMesh::ExportMeshToOBJ(newHMesh, newOBJ);  // HE_Mesh -> OBJ
-		GraphicsManager::LoadOBJToVBO(newOBJ, newHMesh);  // OBJ -> Mesh
-		newOBJ->CalculateDimensions();
+		HalfEdgeMesh::ExportMeshToOBJ(newHMesh, constructedOBJ);  // HE_Mesh -> OBJ
+		constructedOBJ->CalculateDimensions();
 
-		HalfMesh->AssignMesh(newHMesh);
-		Material* newMaterial = new Material();
-		newMaterial->AssignTexture(GraphicsStorage::textures.at(0));
-		GraphicsStorage::materials.push_back(newMaterial);
-		HalfMesh->AssignMaterial(newMaterial);
-		HalfMesh->SetScale(Vector3(4.0f, 4.0f, 4.0f));
-		HalfMesh->SetPosition(Vector3(0.f, 0.f, -10.f));
-		HalfMesh->mat->SetAmbientIntensity(0.5f);
-
-		Object* HalfMeshProxy = Scene::Instance()->addChild(HalfMesh);
-
-		Mesh* proxyMesh = new Mesh();
-		GraphicsManager::LoadOBJToVBO(newOBJ, proxyMesh); //proxy will use same OBJ
-		dynamicMeshes.push_back(proxyMesh);
-
-		HalfMeshProxy->AssignMesh(proxyMesh);
-		Material* newMaterialProxy = new Material();
-		newMaterialProxy->SetColor(Vector3(1.f, 0.f, 0.f));
-		newMaterialProxy->AssignTexture(GraphicsStorage::textures.at(0));
-		GraphicsStorage::materials.push_back(newMaterialProxy);
-		HalfMeshProxy->AssignMaterial(newMaterialProxy);
 		printf("\nDONE\n");
 
+		std::chrono::time_point<std::chrono::high_resolution_clock> start, end;
+		start = std::chrono::high_resolution_clock::now();
+		std::chrono::duration<double> elapsed_seconds; 
 		for (int i = 0; i < 5; i++)
 		{
 			printf("\nLET'S SUBDIVIDE STAGE%d\n", i+1);
 			newHMesh->Subdivide();
-			printf("\nDONE\n");
-		}
 
-		OBJ* subdividedOBJ = new OBJ(); //we need new renderable OBJ for subdivided half-edge mesh while proxy is still using the first generated OBJ
+			end = std::chrono::high_resolution_clock::now();
+			elapsed_seconds = end - start;
+
+			std::cout << "\nPass " << i + 1 << " subdivided in: " << elapsed_seconds.count() << "s\n";
+			
+		}
+		printf("\nDONE\n");
+
+		printf("\nExporting subdivided mesh\n");
+		OBJ* subdividedOBJ = new OBJ(); //we need new renderable OBJ for subdivided half-edge mesh while proxy will still use the first generated OBJ
 		dynamicOBJs.push_back(subdividedOBJ);
 		HalfEdgeMesh::ExportMeshToOBJ(newHMesh, subdividedOBJ);
 		GraphicsManager::LoadOBJToVBO(subdividedOBJ, newHMesh);
+		dynamicHEMeshes.push_back(newHMesh);
 		
-		//must create containers for dynamic meshes and OBJ and delete them when clearing
+		ObjectHalfMesh->AssignMesh(newHMesh); //we assign the subdivided and exported mesh
+		Material* newMaterial = new Material();
+		newMaterial->AssignTexture(GraphicsStorage::textures.at(0));
+		GraphicsStorage::materials.push_back(newMaterial);
+		ObjectHalfMesh->AssignMaterial(newMaterial);
+		ObjectHalfMesh->SetScale(Vector3(4.0f, 4.0f, 4.0f));
+		ObjectHalfMesh->SetPosition(Vector3(0.f, 0.f, -10.f));
+		ObjectHalfMesh->mat->SetAmbientIntensity(0.5f);
+		printf("\nDONE\n");
+
+		printf("\nCreating proxy mesh\n");
+		Object* ObjectHalfMeshProxy = Scene::Instance()->addChildTo(ObjectHalfMesh); //we create the object for proxy
+
+		Mesh* proxyMesh = new Mesh(); //and a new mesh for proxy
+		GraphicsManager::LoadOBJToVBO(constructedOBJ, proxyMesh); //proxy will use the originally generated OBJ from constructed half edge mesh
+		dynamicMeshes.push_back(proxyMesh);
+
+		ObjectHalfMeshProxy->AssignMesh(proxyMesh); //and we assign now generated proxy mesh from constructedOBJ to the proxy Object
+		Material* newMaterialProxy = new Material();
+		newMaterialProxy->SetColor(Vector3(1.f, 0.f, 0.f));
+		newMaterialProxy->AssignTexture(GraphicsStorage::textures.at(0));
+		GraphicsStorage::materials.push_back(newMaterialProxy);
+		ObjectHalfMeshProxy->AssignMaterial(newMaterialProxy);
+		printf("\nDONE\n");
 	}
 
 	void
