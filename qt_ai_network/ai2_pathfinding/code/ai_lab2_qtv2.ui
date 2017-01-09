@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>931</width>
-    <height>604</height>
+    <height>592</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -37,7 +37,7 @@
    <widget class="QCheckBox" name="checkBoxQuad">
     <property name="geometry">
      <rect>
-      <x>30</x>
+      <x>20</x>
       <y>250</y>
       <width>101</width>
       <height>17</height>
@@ -50,8 +50,8 @@
    <widget class="QPushButton" name="pushButtonOptimize">
     <property name="geometry">
      <rect>
-      <x>30</x>
-      <y>270</y>
+      <x>20</x>
+      <y>280</y>
       <width>75</width>
       <height>23</height>
      </rect>
@@ -73,146 +73,10 @@
      <string>Path</string>
     </property>
    </widget>
-   <widget class="QRadioButton" name="radioAStar">
-    <property name="geometry">
-     <rect>
-      <x>20</x>
-      <y>300</y>
-      <width>82</width>
-      <height>17</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>A*</string>
-    </property>
-   </widget>
-   <widget class="QRadioButton" name="radioDijkstra">
-    <property name="geometry">
-     <rect>
-      <x>20</x>
-      <y>330</y>
-      <width>82</width>
-      <height>17</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Dijkstra</string>
-    </property>
-   </widget>
-   <widget class="QRadioButton" name="radioBreadth">
-    <property name="geometry">
-     <rect>
-      <x>20</x>
-      <y>360</y>
-      <width>101</width>
-      <height>17</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Breadth First</string>
-    </property>
-   </widget>
-   <widget class="QRadioButton" name="radioDepth">
-    <property name="geometry">
-     <rect>
-      <x>20</x>
-      <y>390</y>
-      <width>82</width>
-      <height>17</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Depth First</string>
-    </property>
-   </widget>
-   <widget class="QRadioButton" name="radioTurnLeft">
-    <property name="geometry">
-     <rect>
-      <x>20</x>
-      <y>420</y>
-      <width>82</width>
-      <height>17</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Turn Left</string>
-    </property>
-   </widget>
-   <widget class="QDoubleSpinBox" name="doubleTimeElapsed">
-    <property name="geometry">
-     <rect>
-      <x>20</x>
-      <y>570</y>
-      <width>91</width>
-      <height>22</height>
-     </rect>
-    </property>
-    <property name="buttonSymbols">
-     <enum>QAbstractSpinBox::NoButtons</enum>
-    </property>
-    <property name="maximum">
-     <double>999999999.990000009536743</double>
-    </property>
-   </widget>
-   <widget class="QLabel" name="label">
-    <property name="geometry">
-     <rect>
-      <x>120</x>
-      <y>570</y>
-      <width>47</width>
-      <height>16</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>ms</string>
-    </property>
-   </widget>
-   <widget class="QLabel" name="label_2">
-    <property name="geometry">
-     <rect>
-      <x>120</x>
-      <y>530</y>
-      <width>47</width>
-      <height>13</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Length</string>
-    </property>
-   </widget>
-   <widget class="QDoubleSpinBox" name="doublePathLength">
-    <property name="geometry">
-     <rect>
-      <x>20</x>
-      <y>530</y>
-      <width>91</width>
-      <height>22</height>
-     </rect>
-    </property>
-    <property name="buttonSymbols">
-     <enum>QAbstractSpinBox::NoButtons</enum>
-    </property>
-    <property name="maximum">
-     <double>999999.989999999990687</double>
-    </property>
-   </widget>
-   <widget class="QRadioButton" name="radioRandom">
-    <property name="geometry">
-     <rect>
-      <x>20</x>
-      <y>450</y>
-      <width>82</width>
-      <height>17</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Random</string>
-    </property>
-   </widget>
    <widget class="QDoubleSpinBox" name="doubleGenerationTime">
     <property name="geometry">
      <rect>
-      <x>30</x>
+      <x>20</x>
       <y>220</y>
       <width>62</width>
       <height>22</height>
@@ -228,7 +92,7 @@
    <widget class="QLabel" name="label_3">
     <property name="geometry">
      <rect>
-      <x>100</x>
+      <x>90</x>
       <y>220</y>
       <width>111</width>
       <height>16</height>
@@ -237,6 +101,118 @@
     <property name="text">
      <string>Generation Time (ms)</string>
     </property>
+   </widget>
+   <widget class="QWidget" name="verticalLayoutWidget">
+    <property name="geometry">
+     <rect>
+      <x>20</x>
+      <y>330</y>
+      <width>141</width>
+      <height>134</height>
+     </rect>
+    </property>
+    <layout class="QVBoxLayout" name="verticalLayout">
+     <item>
+      <widget class="QRadioButton" name="radioAStar">
+       <property name="text">
+        <string>A*</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QRadioButton" name="radioDijkstra">
+       <property name="text">
+        <string>Dijkstra</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QRadioButton" name="radioBreadth">
+       <property name="text">
+        <string>Breadth First</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QRadioButton" name="radioDepth">
+       <property name="text">
+        <string>Depth First</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QRadioButton" name="radioTurnLeft">
+       <property name="text">
+        <string>Turn Left</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QRadioButton" name="radioRandom">
+       <property name="text">
+        <string>Random</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </widget>
+   <widget class="QWidget" name="gridLayoutWidget">
+    <property name="geometry">
+     <rect>
+      <x>20</x>
+      <y>520</y>
+      <width>160</width>
+      <height>51</height>
+     </rect>
+    </property>
+    <layout class="QGridLayout" name="gridLayout">
+     <item row="0" column="0">
+      <widget class="QDoubleSpinBox" name="doublePathLength">
+       <property name="maximumSize">
+        <size>
+         <width>80</width>
+         <height>16777215</height>
+        </size>
+       </property>
+       <property name="buttonSymbols">
+        <enum>QAbstractSpinBox::NoButtons</enum>
+       </property>
+       <property name="maximum">
+        <double>999999.989999999990687</double>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="1">
+      <widget class="QLabel" name="label_2">
+       <property name="text">
+        <string>Length</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="0">
+      <widget class="QDoubleSpinBox" name="doubleTimeElapsed">
+       <property name="maximumSize">
+        <size>
+         <width>80</width>
+         <height>16777215</height>
+        </size>
+       </property>
+       <property name="buttonSymbols">
+        <enum>QAbstractSpinBox::NoButtons</enum>
+       </property>
+       <property name="maximum">
+        <double>999999999.990000009536743</double>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="1">
+      <widget class="QLabel" name="label">
+       <property name="text">
+        <string>ms</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
    </widget>
   </widget>
  </widget>

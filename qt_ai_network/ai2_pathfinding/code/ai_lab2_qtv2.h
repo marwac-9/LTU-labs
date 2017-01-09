@@ -27,6 +27,7 @@ public:
 	Ai_Lab2_qtv2(QWidget *parent = 0);
 	~Ai_Lab2_qtv2();
 	QGraphicsScene* scene;
+	int cellSize = 20;
 public slots:
 	void loadSelectedMap();
 	void optimize();

@@ -183,7 +183,7 @@ QPolygonF Ai_Lab2_qtv2::buildPolygon(Face* face)
 	do
 	{
 		Vertex* vert1 = currentEdge->vertex;
-		polygon.append(QPointF(vert1->pos.vect[0], vert1->pos.vect[1]));
+		polygon.append(QPointF(vert1->pos.vect[0] * cellSize, vert1->pos.vect[1] * cellSize));
 		currentEdge = currentEdge->next;
 
 	} while (currentEdge != face->edge);
