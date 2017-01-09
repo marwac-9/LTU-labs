@@ -157,18 +157,18 @@ void Ai_Lab2_qtv2::drawpath(const std::vector<Face*> &path, const Vector2 &start
 
 	QPen pen(Qt::yellow);
 	QLine line;
-	line.setLine(start.vect[0], start.vect[1], path.back()->getMidPointMiniMaxi().vect[0], path.back()->getMidPointMiniMaxi().vect[1]);
+	line.setLine(start.vect[0] * cellSize, start.vect[1] * cellSize, path.back()->getMidPointMiniMaxi().vect[0] * cellSize, path.back()->getMidPointMiniMaxi().vect[1] * cellSize);
 	QGraphicsLineItem* lineitem = scene->addLine(line, pen);
 	linepath.push_back(lineitem);
-	line.setLine(end.vect[0], end.vect[1], path.front()->getMidPointMiniMaxi().vect[0], path.front()->getMidPointMiniMaxi().vect[1]);
+	line.setLine(end.vect[0] * cellSize, end.vect[1] * cellSize, path.front()->getMidPointMiniMaxi().vect[0] * cellSize, path.front()->getMidPointMiniMaxi().vect[1] * cellSize);
 	lineitem = scene->addLine(line, pen);
 	linepath.push_back(lineitem);
 	for (size_t i = 0; i < path.size() - 1; i++)
 	{
 		QPen pen(Qt::green);
 		QLine line;
-		Vector2 node1 = path.at(i)->getMidPointMiniMaxi();
-		Vector2 node2 = path.at(i + 1)->getMidPointMiniMaxi();
+		Vector2 node1 = path.at(i)->getMidPointMiniMaxi() * cellSize;
+		Vector2 node2 = path.at(i + 1)->getMidPointMiniMaxi() * cellSize;
 		line.setLine(node1.vect[0], node1.vect[1], node2.vect[0], node2.vect[1]);
 		QGraphicsLineItem* lineitem = scene->addLine(line, pen);
 		linepath.push_back(lineitem);
