@@ -178,12 +178,15 @@ namespace Picking
 			UpdateLightsComponents();
 			
 			if (Time::currentTime - fps_timer >= 0.2){
-				int pI = rand() % Scene::Instance()->objectsToRender.size();
-				std::map<unsigned int, Object*>::iterator it = Scene::Instance()->objectsToRender.begin();
-				std::advance(it, pI);
+				if (currentScene == scene2Loaded)
+				{
+					int pI = rand() % Scene::Instance()->objectsToRender.size();
+					std::map<unsigned int, Object*>::iterator it = Scene::Instance()->objectsToRender.begin();
+					std::advance(it, pI);
 
-				Object* parent = it->second;
-				Scene::Instance()->addObjectTo(parent, "icosphere", Scene::Instance()->generateRandomIntervallVectorCubic(-3,3));
+					Object* parent = it->second;
+					Scene::Instance()->addObjectTo(parent, "icosphere", Scene::Instance()->generateRandomIntervallVectorCubic(-3, 3));
+				}
 			}
 
 			Scene::Instance()->SceneObject->node.UpdateNodeTransform(initNode);
@@ -1244,6 +1247,7 @@ namespace Picking
 	void
 	PickingApp::GenerateFastLines()
 	{
+		if (lineSystems.size() < 1) return;
 		for (auto& child : Scene::Instance()->SceneObject->node.children)
 		{
 			GenerateAndDrawFastLineChildren(&Scene::Instance()->SceneObject->node, child);
