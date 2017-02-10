@@ -268,6 +268,10 @@ namespace Subdivision
 		GLuint ViewMatrixHandle = glGetUniformLocation(currentShaderID, "V");
 		glUniformMatrix4fv(ViewMatrixHandle, 1, GL_FALSE, &View[0][0]);
 
+		GLuint cameraPos = glGetUniformLocation(currentShaderID, "CameraPos");
+		Vector3 camPos = currentCamera->GetPosition2();
+		glUniform3fv(cameraPos, 1, &camPos.x);
+
 		objectsRendered = 0;
 		for (auto& obj : Scene::Instance()->objectsToRender)
 		{

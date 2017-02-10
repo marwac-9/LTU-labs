@@ -1,0 +1,4 @@
+Resources/textures/uvmap_2.dds
+Resources/textures/waternormal2.dds
+Resources/textures/waterdudv2.dds
+Resources/textures/beachsand.dds
