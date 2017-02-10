@@ -272,50 +272,6 @@ namespace SimpleWater
 	}
 
 	void
-	SimpleWaterApp::Draw()
-	{
-
-		Matrix4 View = currentCamera->getViewMatrix();
-		Matrix4 Projection = currentCamera->ProjectionMatrix;
-		Matrix4 ViewProjection = View*Projection;
-		ShaderManager::Instance()->SetCurrentShader(ShaderManager::Instance()->shaderIDs["color"]);
-		GLuint currentShaderID = ShaderManager::Instance()->GetCurrentShaderID();
-			
-		GLuint ViewMatrixHandle = glGetUniformLocation(currentShaderID, "V");
-		glUniformMatrix4fv(ViewMatrixHandle, 1, GL_FALSE, &View.toFloat()[0][0]);
-
-		GLuint fTime = glGetUniformLocation(currentShaderID, "fTime");
-		glUniform1f(fTime, (float)Time::currentTime);
-
-		GLuint CameraPos = glGetUniformLocation(currentShaderID, "CameraPos");
-		Matrix4 viewModel = View.inverse();
-		Vector3 camPos = viewModel.getPosition();
-		glUniform3fv(CameraPos, 1, &camPos.x);
-
-		GLuint screenSize = glGetUniformLocation(currentShaderID, "screenSize");
-		Vector2 scrSize = Vector2((float)windowWidth, (float)windowHeight);
-		glUniform2fv(screenSize, 1, &scrSize.x);
-
-		GLuint LightDir = glGetUniformLocation(currentShaderID, "LightInvDirection_worldspace");
-		glUniform3fv(LightDir, 1, &lightInvDir.x);
-
-		GLuint liPower = glGetUniformLocation(currentShaderID, "lightPower");
-		glUniform1f(liPower, light_power);
-
-		GLuint liColor = glGetUniformLocation(currentShaderID, "lightColor");
-		glUniform3fv(liColor, 1, &light_color.x);
-
-		objectsRendered = 0;
-		for (auto& obj : Scene::Instance()->objectsToRender)
-		{
-			if (FrustumManager::Instance()->isBoundingSphereInView(obj.second->GetWorldPosition(), obj.second->radius)) {
-				Render::draw(obj.second, ViewProjection, currentShaderID);
-				objectsRendered++;
-			}
-		}
-	}
-
-	void
 	SimpleWaterApp::Clear()
 	{
 		Scene::Instance()->Clear();
@@ -452,127 +408,6 @@ namespace SimpleWater
 	}
 
 	void
-	SimpleWaterApp::DrawWater()
-	{
-		ShaderManager::Instance()->SetCurrentShader(ShaderManager::Instance()->shaderIDs["water"]);
-		GLuint currentShaderID = ShaderManager::Instance()->GetCurrentShaderID();
-
-		glBindFramebuffer(GL_READ_FRAMEBUFFER, frameBufferHandle);
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, reflectionBufferHandle);
-		GLuint reflectionSampler = glGetUniformLocation(currentShaderID, "reflectionSampler");
-		glUniform1i(reflectionSampler, 0);
-
-		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, refractionBufferHandle);
-		GLuint refractionSampler = glGetUniformLocation(currentShaderID, "refractionSampler");
-		glUniform1i(refractionSampler, 1);
-
-		glActiveTexture(GL_TEXTURE2);
-		glBindTexture(GL_TEXTURE_2D, GraphicsStorage::textures[1]->TextureID); //normal
-		GLuint normalSampler = glGetUniformLocation(currentShaderID, "normalMapSampler");
-		glUniform1i(normalSampler, 2);
-
-		glActiveTexture(GL_TEXTURE3);
-		glBindTexture(GL_TEXTURE_2D, GraphicsStorage::textures[2]->TextureID); //dudv
-		GLuint dudvSampler = glGetUniformLocation(currentShaderID, "dudvMapSampler");
-		glUniform1i(dudvSampler, 3);
-
-		glActiveTexture(GL_TEXTURE4);
-		glBindTexture(GL_TEXTURE_2D, depthTextureBufferHandle);
-		GLuint depthSampler = glGetUniformLocation(currentShaderID, "depthMapSampler");
-		glUniform1i(depthSampler, 4);
-		
-		GLuint CameraPos = glGetUniformLocation(currentShaderID, "CameraPos");
-		Vector3 camPos = currentCamera->GetPosition2();
-		glUniform3fv(CameraPos, 1, &camPos.x);
-		GLuint screenSize = glGetUniformLocation(currentShaderID, "screenSize");
-		glUniform2f(screenSize, (float)windowWidth, (float)windowHeight);
-
-		GLuint near = glGetUniformLocation(currentShaderID, "near");
-		glUniform1f(near, this->near);
-		GLuint far = glGetUniformLocation(currentShaderID, "far");
-		glUniform1f(far, this->far);
-
-		GLuint waterColor = glGetUniformLocation(currentShaderID, "waterColor");
-		glUniform3fv(waterColor, 1, &water_color.x);
-
-		GLuint fTime = glGetUniformLocation(currentShaderID, "fTime");
-		glUniform1f(fTime, water_speed);
-
-		GLuint LightDir = glGetUniformLocation(currentShaderID, "LightInvDirection_worldspace");
-		glUniform3fv(LightDir, 1, &lightInvDir.x);
-
-		GLuint liPower = glGetUniformLocation(currentShaderID, "lightPower");
-		glUniform1f(liPower, light_power);
-
-		GLuint liColor = glGetUniformLocation(currentShaderID, "lightColor");
-		glUniform3fv(liColor, 1, &light_color.x);
-
-		GLuint waveStr = glGetUniformLocation(currentShaderID, "waveStrength");
-		glUniform1f(waveStr, wave_strength);
-		
-		GLuint maxDepthTransparent = glGetUniformLocation(currentShaderID, "maxDepthTransparent");
-		glUniform1f(maxDepthTransparent, max_depth_transparent);
-
-		GLuint waterRefractionBlend = glGetUniformLocation(currentShaderID, "waterRefractionDepth");
-		glUniform1f(waterRefractionBlend, water_color_refraction_blend);
-
-		Matrix4 dModel = water->CalculateOffsettedModel();
-		Matrix4F ModelMatrix = dModel.toFloat();
-		Matrix4F MVP = (dModel*CameraManager::Instance()->ViewProjection).toFloat();
-
-		GLuint MatrixHandle = glGetUniformLocation(currentShaderID, "MVP");
-		glUniformMatrix4fv(MatrixHandle, 1, GL_FALSE, &MVP[0][0]);
-
-		GLuint ModelMatrixHandle = glGetUniformLocation(currentShaderID, "M");
-		glUniformMatrix4fv(ModelMatrixHandle, 1, GL_FALSE, &ModelMatrix[0][0]);
-
-		GLuint shininess = glGetUniformLocation(currentShaderID, "shininess");
-		glUniform1f(shininess, water->mat->shininess);
-
-		GLuint specularIntensity = glGetUniformLocation(currentShaderID, "specularIntensity");
-		glUniform1f(specularIntensity, water->mat->specularIntensity);
-
-		GLuint tiling = glGetUniformLocation(currentShaderID, "tiling");
-		glUniform2f(tiling, water->mat->tileX, water->mat->tileY);
-
-		GLuint fresnel = glGetUniformLocation(currentShaderID, "fresnelAdjustment");
-		glUniform1f(fresnel, fresnelAdjustment);
-
-		GLuint watersize = glGetUniformLocation(currentShaderID, "waterSize");
-		glUniform1i(watersize, waterSize); 
-		
-		GLuint softenNormals = glGetUniformLocation(currentShaderID, "softenNormals");
-		glUniform1f(softenNormals, soften_normals);
-
-		glEnable(GL_BLEND);
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-		//bind vao before drawing
-		glBindVertexArray(water->mesh->vaoHandle);
-
-		// Draw the triangles !
-		glDrawElements(GL_TRIANGLES, water->mesh->indicesSize, GL_UNSIGNED_INT, (void*)0); // mode, count, type, element array buffer offset
-
-		glDisable(GL_BLEND);
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, 0);
-
-		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, 0);
-
-		glActiveTexture(GL_TEXTURE2);
-		glBindTexture(GL_TEXTURE_2D, 0);
-
-		glActiveTexture(GL_TEXTURE3);
-		glBindTexture(GL_TEXTURE_2D, 0);
-
-		glActiveTexture(GL_TEXTURE4);
-		glBindTexture(GL_TEXTURE_2D, 0);
-	}
-
-	void
 	SimpleWaterApp::SetUpFrameBuffer(int windowWidth, int windowHeight)
 	{
 		//set up frame buffer
@@ -627,200 +462,6 @@ namespace SimpleWater
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	}
 
-	void
-	SimpleWaterApp::DrawReflection()
-	{
-		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, frameBufferHandle);
-		GLenum DrawBuffers[] = { GL_COLOR_ATTACHMENT0 };
-		glDrawBuffers(1, DrawBuffers);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		
-		float plane[4] = { 0.0, 1.0, 0.0, 0.f }; //water at y=0 //last value is for water height
-		glEnable(GL_CLIP_PLANE0);
-
-		glCullFace(GL_FRONT);
-		Matrix4 View = currentCamera->getViewMatrix();
-
-		Vector3 pos = currentCamera->GetInitPos();
-		pos.y = -pos.y;
-		Vector3 dir = currentCamera->getDirection();
-		dir.y = -dir.y;
-		Vector3 right = currentCamera->getRight();
-		View = Matrix4::lookAt(
-			pos,
-			pos + dir,
-			right.crossProd(dir)
-			);
-		View = View*Matrix4::scale(Vector3(1.f, -1.f, 1.f));
-		
-		Matrix4 Projection = currentCamera->ProjectionMatrix;
-		Matrix4 ViewProjection = View*Projection;
-
-		ShaderManager::Instance()->SetCurrentShader(ShaderManager::Instance()->shaderIDs["skybox"]);
-		GLuint currentShaderID = ShaderManager::Instance()->GetCurrentShaderID();
-
-		glDepthMask(GL_FALSE);
-		Matrix4 skyboxView = View;
-		skyboxView[3][0] = 0;
-		skyboxView[3][1] = 0;
-		skyboxView[3][2] = 0;
-
-		GLuint planeHandle = glGetUniformLocation(currentShaderID, "plane");
-		glUniform4fv(planeHandle, 1, &plane[0]);
-
-		Matrix4 ViewProjection2 = skyboxView*Projection;
-		Render::drawSkybox(skybox, ViewProjection2, ShaderManager::Instance()->GetCurrentShaderID());
-
-		glDepthMask(GL_TRUE);
-
-		ShaderManager::Instance()->SetCurrentShader(ShaderManager::Instance()->shaderIDs["color"]);
-		currentShaderID = ShaderManager::Instance()->GetCurrentShaderID();
-
-		planeHandle = glGetUniformLocation(currentShaderID, "plane");
-		glUniform4fv(planeHandle, 1, &plane[0]);
-
-		GLuint ViewMatrixHandle = glGetUniformLocation(currentShaderID, "V");
-		glUniformMatrix4fv(ViewMatrixHandle, 1, GL_FALSE, &View.toFloat()[0][0]);
-
-		GLuint fTime = glGetUniformLocation(currentShaderID, "fTime");
-		glUniform1f(fTime, (float)Time::currentTime);
-
-		GLuint CameraPos = glGetUniformLocation(currentShaderID, "CameraPos");
-		Matrix4 viewModel = View.inverse();
-		Vector3 camPos = viewModel.getPosition();
-		glUniform3fv(CameraPos, 1, &camPos.x);
-
-		GLuint screenSize = glGetUniformLocation(currentShaderID, "screenSize");
-		glUniform2f(screenSize, (float)windowWidth, (float)windowHeight);
-
-		GLuint LightDir = glGetUniformLocation(currentShaderID, "LightInvDirection_worldspace");
-		glUniform3fv(LightDir, 1, &lightInvDir.x);
-
-		GLuint liPower = glGetUniformLocation(currentShaderID, "lightPower");
-		glUniform1f(liPower, light_power);
-
-		GLuint liColor = glGetUniformLocation(currentShaderID, "lightColor");
-		glUniform3fv(liColor, 1, &light_color.x);
-
-		FrustumManager::Instance()->ExtractPlanes(ViewProjection); //we do frustum culling against reflected frustum planes
-		for (auto& obj : Scene::Instance()->objectsToRender)
-		{
-			if (FrustumManager::Instance()->isBoundingSphereInView(obj.second->GetWorldPosition(), obj.second->radius)) {
-				Render::draw(obj.second, ViewProjection, currentShaderID);
-			}
-		}
-
-		glDisable(GL_CLIP_PLANE0);
-		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-		glCullFace(GL_BACK);
-	}
-
-	void
-	SimpleWaterApp::DrawRefraction()
-	{
-		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, frameBufferHandle);
-		GLenum DrawBuffers[] = { GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2 };
-		glDrawBuffers(2, DrawBuffers);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		ShaderManager::Instance()->SetCurrentShader(ShaderManager::Instance()->shaderIDs["color"]);
-
-		float plane[4] = { 0.0, -1.0, 0.0, 0.146f }; //water at y=0 //last value is for water height
-		glEnable(GL_CLIP_PLANE0);
-
-
-		Matrix4F View = currentCamera->getViewMatrix().toFloat();
-		GLuint currentShaderID = ShaderManager::Instance()->GetCurrentShaderID();
-
-		GLuint planeHandle = glGetUniformLocation(currentShaderID, "plane");
-		glUniform4fv(planeHandle, 1, &plane[0]);
-
-		GLuint ViewMatrixHandle = glGetUniformLocation(currentShaderID, "V");
-		glUniformMatrix4fv(ViewMatrixHandle, 1, GL_FALSE, &View[0][0]);
-		GLuint fTime = glGetUniformLocation(currentShaderID, "fTime");
-		glUniform1f(fTime, (float)Time::currentTime);
-		GLuint CameraPos = glGetUniformLocation(currentShaderID, "CameraPos");
-		Vector3 camPos = currentCamera->GetPosition2();
-		glUniform3fv(CameraPos, 1, &camPos.x);
-		GLuint screenSize = glGetUniformLocation(currentShaderID, "screenSize");
-		glUniform2f(screenSize, (float)windowWidth, (float)windowHeight);
-
-		GLuint LightDir = glGetUniformLocation(currentShaderID, "LightInvDirection_worldspace");
-		glUniform3fv(LightDir, 1, &lightInvDir.x);
-
-		GLuint liPower = glGetUniformLocation(currentShaderID, "lightPower");
-		glUniform1f(liPower, light_power);
-
-		GLuint liColor = glGetUniformLocation(currentShaderID, "lightColor");
-		glUniform3fv(liColor, 1, &light_color.x);
-
-		FrustumManager::Instance()->ExtractPlanes(CameraManager::Instance()->ViewProjection);
-
-		for (auto& obj : Scene::Instance()->objectsToRender)
-		{
-			if (FrustumManager::Instance()->isBoundingSphereInView(obj.second->GetWorldPosition(), obj.second->radius)) {
-				Render::draw(obj.second, CameraManager::Instance()->ViewProjection, currentShaderID);
-			}
-		}
-		glDisable(GL_CLIP_PLANE0);
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, 0);
-		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-	}
-
-	void
-	SimpleWaterApp::DrawTextures(int width, int height)
-	{
-		ShaderManager::Instance()->SetCurrentShader(ShaderManager::Instance()->shaderIDs["quadToScreen"]);
-
-		float fHeight = (float)height;
-		float fWidth = (float)width;
-		int y = (int)(fHeight*0.20f);
-		int glWidth = (int)(fWidth *0.20f);
-		int glHeight = (int)(fHeight*0.20f);
-
-		glEnable(GL_SCISSOR_TEST);
-		glScissor(0, 0, glWidth, glHeight);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		glDisable(GL_SCISSOR_TEST);
-		glViewport(0, 0, glWidth, glHeight);
-
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, reflectionBufferHandle);
-		DebugDraw::Instance()->DrawQuad();
-
-		glEnable(GL_SCISSOR_TEST);
-		glScissor(width - glWidth, 0, glWidth, glHeight);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		glDisable(GL_SCISSOR_TEST);
-		glViewport(width - glWidth, 0, glWidth, glHeight);
-
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, refractionBufferHandle);
-		DebugDraw::Instance()->DrawQuad();
-
-		glBindTexture(GL_TEXTURE_2D, 0);
-		glViewport(0, 0, width, height);
-	}
-
-	void
-	SimpleWaterApp::DrawSkybox()
-	{
-		ShaderManager::Instance()->SetCurrentShader(ShaderManager::Instance()->shaderIDs["skybox"]);
-
-		glDepthMask(GL_FALSE);
-		Matrix4 View = currentCamera->getViewMatrix();
-		Matrix4 Projection = currentCamera->ProjectionMatrix;
-
-		View[3][0] = 0;
-		View[3][1] = 0;
-		View[3][2] = 0;
-
-		Matrix4 ViewProjection = View*Projection;
-		Render::drawSkybox(skybox, ViewProjection, ShaderManager::Instance()->GetCurrentShaderID());
-
-		glDepthMask(GL_TRUE);
-	}
-
 	void SimpleWaterApp::DrawGUI()
 	{
 		ImGui::Begin("Properties", NULL, ImGuiWindowFlags_AlwaysAutoResize);
@@ -858,6 +499,378 @@ namespace SimpleWater
 
 		ImGui::SliderFloat("Soften Normals", &soften_normals, 2.0f, 9.0f);
 		ImGui::End();
+	}
+
+	void
+	SimpleWaterApp::DrawSkybox()
+	{
+		GLuint currentShader = ShaderManager::Instance()->shaderIDs["skybox"];
+		ShaderManager::Instance()->SetCurrentShader(currentShader);
+
+		glDepthMask(GL_FALSE);
+		Matrix4 View = currentCamera->getViewMatrix();
+		Matrix4 Projection = currentCamera->ProjectionMatrix;
+
+		View[3][0] = 0;
+		View[3][1] = 0;
+		View[3][2] = 0;
+		float plane[4] = { 0.0, 1.0, 0.0, 100000.146f }; //water at y=0 //last value is for water height
+
+		GLuint planeHandle = glGetUniformLocation(currentShader, "plane");
+		glUniform4fv(planeHandle, 1, &plane[0]);
+		Matrix4 ViewProjection = View*Projection;
+		Render::drawSkybox(skybox, ViewProjection, currentShader);
+
+		glDepthMask(GL_TRUE);
+	}
+
+	void
+		SimpleWaterApp::Draw()
+	{
+
+		Matrix4 View = currentCamera->getViewMatrix();
+		Matrix4 Projection = currentCamera->ProjectionMatrix;
+		Matrix4 ViewProjection = View*Projection;
+
+		GLuint currentShaderID = ShaderManager::Instance()->shaderIDs["color"];
+		ShaderManager::Instance()->SetCurrentShader(currentShaderID);
+
+		float plane[4] = { 0.0, 1.0, 0.0, 10000.f }; //water at y=0 //last value is for water height
+		GLuint planeHandle = glGetUniformLocation(currentShaderID, "plane");
+		glUniform4fv(planeHandle, 1, &plane[0]);
+
+		GLuint ViewMatrixHandle = glGetUniformLocation(currentShaderID, "V");
+		glUniformMatrix4fv(ViewMatrixHandle, 1, GL_FALSE, &View.toFloat()[0][0]);
+
+		GLuint fTime = glGetUniformLocation(currentShaderID, "fTime");
+		glUniform1f(fTime, (float)Time::currentTime);
+
+		GLuint CameraPos = glGetUniformLocation(currentShaderID, "CameraPos");
+		Matrix4 viewModel = View.inverse();
+		Vector3 camPos = viewModel.getPosition();
+		glUniform3fv(CameraPos, 1, &camPos.x);
+
+		GLuint screenSize = glGetUniformLocation(currentShaderID, "screenSize");
+		Vector2 scrSize = Vector2((float)windowWidth, (float)windowHeight);
+		glUniform2fv(screenSize, 1, &scrSize.x);
+
+		GLuint LightDir = glGetUniformLocation(currentShaderID, "LightInvDirection_worldspace");
+		glUniform3fv(LightDir, 1, &lightInvDir.x);
+
+		GLuint liPower = glGetUniformLocation(currentShaderID, "lightPower");
+		glUniform1f(liPower, light_power);
+
+		GLuint liColor = glGetUniformLocation(currentShaderID, "lightColor");
+		glUniform3fv(liColor, 1, &light_color.x);
+
+		objectsRendered = 0;
+		for (auto& obj : Scene::Instance()->objectsToRender)
+		{
+			if (FrustumManager::Instance()->isBoundingSphereInView(obj.second->GetWorldPosition(), obj.second->radius)) {
+				Render::draw(obj.second, ViewProjection, currentShaderID);
+				objectsRendered++;
+			}
+		}
+	}
+
+	void
+	SimpleWaterApp::DrawReflection()
+	{
+		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, frameBufferHandle);
+		GLenum DrawBuffers[] = { GL_COLOR_ATTACHMENT0 };
+		glDrawBuffers(1, DrawBuffers);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		float plane[4] = { 0.0, 1.0, 0.0, 0.f }; //water at y=0 //last value is for water height
+		glEnable(GL_CLIP_PLANE0);
+
+		glCullFace(GL_FRONT);
+		Matrix4 View = currentCamera->getViewMatrix();
+
+		Vector3 pos = currentCamera->GetInitPos();
+		pos.y = -pos.y;
+		Vector3 dir = currentCamera->getDirection();
+		dir.y = -dir.y;
+		Vector3 right = currentCamera->getRight();
+		View = Matrix4::lookAt(
+			pos,
+			pos + dir,
+			right.crossProd(dir)
+		);
+		View = View*Matrix4::scale(Vector3(1.f, -1.f, 1.f));
+
+		Matrix4 Projection = currentCamera->ProjectionMatrix;
+		Matrix4 ViewProjection = View*Projection;
+
+		GLuint currentShaderID = ShaderManager::Instance()->shaderIDs["skybox"];
+		ShaderManager::Instance()->SetCurrentShader(currentShaderID);
+
+		glDepthMask(GL_FALSE);
+		Matrix4 skyboxView = View;
+		skyboxView[3][0] = 0;
+		skyboxView[3][1] = 0;
+		skyboxView[3][2] = 0;
+
+		GLuint planeHandle = glGetUniformLocation(currentShaderID, "plane");
+		glUniform4fv(planeHandle, 1, &plane[0]);
+
+		Matrix4 ViewProjection2 = skyboxView*Projection;
+		Render::drawSkybox(skybox, ViewProjection2, currentShaderID);
+
+		glDepthMask(GL_TRUE);
+
+		currentShaderID = ShaderManager::Instance()->shaderIDs["color"];
+		ShaderManager::Instance()->SetCurrentShader(currentShaderID);
+
+		planeHandle = glGetUniformLocation(currentShaderID, "plane");
+		glUniform4fv(planeHandle, 1, &plane[0]);
+
+		GLuint ViewMatrixHandle = glGetUniformLocation(currentShaderID, "V");
+		glUniformMatrix4fv(ViewMatrixHandle, 1, GL_FALSE, &View.toFloat()[0][0]);
+
+		GLuint fTime = glGetUniformLocation(currentShaderID, "fTime");
+		glUniform1f(fTime, (float)Time::currentTime);
+
+		GLuint CameraPos = glGetUniformLocation(currentShaderID, "CameraPos");
+		Matrix4 viewModel = View.inverse();
+		Vector3 camPos = viewModel.getPosition();
+		glUniform3fv(CameraPos, 1, &camPos.x);
+
+		GLuint screenSize = glGetUniformLocation(currentShaderID, "screenSize");
+		glUniform2f(screenSize, (float)windowWidth, (float)windowHeight);
+
+		GLuint LightDir = glGetUniformLocation(currentShaderID, "LightInvDirection_worldspace");
+		glUniform3fv(LightDir, 1, &lightInvDir.x);
+
+		GLuint liPower = glGetUniformLocation(currentShaderID, "lightPower");
+		glUniform1f(liPower, light_power);
+
+		GLuint liColor = glGetUniformLocation(currentShaderID, "lightColor");
+		glUniform3fv(liColor, 1, &light_color.x);
+
+		FrustumManager::Instance()->ExtractPlanes(ViewProjection); //we do frustum culling against reflected frustum planes
+		for (auto& obj : Scene::Instance()->objectsToRender)
+		{
+			if (FrustumManager::Instance()->isBoundingSphereInView(obj.second->GetWorldPosition(), obj.second->radius)) {
+				Render::draw(obj.second, ViewProjection, currentShaderID);
+			}
+		}
+
+		//glDisable(GL_CLIP_PLANE0);
+		//glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+		glCullFace(GL_BACK);
+	}
+
+	void
+	SimpleWaterApp::DrawRefraction()
+	{
+		//glBindFramebuffer(GL_DRAW_FRAMEBUFFER, frameBufferHandle);
+		GLenum DrawBuffers[] = { GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2 };
+		glDrawBuffers(2, DrawBuffers);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		GLuint currentShaderID = ShaderManager::Instance()->shaderIDs["color"];
+		ShaderManager::Instance()->SetCurrentShader(currentShaderID);
+
+		float plane[4] = { 0.0, -1.0, 0.0, 0.146f }; //water at y=0 //last value is for water height
+		glEnable(GL_CLIP_PLANE0);
+
+
+		Matrix4F View = currentCamera->getViewMatrix().toFloat();
+
+		GLuint planeHandle = glGetUniformLocation(currentShaderID, "plane");
+		glUniform4fv(planeHandle, 1, &plane[0]);
+
+		GLuint ViewMatrixHandle = glGetUniformLocation(currentShaderID, "V");
+		glUniformMatrix4fv(ViewMatrixHandle, 1, GL_FALSE, &View[0][0]);
+		GLuint fTime = glGetUniformLocation(currentShaderID, "fTime");
+		glUniform1f(fTime, (float)Time::currentTime);
+		GLuint CameraPos = glGetUniformLocation(currentShaderID, "CameraPos");
+		Vector3 camPos = currentCamera->GetPosition2();
+		glUniform3fv(CameraPos, 1, &camPos.x);
+		GLuint screenSize = glGetUniformLocation(currentShaderID, "screenSize");
+		glUniform2f(screenSize, (float)windowWidth, (float)windowHeight);
+
+		GLuint LightDir = glGetUniformLocation(currentShaderID, "LightInvDirection_worldspace");
+		glUniform3fv(LightDir, 1, &lightInvDir.x);
+
+		GLuint liPower = glGetUniformLocation(currentShaderID, "lightPower");
+		glUniform1f(liPower, light_power);
+
+		GLuint liColor = glGetUniformLocation(currentShaderID, "lightColor");
+		glUniform3fv(liColor, 1, &light_color.x);
+
+		FrustumManager::Instance()->ExtractPlanes(CameraManager::Instance()->ViewProjection);
+
+		for (auto& obj : Scene::Instance()->objectsToRender)
+		{
+			if (FrustumManager::Instance()->isBoundingSphereInView(obj.second->GetWorldPosition(), obj.second->radius)) {
+				Render::draw(obj.second, CameraManager::Instance()->ViewProjection, currentShaderID);
+			}
+		}
+		glDisable(GL_CLIP_PLANE0);
+		//glActiveTexture(GL_TEXTURE0);
+		//glBindTexture(GL_TEXTURE_2D, 0);
+		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+	}
+
+	void
+	SimpleWaterApp::DrawWater()
+	{
+		GLuint currentShaderID = ShaderManager::Instance()->shaderIDs["water"];
+		ShaderManager::Instance()->SetCurrentShader(currentShaderID);
+
+		//glBindFramebuffer(GL_READ_FRAMEBUFFER, frameBufferHandle);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, reflectionBufferHandle);
+		GLuint reflectionSampler = glGetUniformLocation(currentShaderID, "reflectionSampler");
+		glUniform1i(reflectionSampler, 0);
+
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, refractionBufferHandle);
+		GLuint refractionSampler = glGetUniformLocation(currentShaderID, "refractionSampler");
+		glUniform1i(refractionSampler, 1);
+
+		glActiveTexture(GL_TEXTURE2);
+		glBindTexture(GL_TEXTURE_2D, GraphicsStorage::textures[1]->TextureID); //normal
+		GLuint normalSampler = glGetUniformLocation(currentShaderID, "normalMapSampler");
+		glUniform1i(normalSampler, 2);
+
+		glActiveTexture(GL_TEXTURE3);
+		glBindTexture(GL_TEXTURE_2D, GraphicsStorage::textures[2]->TextureID); //dudv
+		GLuint dudvSampler = glGetUniformLocation(currentShaderID, "dudvMapSampler");
+		glUniform1i(dudvSampler, 3);
+
+		glActiveTexture(GL_TEXTURE4);
+		glBindTexture(GL_TEXTURE_2D, depthTextureBufferHandle);
+		GLuint depthSampler = glGetUniformLocation(currentShaderID, "depthMapSampler");
+		glUniform1i(depthSampler, 4);
+
+		GLuint CameraPos = glGetUniformLocation(currentShaderID, "CameraPos");
+		Vector3 camPos = currentCamera->GetPosition2();
+		glUniform3fv(CameraPos, 1, &camPos.x);
+		GLuint screenSize = glGetUniformLocation(currentShaderID, "screenSize");
+		glUniform2f(screenSize, (float)windowWidth, (float)windowHeight);
+
+		GLuint near = glGetUniformLocation(currentShaderID, "near");
+		glUniform1f(near, this->near);
+		GLuint far = glGetUniformLocation(currentShaderID, "far");
+		glUniform1f(far, this->far);
+
+		GLuint waterColor = glGetUniformLocation(currentShaderID, "waterColor");
+		glUniform3fv(waterColor, 1, &water_color.x);
+
+		GLuint fTime = glGetUniformLocation(currentShaderID, "fTime");
+		glUniform1f(fTime, water_speed);
+
+		GLuint LightDir = glGetUniformLocation(currentShaderID, "LightInvDirection_worldspace");
+		glUniform3fv(LightDir, 1, &lightInvDir.x);
+
+		GLuint liPower = glGetUniformLocation(currentShaderID, "lightPower");
+		glUniform1f(liPower, light_power);
+
+		GLuint liColor = glGetUniformLocation(currentShaderID, "lightColor");
+		glUniform3fv(liColor, 1, &light_color.x);
+
+		GLuint waveStr = glGetUniformLocation(currentShaderID, "waveStrength");
+		glUniform1f(waveStr, wave_strength);
+
+		GLuint maxDepthTransparent = glGetUniformLocation(currentShaderID, "maxDepthTransparent");
+		glUniform1f(maxDepthTransparent, max_depth_transparent);
+
+		GLuint waterRefractionBlend = glGetUniformLocation(currentShaderID, "waterRefractionDepth");
+		glUniform1f(waterRefractionBlend, water_color_refraction_blend);
+
+		Matrix4 dModel = water->CalculateOffsettedModel();
+		Matrix4F ModelMatrix = dModel.toFloat();
+		Matrix4F MVP = (dModel*CameraManager::Instance()->ViewProjection).toFloat();
+
+		GLuint MatrixHandle = glGetUniformLocation(currentShaderID, "MVP");
+		glUniformMatrix4fv(MatrixHandle, 1, GL_FALSE, &MVP[0][0]);
+
+		GLuint ModelMatrixHandle = glGetUniformLocation(currentShaderID, "M");
+		glUniformMatrix4fv(ModelMatrixHandle, 1, GL_FALSE, &ModelMatrix[0][0]);
+
+		GLuint shininess = glGetUniformLocation(currentShaderID, "shininess");
+		glUniform1f(shininess, water->mat->shininess);
+
+		GLuint specularIntensity = glGetUniformLocation(currentShaderID, "specularIntensity");
+		glUniform1f(specularIntensity, water->mat->specularIntensity);
+
+		GLuint tiling = glGetUniformLocation(currentShaderID, "tiling");
+		glUniform2f(tiling, water->mat->tileX, water->mat->tileY);
+
+		GLuint fresnel = glGetUniformLocation(currentShaderID, "fresnelAdjustment");
+		glUniform1f(fresnel, fresnelAdjustment);
+
+		GLuint watersize = glGetUniformLocation(currentShaderID, "waterSize");
+		glUniform1i(watersize, waterSize);
+
+		GLuint softenNormals = glGetUniformLocation(currentShaderID, "softenNormals");
+		glUniform1f(softenNormals, soften_normals);
+
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+		//bind vao before drawing
+		glBindVertexArray(water->mesh->vaoHandle);
+
+		// Draw the triangles !
+		glDrawElements(GL_TRIANGLES, water->mesh->indicesSize, GL_UNSIGNED_INT, (void*)0); // mode, count, type, element array buffer offset
+
+		glDisable(GL_BLEND);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, 0);
+
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, 0);
+
+		glActiveTexture(GL_TEXTURE2);
+		glBindTexture(GL_TEXTURE_2D, 0);
+
+		glActiveTexture(GL_TEXTURE3);
+		glBindTexture(GL_TEXTURE_2D, 0);
+
+		glActiveTexture(GL_TEXTURE4);
+		glBindTexture(GL_TEXTURE_2D, 0);
+
+
+
+	}
+
+	void
+	SimpleWaterApp::DrawTextures(int width, int height)
+	{
+		ShaderManager::Instance()->SetCurrentShader(ShaderManager::Instance()->shaderIDs["quadToScreen"]);
+
+		float fHeight = (float)height;
+		float fWidth = (float)width;
+		int y = (int)(fHeight*0.20f);
+		int glWidth = (int)(fWidth *0.20f);
+		int glHeight = (int)(fHeight*0.20f);
+
+		glEnable(GL_SCISSOR_TEST);
+		glScissor(0, 0, glWidth, glHeight);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glDisable(GL_SCISSOR_TEST);
+		glViewport(0, 0, glWidth, glHeight);
+
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, reflectionBufferHandle);
+		DebugDraw::Instance()->DrawQuad();
+
+		glEnable(GL_SCISSOR_TEST);
+		glScissor(width - glWidth, 0, glWidth, glHeight);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glDisable(GL_SCISSOR_TEST);
+		glViewport(width - glWidth, 0, glWidth, glHeight);
+
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, refractionBufferHandle);
+		DebugDraw::Instance()->DrawQuad();
+
+		glBindTexture(GL_TEXTURE_2D, 0);
+		glViewport(0, 0, width, height);
 	}
 
 	Mesh* SimpleWaterApp::GenerateWaterMesh(int width, int height)
