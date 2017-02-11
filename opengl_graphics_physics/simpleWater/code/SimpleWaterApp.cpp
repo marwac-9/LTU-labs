@@ -75,7 +75,7 @@ namespace SimpleWater
 			currentCamera->ProjectionMatrix = Matrix4::OpenGLPersp(45.f, aspect, this->near, this->far);
 			UpdateTextureBuffers(this->windowWidth, this->windowHeight);
 			currentCamera->UpdateSize(width, height);
-			
+			CameraManager::Instance()->Update();
 		});
 
 		this->window->SetWindowIconifyFunction([this](int iconified){
@@ -248,7 +248,6 @@ namespace SimpleWater
 	void
 	SimpleWaterApp::InitGL()
 	{
-
 		// grey background
 		glClearColor(0.f, 0.f, 0.f, 1.0f);
 
@@ -476,6 +475,8 @@ namespace SimpleWater
 		ImGui::NewLine();
 		ImGui::Text("SHADING:");
 		ImGui::ColorEdit3("Water Color", (float*)&water_color);
+		ImGui::SliderFloat("Water Spec Intensity", (float*)&water->mat->specularIntensity, 0.0f, 5.0f);
+		ImGui::SliderFloat("Water Shininess", (float*)&water->mat->shininess, 0.0f, 100.0f);
 
 		ImGui::SliderFloat("Water Speed", &speed_multiplier, 0.0f, 5.0f);
 		water_speed = (float)Time::currentTime * 0.2f * speed_multiplier;

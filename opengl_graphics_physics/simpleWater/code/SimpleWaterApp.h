@@ -84,7 +84,7 @@ namespace SimpleWater
 		mwm::Vector3 water_color = mwm::Vector3(0.0, 0.6, 0.5);
 		float water_speed = 0.16f;
 		float speed_multiplier = 1.0f;
-		float water_tiling = 6.f;
+		float water_tiling = 8.f;
 		float sun_angle = 260.f;
 		float sun_height = 2.f;
 		float light_power = 1.f;
