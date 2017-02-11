@@ -1,7 +1,3 @@
-//
-// Created by marwac-9 on 9/16/15.
-//
-
 #include "SimpleWaterApp.h"
 #include <cstring>
 #include <time.h>
@@ -139,13 +135,14 @@ namespace SimpleWater
 			FrustumManager::Instance()->ExtractPlanes(CameraManager::Instance()->ViewProjection);
 			
 			Scene::Instance()->SceneObject->node.UpdateNodeTransform(initNode);
-			
-			DrawGUI();
-			DrawSkybox();
-			Draw();
-			DrawReflection();
-			DrawRefraction();
-			DrawWater();
+			//for HDR //draw current "to screen" to another texture draw water there too, then draw quad to screen from this texture
+			//for Bloom //draw current "to screen" to yet another texture in same shaders
+			DrawGUI(); // <-- to screen
+			DrawSkybox(); // <-- to screen
+			Draw(); // <-- to screen
+			DrawReflection(); // <-- to texture
+			DrawRefraction(); // <-- to texture
+			DrawWater(); // <-- to screen from textures
 			
 
 			DrawTextures(windowWidth, windowHeight);
@@ -447,8 +444,7 @@ namespace SimpleWater
 		glReadBuffer(GL_NONE);
 		//no color buffer
 		glDrawBuffer(GL_NONE);
-		//glDrawBuffer(GL_COLOR_ATTACHMENT0);
-		//glDrawBuffer(GL_NONE);
+
 		// Verify that the FBO is correct
 		GLenum Status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
 
@@ -535,7 +531,7 @@ namespace SimpleWater
 		GLuint currentShaderID = ShaderManager::Instance()->shaderIDs["color"];
 		ShaderManager::Instance()->SetCurrentShader(currentShaderID);
 
-		float plane[4] = { 0.0, 1.0, 0.0, 10000.f }; //water at y=0 //last value is for water height
+		float plane[4] = { 0.0, 1.0, 0.0, 10000.f };
 		GLuint planeHandle = glGetUniformLocation(currentShaderID, "plane");
 		glUniform4fv(planeHandle, 1, &plane[0]);
 
@@ -581,7 +577,7 @@ namespace SimpleWater
 		glDrawBuffers(1, DrawBuffers);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		float plane[4] = { 0.0, 1.0, 0.0, 0.f }; //water at y=0 //last value is for water height
+		float plane[4] = { 0.0, 1.0, 0.0, 0.f }; 
 		glEnable(GL_CLIP_PLANE0);
 
 		glCullFace(GL_FRONT);
@@ -656,17 +652,14 @@ namespace SimpleWater
 			}
 		}
 
-		//glDisable(GL_CLIP_PLANE0);
-		//glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 		glCullFace(GL_BACK);
 	}
 
 	void
 	SimpleWaterApp::DrawRefraction()
 	{
-		//glBindFramebuffer(GL_DRAW_FRAMEBUFFER, frameBufferHandle);
-		GLenum DrawBuffers[] = { GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2 };
-		glDrawBuffers(2, DrawBuffers);
+		GLenum DrawBuffers[] = { GL_COLOR_ATTACHMENT1 };
+		glDrawBuffers(1, DrawBuffers);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		GLuint currentShaderID = ShaderManager::Instance()->shaderIDs["color"];
@@ -709,8 +702,6 @@ namespace SimpleWater
 			}
 		}
 		glDisable(GL_CLIP_PLANE0);
-		//glActiveTexture(GL_TEXTURE0);
-		//glBindTexture(GL_TEXTURE_2D, 0);
 		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 	}
 
@@ -720,7 +711,6 @@ namespace SimpleWater
 		GLuint currentShaderID = ShaderManager::Instance()->shaderIDs["water"];
 		ShaderManager::Instance()->SetCurrentShader(currentShaderID);
 
-		//glBindFramebuffer(GL_READ_FRAMEBUFFER, frameBufferHandle);
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, reflectionBufferHandle);
 		GLuint reflectionSampler = glGetUniformLocation(currentShaderID, "reflectionSampler");
