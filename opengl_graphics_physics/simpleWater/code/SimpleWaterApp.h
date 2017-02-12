@@ -32,7 +32,7 @@ namespace SimpleWater
 	private:
 		void Clear();
 
-		void Draw();
+		
 		void InitGL();
 		void ClearBuffers();
 		void KeyCallback(int key, int scancode, int action, int mods);
@@ -40,7 +40,7 @@ namespace SimpleWater
 		void SetUpCamera();
 		void LoadScene1();
 		void LoadShaders();
-		void DrawWater();
+		
 		bool windowLocked = true;
 
 		bool running = false;
@@ -67,17 +67,35 @@ namespace SimpleWater
 		GLuint depthTextureBufferHandle;
 		GLuint depthBufferHandle;
 		GLuint frameBufferHandle;
+
+		GLuint postFrameBufferHandle;
+		GLuint hdrBufferTextureHandle;
+		GLuint brightLightBufferHandle;
+		GLuint postDepthBufferHandle;
+
+		GLuint blurFrameBufferHandle[2];
+		GLuint blurBufferHandle[2];
+
 		Object* selectedObject;
 		Object* skybox;
 		bool minimized = false;
 
 		std::vector<Object*> dynamicObjects;
+		
+		void SetUpPostBuffer(int windowWidth, int windowHeight);
+		void SetUpBlurrBuffer(int windowWidth, int windowHeight);
+		void SetUpFrameBuffer(int windowWidth, int windowHeight);
+		
+		void DrawGUI();
+		void DrawSkybox();
+		void Draw();
 		void DrawReflection();
 		void DrawRefraction();
-		void SetUpFrameBuffer(int windowWidth, int windowHeight);
+		void DrawWater();
+		void BlurLight();
+		void DrawHDR();
 		void DrawTextures(int width, int height);
-		void DrawSkybox();
-		void DrawGUI();
+
 		Mesh* GenerateWaterMesh(int width, int height);
 		void UpdateTextureBuffers(int windowWidth, int windowHeight);
 		//shader variables:
@@ -96,9 +114,13 @@ namespace SimpleWater
 		float water_color_refraction_blend = 23.f;
 		float fresnelAdjustment = 1.f;
 		float soften_normals = 3.0;
+		bool hdrEnabled = GL_TRUE;
+		bool bloomEnabled = GL_TRUE;
+		float exposure = 1.0f;
+		float gamma = 1.2f;
 		int waterSize = 2;
-		
-
+		int bloomSize = 4;
+		bool post = true;
 #pragma pack (push)
 #pragma pack(1)
 		struct VertexData
@@ -111,6 +133,6 @@ namespace SimpleWater
 			{}
 		};
 #pragma pack (pop) 
-
+		
 	};
 } // namespace 

@@ -7,6 +7,7 @@ in vec3 EyeDirection_worldspace;
 in vec3 LightDirection_worldspace;
 
 layout(location = 0) out vec4 color;
+layout(location = 1) out vec4 brightColor;
 
 uniform sampler2D myTextureSampler;
 
@@ -45,4 +46,9 @@ void main(){
 	float totalLight = (Ambient + Diffuse + Specular);
 
 	color = vec4(MaterialDiffuseColor * lightColor * lightPower * totalLight, 0.1f);
+	float brightness = dot(color.rgb, vec3(0.2126, 0.7152, 0.0722));
+	if (brightness > 1.0)
+		brightColor = color;
+	else
+		brightColor = vec4(0.0, 0.0, 0.0, 1.0);
 }

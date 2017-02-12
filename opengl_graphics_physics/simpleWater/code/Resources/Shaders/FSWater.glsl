@@ -8,6 +8,7 @@ in vec2 UV;
 in float moveFactor;
 
 layout(location = 0) out vec4 color;
+layout(location = 1) out vec4 brightColor;
 
 uniform sampler2D reflectionSampler;
 uniform sampler2D refractionSampler;
@@ -77,4 +78,9 @@ void main(){
 	color.rgb = mix(reflection, refraction, fresnelFactor); //blend reflection and refraction based on fresnel factor
 	color.rgb = color.rgb + specularHighlights; //apply specular
 	color.a = clamp(waterDepth / maxDepthTransparent, 0.0, 1.0); //change transparency based on depth of water, more transparent near the shore where water is shallow
+	float brightness = dot(color.rgb, vec3(0.2126, 0.7152, 0.0722));
+	if (brightness > 1.0)
+		brightColor = color;
+	else
+		brightColor = vec4(0.0, 0.0, 0.0, 1.0);
 }

@@ -99,6 +99,9 @@ namespace SimpleWater
 	{
 		InitGL();
 		SetUpFrameBuffer(this->windowWidth, this->windowHeight);
+		SetUpPostBuffer(this->windowWidth, this->windowHeight);
+		SetUpBlurrBuffer(this->windowWidth, this->windowHeight);
+
 		GraphicsManager::LoadAllAssets();
 
 		LoadScene1();
@@ -138,12 +141,30 @@ namespace SimpleWater
 			//for HDR //draw current "to screen" to another texture draw water there too, then draw quad to screen from this texture
 			//for Bloom //draw current "to screen" to yet another texture in same shaders
 			DrawGUI(); // <-- to screen
-			DrawSkybox(); // <-- to screen
-			Draw(); // <-- to screen
+			glBindFramebuffer(GL_DRAW_FRAMEBUFFER, frameBufferHandle);
 			DrawReflection(); // <-- to texture
 			DrawRefraction(); // <-- to texture
+			glBindFramebuffer(GL_DRAW_FRAMEBUFFER, postFrameBufferHandle);
+			DrawSkybox(); // <-- to screen
+			Draw(); // <-- to screen
 			DrawWater(); // <-- to screen from textures
+			if (post)
+			{
+				BlurLight();
+				glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+				DrawHDR();
+			}
+			else
+			{
+				glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+				ShaderManager::Instance()->SetCurrentShader(ShaderManager::Instance()->shaderIDs["quadToScreen"]);
+				glActiveTexture(GL_TEXTURE0);
+				glBindTexture(GL_TEXTURE_2D, hdrBufferTextureHandle);
+				DebugDraw::Instance()->DrawQuad();
+			}
 			
+			
+
 
 			DrawTextures(windowWidth, windowHeight);
 			
@@ -297,7 +318,7 @@ namespace SimpleWater
 		water->SetOrientation(Quaternion(1.57f, Vector3(0.f, 1.f, 0.f)));
 		water->node.UpdateNodeTransform(Scene::Instance()->SceneObject->node);
 		newMaterial->SetShininess(10.f);
-		newMaterial->SetSpecularIntensity(0.5f);
+		newMaterial->SetSpecularIntensity(0.55f);
 		newMaterial->tileX = 6.f;
 		newMaterial->tileY = 6.f;
 		GraphicsStorage::materials.push_back(newMaterial);
@@ -331,6 +352,7 @@ namespace SimpleWater
 			Object* sphere = Scene::Instance()->addObjectToScene("icosphere", Scene::Instance()->generateRandomIntervallVectorFlat(-20, 20, Scene::axis::y, -5));
 			sphere->mat->SetSpecularIntensity(3.0f);
 			sphere->mat->SetShininess(20.0f);
+			//sphere->mat->SetColor(Vector3(2.f,2.f,2.f));
 		}
 
 		for (int i = 0; i < 20; i++)
@@ -338,6 +360,7 @@ namespace SimpleWater
 			Object* sphere = Scene::Instance()->addObjectToScene("sphere", Scene::Instance()->generateRandomIntervallVectorFlat(-20, 20, Scene::axis::y, 5));
 			sphere->mat->SetSpecularIntensity(3.0f);
 			sphere->mat->SetShininess(20.0f);
+			//sphere->mat->SetColor(Vector3(2.f, 2.f, 2.f));
 		}
 
 		for (int i = 0; i < 8; i++)
@@ -345,6 +368,7 @@ namespace SimpleWater
 			Object* sphere = Scene::Instance()->addObjectToScene("cube", Vector3(30.f, i * 2.f, 30.f));
 			sphere->mat->SetSpecularIntensity(3.0f);
 			sphere->mat->SetShininess(20.0f);
+			//sphere->mat->SetColor(Vector3(2.f, 2.f, 2.f));
 		}
 
 		for (int i = 0; i < 8; i++)
@@ -401,6 +425,8 @@ namespace SimpleWater
 		ShaderManager::Instance()->AddShader("water", GraphicsManager::LoadShaders("Resources/Shaders/VSWater.glsl", "Resources/Shaders/FSWater.glsl"));
 		ShaderManager::Instance()->AddShader("quadToScreen", GraphicsManager::LoadShaders("Resources/Shaders/VSQuadToScreen.glsl", "Resources/Shaders/FSQuadToScreen.glsl"));
 		ShaderManager::Instance()->AddShader("skybox", GraphicsManager::LoadShaders("Resources/Shaders/VSSkybox.glsl", "Resources/Shaders/FSSkybox.glsl"));
+		ShaderManager::Instance()->AddShader("blur", GraphicsManager::LoadShaders("Resources/Shaders/VSBlur.glsl", "Resources/Shaders/FSBlur.glsl"));
+		ShaderManager::Instance()->AddShader("hdrBloom", GraphicsManager::LoadShaders("Resources/Shaders/VSHDRBloom.glsl", "Resources/Shaders/FSHDRBloom.glsl"));
 	}
 
 	void
@@ -457,13 +483,115 @@ namespace SimpleWater
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	}
 
-	void SimpleWaterApp::DrawGUI()
+	void
+	SimpleWaterApp::SetUpPostBuffer(int windowWidth, int windowHeight)
+	{
+		//set up frame buffer
+
+		// Create the FBO
+		glGenFramebuffers(1, &postFrameBufferHandle);
+		glBindFramebuffer(GL_FRAMEBUFFER, postFrameBufferHandle);
+
+		glGenTextures(1, &hdrBufferTextureHandle);
+		glBindTexture(GL_TEXTURE_2D, hdrBufferTextureHandle);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, windowWidth, windowHeight, 0, GL_RGB, GL_FLOAT, NULL);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, hdrBufferTextureHandle, 0);
+
+		glGenTextures(1, &brightLightBufferHandle);
+		glBindTexture(GL_TEXTURE_2D, brightLightBufferHandle);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, windowWidth, windowHeight, 0, GL_RGB, GL_FLOAT, NULL);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, brightLightBufferHandle, 0);
+
+		glGenTextures(1, &postDepthBufferHandle);
+		glBindTexture(GL_TEXTURE_2D, postDepthBufferHandle);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32, windowWidth, windowHeight, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, postDepthBufferHandle, 0);
+
+		// Disable reading to avoid problems with older GPUs
+		glReadBuffer(GL_NONE);
+		//no color buffer
+		glDrawBuffer(GL_NONE);
+
+		// Verify that the FBO is correct
+		GLenum Status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+
+		if (Status != GL_FRAMEBUFFER_COMPLETE) {
+			printf("FB error, status: 0x%x\n", Status);
+			return;
+		}
+
+		// Restore the default framebuffer
+		glBindTexture(GL_TEXTURE_2D, 0);
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	}
+
+	void
+	SimpleWaterApp::SetUpBlurrBuffer(int windowWidth, int windowHeight)
+	{
+		//set up blur frame buffer
+		// Create the FBO
+		glGenFramebuffers(2, blurFrameBufferHandle);
+		glGenTextures(2, blurBufferHandle);
+		for (int i = 0; i < 2; i++)
+		{
+			glBindFramebuffer(GL_FRAMEBUFFER, blurFrameBufferHandle[i]);
+			glBindTexture(GL_TEXTURE_2D, blurBufferHandle[i]);
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, windowWidth, windowHeight, 0, GL_RGB, GL_FLOAT, NULL);
+			//glGenerateMipmap(GL_TEXTURE_2D);
+			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+			glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, blurBufferHandle[i], 0);
+
+			// Disable reading to avoid problems with older GPUs
+			glReadBuffer(GL_NONE);
+			//no color buffer
+			glDrawBuffer(GL_NONE);
+			//glDrawBuffer(GL_COLOR_ATTACHMENT0);
+			//glDrawBuffer(GL_NONE);
+			// Verify that the FBO is correct
+			GLenum Status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+
+			if (Status != GL_FRAMEBUFFER_COMPLETE) {
+				printf("FB error, status: 0x%x\n", Status);
+				return;
+			}
+
+			// Restore the default framebuffer
+			glBindTexture(GL_TEXTURE_2D, 0);
+			glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		}
+	}
+
+	void
+	SimpleWaterApp::DrawGUI()
 	{
 		ImGui::Begin("Properties", NULL, ImGuiWindowFlags_AlwaysAutoResize);
 		ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 		ImGui::Text("Objects rendered %d", objectsRendered);
 
+		ImGui::NewLine();
+		ImGui::Checkbox("Post Effects:", &post);
+		ImGui::Checkbox("HDR", &hdrEnabled);
+		ImGui::Checkbox("Bloom", &bloomEnabled);
+		ImGui::SliderInt("Bloom Size", &bloomSize, 0, 10);
+		ImGui::SliderFloat("Exposure", &exposure, 0.0f, 5.0f);
+		ImGui::SliderFloat("Gamma", &gamma, 0.0f, 5.0f);
 
+		ImGui::NewLine();
 		ImGui::Text("LIGHTING:");
 		ImGui::ColorEdit3("Sun Color", (float*)&light_color);
 		ImGui::SliderFloat("Sun Power", &light_power, 0.0f, 10.0f);
@@ -501,6 +629,9 @@ namespace SimpleWater
 	void
 	SimpleWaterApp::DrawSkybox()
 	{
+		GLenum DrawBuffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
+		glDrawBuffers(2, DrawBuffers);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		GLuint currentShader = ShaderManager::Instance()->shaderIDs["skybox"];
 		ShaderManager::Instance()->SetCurrentShader(currentShader);
 
@@ -522,7 +653,7 @@ namespace SimpleWater
 	}
 
 	void
-		SimpleWaterApp::Draw()
+	SimpleWaterApp::Draw()
 	{
 
 		Matrix4 View = currentCamera->getViewMatrix();
@@ -573,7 +704,6 @@ namespace SimpleWater
 	void
 	SimpleWaterApp::DrawReflection()
 	{
-		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, frameBufferHandle);
 		GLenum DrawBuffers[] = { GL_COLOR_ATTACHMENT0 };
 		glDrawBuffers(1, DrawBuffers);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -703,7 +833,6 @@ namespace SimpleWater
 			}
 		}
 		glDisable(GL_CLIP_PLANE0);
-		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 	}
 
 	void
@@ -824,9 +953,92 @@ namespace SimpleWater
 
 		glActiveTexture(GL_TEXTURE4);
 		glBindTexture(GL_TEXTURE_2D, 0);
+	}
 
+	void SimpleWaterApp::BlurLight()
+	{
+		GLuint currentShader = ShaderManager::Instance()->shaderIDs["blur"];
+		ShaderManager::Instance()->SetCurrentShader(currentShader);
 
+		GLuint scaleUniform = glGetUniformLocation(currentShader, "scaleUniform");
 
+		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, blurFrameBufferHandle[1]);
+		glDrawBuffer(GL_COLOR_ATTACHMENT0);
+
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glUniform2f(scaleUniform, 1.0f / (float)windowWidth, 0.0f); //horizontally
+
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, brightLightBufferHandle);
+
+		DebugDraw::Instance()->DrawQuad();
+
+		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, blurFrameBufferHandle[0]); //final blur result is stored in the blurFrameBufferHandle 0
+		glDrawBuffer(GL_COLOR_ATTACHMENT0);
+
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glUniform2f(scaleUniform, 0.0f, 1.0f / (float)windowHeight); //vertically
+
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, blurBufferHandle[1]);
+
+		DebugDraw::Instance()->DrawQuad();
+
+		for (int i = 0; i < bloomSize; i++) {
+			glBindFramebuffer(GL_DRAW_FRAMEBUFFER, blurFrameBufferHandle[1]);
+			glDrawBuffer(GL_COLOR_ATTACHMENT0);
+
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+			glUniform2f(scaleUniform, 1.0f / (float)windowWidth, 0.0f); //horizontally
+
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D, blurBufferHandle[0]);
+
+			DebugDraw::Instance()->DrawQuad();
+
+			glBindFramebuffer(GL_DRAW_FRAMEBUFFER, blurFrameBufferHandle[0]); //final blur result is stored in the blurFrameBufferHandle 0
+			glDrawBuffer(GL_COLOR_ATTACHMENT0);
+
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+			glUniform2f(scaleUniform, 0.0f, 1.0f / (float)windowHeight); //vertically
+
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D, blurBufferHandle[1]);
+
+			DebugDraw::Instance()->DrawQuad();
+		}
+	}
+
+	void
+	SimpleWaterApp::DrawHDR()
+	{
+		//we draw color to the screen
+		GLuint hdrBloom = ShaderManager::Instance()->shaderIDs["hdrBloom"];
+		ShaderManager::Instance()->SetCurrentShader(hdrBloom);
+
+		GLuint hdrEnabled = glGetUniformLocation(hdrBloom, "hdr");
+		GLuint bloomEnabled = glGetUniformLocation(hdrBloom, "bloom");
+		GLuint exposure = glGetUniformLocation(hdrBloom, "exposure");
+		GLuint gamma = glGetUniformLocation(hdrBloom, "gamma");
+
+		glUniform1i(hdrEnabled, this->hdrEnabled);
+		glUniform1f(exposure, this->exposure);
+		glUniform1f(gamma, this->gamma);
+		glUniform1i(bloomEnabled, this->bloomEnabled);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, hdrBufferTextureHandle);
+		GLuint hdrBuffer = glGetUniformLocation(hdrBloom, "hdrBuffer");
+		glUniform1i(hdrBuffer, 0);
+
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, blurBufferHandle[0]); //blurred bright light(bloom)
+		GLuint bloomBuffer = glGetUniformLocation(hdrBloom, "bloomBuffer");
+		glUniform1i(bloomBuffer, 1);
+
+		DebugDraw::Instance()->DrawQuad();
+
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, 0);
 	}
 
 	void
@@ -858,6 +1070,26 @@ namespace SimpleWater
 
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, refractionBufferHandle);
+		DebugDraw::Instance()->DrawQuad();
+
+		glEnable(GL_SCISSOR_TEST);
+		glScissor(width - glWidth, height - glHeight, glWidth, glHeight);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glDisable(GL_SCISSOR_TEST);
+		glViewport(width - glWidth, height - glHeight, glWidth, glHeight);
+
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, blurBufferHandle[0]);
+		DebugDraw::Instance()->DrawQuad();
+
+		glEnable(GL_SCISSOR_TEST);
+		glScissor(0, height - glHeight, glWidth, glHeight);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glDisable(GL_SCISSOR_TEST);
+		glViewport(0, height - glHeight, glWidth, glHeight);
+
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, hdrBufferTextureHandle);
 		DebugDraw::Instance()->DrawQuad();
 
 		glBindTexture(GL_TEXTURE_2D, 0);
@@ -945,6 +1177,21 @@ namespace SimpleWater
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, windowWidth, windowHeight, 0, GL_RGB, GL_FLOAT, NULL);
 
 		glBindTexture(GL_TEXTURE_2D, depthTextureBufferHandle);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32, windowWidth, windowHeight, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+
+		glBindTexture(GL_TEXTURE_2D, hdrBufferTextureHandle);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, windowWidth, windowHeight, 0, GL_RGB, GL_FLOAT, NULL);
+
+		glBindTexture(GL_TEXTURE_2D, brightLightBufferHandle);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, windowWidth, windowHeight, 0, GL_RGB, GL_FLOAT, NULL);
+
+		glBindTexture(GL_TEXTURE_2D, blurBufferHandle[0]);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, windowWidth, windowHeight, 0, GL_RGBA, GL_FLOAT, NULL);
+
+		glBindTexture(GL_TEXTURE_2D, blurBufferHandle[1]);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, windowWidth, windowHeight, 0, GL_RGBA, GL_FLOAT, NULL);
+		
+		glBindTexture(GL_TEXTURE_2D, postDepthBufferHandle);
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32, windowWidth, windowHeight, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
 	}
 
