@@ -1173,7 +1173,7 @@ namespace Picking
 		
 		GLuint scaleUniform = glGetUniformLocation(ShaderManager::Instance()->GetCurrentShaderID(), "scaleUniform");
 		
-		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, FBOManager::Instance()->blurFrameBufferHandle[0]);
+		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, FBOManager::Instance()->blurFrameBufferHandle[1]);
 		glDrawBuffer(GL_COLOR_ATTACHMENT0);
 
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -1184,14 +1184,14 @@ namespace Picking
 
 		DebugDraw::Instance()->DrawQuad();
 
-		FBOManager::Instance()->BindFrameBuffer(draw, FBOManager::Instance()->blurFrameBufferHandle[1]); //final blur result is stored in the blurFrameBufferHandle 0
+		FBOManager::Instance()->BindFrameBuffer(draw, FBOManager::Instance()->blurFrameBufferHandle[0]); //final blur result is stored in the blurFrameBufferHandle 0
 		glDrawBuffer(GL_COLOR_ATTACHMENT0);
 
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glUniform2f(scaleUniform, 0.0f, 1.0f / (float)windowHeight); //vertically
 
 		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, FBOManager::Instance()->blurBufferHandle[0]);
+		glBindTexture(GL_TEXTURE_2D, FBOManager::Instance()->blurBufferHandle[1]);
 
 		DebugDraw::Instance()->DrawQuad();
 
