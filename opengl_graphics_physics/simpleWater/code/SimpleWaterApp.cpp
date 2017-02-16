@@ -135,19 +135,19 @@ namespace SimpleWater
 			Scene::Instance()->SceneObject->node.UpdateNodeTransform(initNode);
 			//for HDR //draw current "to screen" to another texture draw water there too, then draw quad to screen from this texture
 			//for Bloom //draw current "to screen" to yet another texture in same shaders
-			DrawGUI(); // <-- to screen
+			DrawGUI(); // <-- (generate) to screen
 			glBindFramebuffer(GL_DRAW_FRAMEBUFFER, frameBufferHandle);
-			DrawReflection(); // <-- to texture
-			DrawRefraction(); // <-- to texture
+			DrawReflection(); // <-- to fb texture
+			DrawRefraction(); // <-- to fb texture
 			glBindFramebuffer(GL_DRAW_FRAMEBUFFER, postFrameBufferHandle);
-			DrawSkybox(); // <-- to screen
-			Draw(); // <-- to screen
-			DrawWater(); // <-- to screen from textures
+			DrawSkybox(); // <-- to pf texture
+			Draw(); // <-- to pf texture
+			DrawWater(); // <-- to pf textures
 			if (post)
 			{
-				BlurLight();
+				BlurLight(); //blur bright color
 				glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-				DrawHDR();
+				DrawHDR(); // <-- to screen from hdr and bloom textures
 			}
 			else
 			{
@@ -160,7 +160,7 @@ namespace SimpleWater
 			
 			
 			DrawTextures(windowWidth, windowHeight);
-			ImGui::Render();
+			ImGui::Render(); // <-- (draw) to screen
 			this->window->SwapBuffers();
 
 			lastTime = Time::currentTime;			
