@@ -626,7 +626,7 @@ namespace Picking
 		for (int i = 0; i < 60; i++)
 		{
 			Vector3 pos = Scene::Instance()->generateRandomIntervallVectorCubic(-100, 100);
-			float len = pos.vectLengthSSE();
+			float len = pos.vectLengt();
 			Object* sphere = Scene::Instance()->addObjectToScene("cube", pos);
 
 			//it is better if we can attach the node to the object
@@ -647,7 +647,7 @@ namespace Picking
 			for (int j = 0; j < 3; j++)
 			{
 				Vector3 childPos = Scene::Instance()->generateRandomIntervallVectorCubic((int)-len, (int)len) / 4.f;
-				float childLen = childPos.vectLengthSSE();
+				float childLen = childPos.vectLengt();
 				Object* child = Scene::Instance()->addObjectTo(sphere, "icosphere", childPos);
 
 				FastLine* line = lSystem->GetLine();
@@ -720,7 +720,7 @@ namespace Picking
 		for (int i = 0; i < 1000; i++)
 		{
 			Vector3 pos = Scene::Instance()->generateRandomIntervallVectorCubic(-80, 80);
-			float len = pos.vectLengthSSE();
+			float len = pos.vectLengt();
 			Object* object = Scene::Instance()->addObjectToScene("icosphere", pos);
 			//object->mat->SetDiffuseIntensity(10.3f);
 			RigidBody* body = new RigidBody(object);
