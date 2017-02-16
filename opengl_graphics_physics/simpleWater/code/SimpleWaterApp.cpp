@@ -103,21 +103,16 @@ namespace SimpleWater
 		SetUpBlurrBuffer(this->windowWidth, this->windowHeight);
 
 		GraphicsManager::LoadAllAssets();
-
 		LoadScene1();
 		
 		double lastTime = glfwGetTime();
-
 		window->SetCursorMode(GLFW_CURSOR_DISABLED);
-
 		SetUpCamera();
 
 		double fps_timer = 0;
 		Node initNode = Node();
 		Scene::Instance()->SceneObject->node.UpdateNodeTransform(initNode);
-
 		glfwSwapInterval(0); //unlock fps
-
 		ImGui_ImplGlfwGL3_Init(this->window->GetGLFWWindow(), false);
 		window->SetTitle("Simple Water");
 		while (running)
@@ -164,10 +159,7 @@ namespace SimpleWater
 			}
 			
 			
-
-
 			DrawTextures(windowWidth, windowHeight);
-			
 			ImGui::Render();
 			this->window->SwapBuffers();
 
@@ -299,6 +291,14 @@ namespace SimpleWater
 			delete obj;
 		}
 		dynamicObjects.clear();
+		for (auto& mesh : dynamicMeshes)
+		{
+			delete mesh;
+		}
+		dynamicMeshes.clear();
+		water = nullptr;
+		selectedObject = nullptr;
+		skybox = nullptr;
 	}
 
 	void
@@ -310,13 +310,19 @@ namespace SimpleWater
 		water = new Object();
 		dynamicObjects.push_back(water);
 		water->SetPosition(Vector3(0.f, 0.f, 0.f));
+
 		Material* newMaterial = new Material();
 		water->AssignMaterial(newMaterial);
-		water->AssignMesh(GenerateWaterMesh(waterSize, waterSize));
+		Mesh* waterMesh = GenerateWaterMesh(waterSize, waterSize);
+		dynamicMeshes.push_back(waterMesh);
+
+		water->AssignMesh(waterMesh);
 		water->SetScale(Vector3(100.f, 0.f, 100.f));
 		water->SetPosition(Vector3(50.f, 0.f, -50.f));
 		water->SetOrientation(Quaternion(1.57f, Vector3(0.f, 1.f, 0.f)));
+
 		water->node.UpdateNodeTransform(Scene::Instance()->SceneObject->node);
+
 		newMaterial->SetShininess(10.f);
 		newMaterial->SetSpecularIntensity(0.55f);
 		newMaterial->tileX = 6.f;
@@ -346,7 +352,6 @@ namespace SimpleWater
 		sphere2->mat->SetShininess(20.f);
 		sphere2->mat->SetSpecularIntensity(3.f);
 
-		
 		for (int i = 0; i < 20; i++)
 		{
 			Object* sphere = Scene::Instance()->addObjectToScene("icosphere", Scene::Instance()->generateRandomIntervallVectorFlat(-20, 20, Scene::axis::y, -5));
@@ -398,7 +403,7 @@ namespace SimpleWater
 			sphere->mat->SetSpecularIntensity(3.0f);
 			sphere->mat->SetShininess(20.0f);
 		}
-		
+
 		Object* plane = Scene::Instance()->addObjectToScene("pond", Vector3(0.f, -3.f, 0.f));
 		plane->mat->AssignTexture(GraphicsStorage::textures[3]);
 		plane->mat->tileX = 20;
@@ -413,6 +418,7 @@ namespace SimpleWater
 		window->SetCursorPos(windowMidX, windowMidY+100.0);
 		CameraManager::Instance()->AddCamera("default", currentCamera);
 		CameraManager::Instance()->SetCurrentCamera("default");
+
 		currentCamera->ProjectionMatrix = Matrix4::OpenGLPersp(45.0f, (float)this->windowWidth / (float)this->windowHeight, this->near, this->far);
 		DebugDraw::Instance()->Projection = &currentCamera->ProjectionMatrix;
 		DebugDraw::Instance()->View = &currentCamera->getViewMatrix();

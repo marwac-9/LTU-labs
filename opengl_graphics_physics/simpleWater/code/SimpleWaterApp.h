@@ -60,7 +60,7 @@ namespace SimpleWater
 		mwm::Vector3 lightPos = mwm::Vector3();
 		int objectsRendered = 0;
 
-		Object* water;
+		Object* water = nullptr;
 
 		GLuint reflectionBufferHandle;
 		GLuint refractionBufferHandle;
@@ -76,11 +76,12 @@ namespace SimpleWater
 		GLuint blurFrameBufferHandle[2];
 		GLuint blurBufferHandle[2];
 
-		Object* selectedObject;
-		Object* skybox;
+		Object* selectedObject = nullptr;
+		Object* skybox = nullptr;
 		bool minimized = false;
 
 		std::vector<Object*> dynamicObjects;
+		std::vector<Mesh*> dynamicMeshes;
 		
 		void SetUpPostBuffer(int windowWidth, int windowHeight);
 		void SetUpBlurrBuffer(int windowWidth, int windowHeight);
