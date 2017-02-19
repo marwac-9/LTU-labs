@@ -7,8 +7,6 @@ class DepthFirst
 {
 private:
 	std::vector<Face*> visitedNodes;
-	std::vector<Face*> stack;
-	std::vector<Face*> path;
 	bool checkIfVisited(Face*);
 	bool checkIfPath(Face*);
 public:

@@ -3,7 +3,6 @@
 
 #include <QtWidgets/QMainWindow>
 #include "ui_ai_lab2_qtv2.h"
-#include "QObject"
 #include "QTime"
 #include "QDebug"
 #include <QGraphicsItem>
@@ -36,7 +35,6 @@ public slots:
 	void drawmap();
 private:
 	Ui::Ai_Lab2_qtv2Class ui;
-	void addAllTriangles();
 	void drawfaces(const cop4530::Vector<Face*> &faces, QColor &color);
 	void drawgoals(const cop4530::Vector<Face*> &faces, QColor &color);
 	void clearMap();

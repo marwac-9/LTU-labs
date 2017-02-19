@@ -29,10 +29,6 @@ Ai_Lab2_qtv2::Ai_Lab2_qtv2(QWidget *parent)
 	scene = new QGraphicsScene(this);
 	ui.graphicsView->setScene(scene);
 	loadMapsPaths("Maps");
-	if (mapPaths.size() > 0)
-	{
-		ui.listWidget->setCurrentRow(0);
-	}
 	srand(time(NULL));
 	
 	
@@ -63,19 +59,6 @@ Ai_Lab2_qtv2::Ai_Lab2_qtv2(QWidget *parent)
 Ai_Lab2_qtv2::~Ai_Lab2_qtv2()
 {
 
-}
-
-void Ai_Lab2_qtv2::addAllTriangles()
-{
-	for (int i = 0; i < mesh->faces.size(); i++)
-	{
-		Face* curFace = mesh->faces.at(i);
-		QPolygonF polygon = buildPolygon(curFace);
-
-		// Add the polygon to the scene
-		QGraphicsPolygonItem* PolygonItem = scene->addPolygon(polygon);
-		polygons.push_back(PolygonItem);
-	}
 }
 
 void Ai_Lab2_qtv2::drawfaces(const Vector<Face*> &path, QColor& color)
@@ -247,6 +230,10 @@ void Ai_Lab2_qtv2::loadMapsPaths(const char * path) {
 	for (size_t i = 0; i < mapPaths.size(); i++)
 	{
 		ui.listWidget->addItem(mapPaths.at(i));
+	}
+	if (mapPaths.size() > 0)
+	{
+		ui.listWidget->setCurrentRow(0);
 	}
 }
 
