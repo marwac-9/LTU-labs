@@ -134,6 +134,8 @@ namespace Picking
 		Node initNode = Node();
 		Scene::Instance()->SceneObject->node.UpdateNodeTransform(initNode);
 		
+		//glfwSwapInterval(0); //unlock fps
+
         while (running)
         {
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -160,11 +162,8 @@ namespace Picking
 			PassPickingTexture(); //picking
 			PickingTest();
 
-			PhysicsManager::Instance()->SortAndSweep();
-			PhysicsManager::Instance()->NarrowTestSAT((float)Time::dtInv);
-
-			UpdateComponents();
-			Scene::Instance()->SceneObject->node.UpdateNodeTransform(initNode);
+			PhysicsManager::Instance()->Update(Time::dtInv);
+			Scene::Instance()->Update();
 
 			DrawPass2(); // color || debug
 			DebugDraw::Instance()->DrawCrossHair(windowWidth, windowHeight);
@@ -357,19 +356,19 @@ namespace Picking
 			//std::cout << pickedID << std::endl;
 			if (lastPickedObject != nullptr) //reset previously picked object color
 			{
-				lastPickedObject->mat->color = Vector3(0.f, 0.f, 0.f);
+				lastPickedObject->mat->color = Vector3F(0.f, 0.f, 0.f);
 			}
-			if (Scene::Instance()->objectsToRender.find(pickedID) != Scene::Instance()->objectsToRender.end())
+			if (Scene::Instance()->pickingList.find(pickedID) != Scene::Instance()->pickingList.end())
 			{
-				lastPickedObject = Scene::Instance()->objectsToRender[pickedID];
-				lastPickedObject->mat->color = Vector3(2.f, 1.f, 0.f);
+				lastPickedObject = Scene::Instance()->pickingList[pickedID];
+				lastPickedObject->mat->color = Vector3F(2.f, 1.f, 0.f);
 
-				Vector3 world_position;
+				Vector3F world_position;
 				FBOManager::Instance()->ReadWorldPos((unsigned int)leftMouseX, this->windowHeight - (unsigned int)leftMouseY, world_position.vect);
 				//Vector3 mouseInWorld = ConvertMousePosToWorld();
-
-				Vector3 impulse = (world_position - currentCamera->GetPosition2()).vectNormalize();
-				if (RigidBody* body = this->lastPickedObject->GetComponent<RigidBody>()) body->ApplyImpulse(impulse, 20.f, world_position);
+				Vector3 dWorldPos = Vector3(world_position.x, world_position.y, world_position.z);
+				Vector3 impulse = (dWorldPos - currentCamera->GetPosition2()).vectNormalize();
+				if (RigidBody* body = this->lastPickedObject->GetComponent<RigidBody>()) body->ApplyImpulse(impulse, 20.f, dWorldPos);
 			}
         }
     }
@@ -385,7 +384,7 @@ namespace Picking
 		mouse_p0s[3] = 1.f;
 
 		Vector4 my_mouse_in_world_space = currentCamera->ProjectionMatrix.inverse() * mouse_p0s;
-		my_mouse_in_world_space = currentCamera->getViewMatrix().inverse() * my_mouse_in_world_space;
+		my_mouse_in_world_space = currentCamera->ViewMatrix.inverse() * my_mouse_in_world_space;
 		my_mouse_in_world_space = my_mouse_in_world_space / my_mouse_in_world_space[3];
 
 		Vector3 my_mouse_in_world_space_vec3(my_mouse_in_world_space[0], my_mouse_in_world_space[1], my_mouse_in_world_space[2]);
@@ -421,13 +420,13 @@ namespace Picking
     void
     PickingApp::Draw()
     {
-		Matrix4F View = currentCamera->getViewMatrix().toFloat();
+		Matrix4F View = currentCamera->ViewMatrix.toFloat();
 		GLuint currentShaderID = ShaderManager::Instance()->GetCurrentShaderID();
 		GLuint ViewMatrixHandle = glGetUniformLocation(currentShaderID, "V");
 		glUniformMatrix4fv(ViewMatrixHandle, 1, GL_FALSE, &View[0][0]);
 
 		objectsRendered = 0;
-		for (auto& obj : Scene::Instance()->objectsToRender)
+		for (auto& obj : Scene::Instance()->pickingList)
 		{
 			if (FrustumManager::Instance()->isBoundingSphereInView(obj.second->GetWorldPosition(), obj.second->radius)) {
 				Render::draw(obj.second, CameraManager::Instance()->ViewProjection, currentShaderID);
@@ -442,18 +441,18 @@ namespace Picking
 		GLuint wireframeShader = ShaderManager::Instance()->shaderIDs["wireframe"];
 		for (auto& obj : PhysicsManager::Instance()->satOverlaps)
 		{
-			obj.rbody1->aabb.color = Vector3(1.f, 0.f, 0.f);
-			obj.rbody2->aabb.color = Vector3(1.f, 0.f, 0.f);
+			obj.rbody1->aabb.color = Vector3F(1.f, 0.f, 0.f);
+			obj.rbody2->aabb.color = Vector3F(1.f, 0.f, 0.f);
 		}
-		for (auto& obj : Scene::Instance()->objectsToRender)
+		for (auto& obj : Scene::Instance()->pickingList)
 		{
 			if (FrustumManager::Instance()->isBoundingSphereInView(obj.second->GetWorldPosition(), obj.second->radius)) {
 				if (RigidBody* body = obj.second->GetComponent<RigidBody>())
 				{
 					boundingBox->mat->SetColor(body->obb.color);
-					boundingBox->Draw(Matrix4::scale(obj.second->GetMeshDimensions())*obj.second->node.TopDownTransform, currentCamera->getViewMatrix(), currentCamera->ProjectionMatrix, wireframeShader);
+					boundingBox->Draw(Matrix4::scale(obj.second->GetMeshDimensions())*obj.second->node.TopDownTransform, currentCamera->ViewMatrix, currentCamera->ProjectionMatrix, wireframeShader);
 					boundingBox->mat->SetColor(body->aabb.color);
-					boundingBox->Draw(body->aabb.model, currentCamera->getViewMatrix(), currentCamera->ProjectionMatrix, wireframeShader);
+					boundingBox->Draw(body->aabb.model, currentCamera->ViewMatrix, currentCamera->ProjectionMatrix, wireframeShader);
 				}
 			}
 		}
@@ -462,7 +461,7 @@ namespace Picking
     void PickingApp::UpdateComponents()
     {
 		Scene::Instance()->SceneObject->Update();
-		for(auto& obj : Scene::Instance()->objectsToRender)
+		for(auto& obj : Scene::Instance()->pickingList)
 		{
 			obj.second->Update();
 			obj.second->CalculateRadius();
@@ -530,7 +529,7 @@ namespace Picking
 		Clear();
 		PhysicsManager::Instance()->gravity = Vector3(0.f, -9.f, 0.f);
 		scene4loaded = true;
-		Scene::Instance()->addRandomlyPhysicObjects("cube", 50);
+		Scene::Instance()->addRandomlyPhysicObjects("cube", 200);
 	}
 
 
@@ -538,13 +537,14 @@ namespace Picking
 	{
 		Clear();
 		PhysicsManager::Instance()->gravity = Vector3();
+
 		Scene::Instance()->addRandomlyPhysicObjects("icosphere", 600);
 	}
 
 
 	void PickingApp::Vortex()
 	{
-		for (auto& obj : Scene::Instance()->objectsToRender)
+		for (auto& obj : Scene::Instance()->pickingList)
 		{
 			if (RigidBody* body = obj.second->GetComponent<RigidBody>())
 			{
@@ -572,7 +572,7 @@ namespace Picking
 		CameraManager::Instance()->SetCurrentCamera("default");
 		currentCamera->ProjectionMatrix = Matrix4::OpenGLPersp(45.0f, (float)this->windowWidth / (float)this->windowHeight, 0.1f, 200.0f);
 		DebugDraw::Instance()->Projection = &currentCamera->ProjectionMatrix;
-		DebugDraw::Instance()->View = &currentCamera->getViewMatrix();
+		DebugDraw::Instance()->View = &currentCamera->ViewMatrix;
 	}
 
 	void PickingApp::LoadShaders()

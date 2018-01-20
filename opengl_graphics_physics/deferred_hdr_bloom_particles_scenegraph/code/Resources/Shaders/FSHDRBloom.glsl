@@ -7,6 +7,7 @@ uniform sampler2D bloomBuffer;
 uniform bool hdr;
 uniform float exposure;
 uniform float gamma;
+uniform float bloomIntensity;
 
 out vec4 color;
 
@@ -15,7 +16,7 @@ void main()
 	vec3 hdrColor = texture(hdrBuffer, UV).rgb;
 	vec3 bloomColor = texture(bloomBuffer, UV).rgb;
 
-	hdrColor += bloomColor; // additive blending
+	hdrColor += bloomColor * bloomIntensity; // additive blending
 	
 	if (hdr)
 	{

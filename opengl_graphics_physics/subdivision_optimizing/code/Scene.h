@@ -8,7 +8,7 @@ public:
 	static Scene* Instance();
 	int idCounter;
 	Object* addChildTo(Object* parentNodeGR);
-	std::map<int, Object*> objectsToRender;
+	std::map<int, Object*> pickingList;
 	Object* SceneObject;
 	Object* LastAddedObject;
 	Object* build();

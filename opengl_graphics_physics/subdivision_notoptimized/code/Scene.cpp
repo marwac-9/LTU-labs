@@ -31,7 +31,7 @@ Object* Scene::addChildTo(Object* parentObject)
 	parentObject->node.addChild(&child->node);
 
 	child->ID = idCounter;
-	objectsToRender[idCounter] = child;
+	pickingList[idCounter] = child;
 	idCounter++;
 	LastAddedObject = child;
 	return child;

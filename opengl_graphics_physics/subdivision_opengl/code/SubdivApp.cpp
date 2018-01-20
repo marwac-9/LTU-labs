@@ -252,7 +252,6 @@ namespace Subdivision
 		LoadShaders();
 		ShaderManager::Instance()->SetCurrentShader(ShaderManager::Instance()->shaderIDs["color"]);
 		LightID = glGetUniformLocation(ShaderManager::Instance()->shaderIDs["color"], "LightPosition_worldspace");
-		GLuint LightDir = glGetUniformLocation(ShaderManager::Instance()->shaderIDs["color"], "LightInvDirection_worldspace");
 		glUniform3f(LightID, 0.f, 0.f, 0.f);
 
 		this->window->GetWindowSize(&this->windowWidth, &this->windowHeight);
@@ -263,20 +262,21 @@ namespace Subdivision
 	void
 	SubdivisionApp::Draw()
 	{
-		Matrix4F View = currentCamera->getViewMatrix().toFloat();
+		Matrix4F View = currentCamera->ViewMatrix.toFloat();
 		GLuint currentShaderID = ShaderManager::Instance()->GetCurrentShaderID();
 		GLuint ViewMatrixHandle = glGetUniformLocation(currentShaderID, "V");
 		glUniformMatrix4fv(ViewMatrixHandle, 1, GL_FALSE, &View[0][0]);
 
 		GLuint cameraPos = glGetUniformLocation(currentShaderID, "CameraPos");
-		Vector3 camPos = currentCamera->GetPosition2();
+		Vector3F camPos = currentCamera->GetPosition2().toFloat();
 		glUniform3fv(cameraPos, 1, &camPos.x);
-
 		objectsRendered = 0;
-		for (auto& obj : Scene::Instance()->objectsToRender)
+		for (auto& obj : Scene::Instance()->pickingList)
 		{
+			obj.second->CalculateRadius();
 			if (FrustumManager::Instance()->isBoundingSphereInView(obj.second->GetWorldPosition(), obj.second->radius)) {
 				Render::draw(obj.second, CameraManager::Instance()->ViewProjection, currentShaderID);
+				printf("%d : %f\n", objectsRendered, obj.second->radius);
 				objectsRendered++;
 			}
 		}
@@ -368,6 +368,7 @@ namespace Subdivision
 		OBJ* subdividedOBJ = new OBJ(); //we need new renderable OBJ for subdivided half-edge mesh while proxy will still use the first generated OBJ
 		dynamicOBJs.push_back(subdividedOBJ);
 		HalfEdgeMesh::ExportMeshToOBJ(newHMesh, subdividedOBJ);
+		subdividedOBJ->CalculateDimensions();
 		GraphicsManager::LoadOBJToVBO(subdividedOBJ, newHMesh);
 		dynamicHEMeshes.push_back(newHMesh);
 		
@@ -390,7 +391,7 @@ namespace Subdivision
 
 		ObjectHalfMeshProxy->AssignMesh(proxyMesh); //and we assign now generated proxy mesh from constructedOBJ to the proxy Object
 		Material* newMaterialProxy = new Material();
-		newMaterialProxy->SetColor(Vector3(1.f, 0.f, 0.f));
+		newMaterialProxy->SetColor(Vector3F(1.f, 0.f, 0.f));
 		newMaterialProxy->AssignTexture(GraphicsStorage::textures.at(0));
 		GraphicsStorage::materials.push_back(newMaterialProxy);
 		ObjectHalfMeshProxy->AssignMaterial(newMaterialProxy);
@@ -410,14 +411,14 @@ namespace Subdivision
 	void
 	SubdivisionApp::SetUpCamera()
 	{
-		currentCamera = new Camera(Vector3(0.f, 3.f, 16.f), windowWidth, windowHeight);
-		currentCamera->Update((float)Time::timeStep);
+		currentCamera = new Camera(Vector3(0.0, 3.0, 16.0), windowWidth, windowHeight);
+		currentCamera->Update(Time::timeStep);
 		window->SetCursorPos(windowMidX, windowMidY);
 		CameraManager::Instance()->AddCamera("default", currentCamera);
 		CameraManager::Instance()->SetCurrentCamera("default");
-		currentCamera->ProjectionMatrix = Matrix4::OpenGLPersp(45.0f, (float)this->windowWidth / (float)this->windowHeight, 0.1f, 200.0f);
+		currentCamera->ProjectionMatrix = Matrix4::OpenGLPersp(45.0, (double)this->windowWidth / (double)this->windowHeight, 0.1, 200.0);
 		DebugDraw::Instance()->Projection = &currentCamera->ProjectionMatrix;
-		DebugDraw::Instance()->View = &currentCamera->getViewMatrix();
+		DebugDraw::Instance()->View = &currentCamera->ViewMatrix;
 	}
 
 	void

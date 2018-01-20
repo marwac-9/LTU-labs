@@ -8,6 +8,7 @@ uniform bool hdr;
 uniform bool bloom;
 uniform float exposure;
 uniform float gamma;
+uniform float bloomIntensity;
 
 out vec4 color;
 
@@ -17,7 +18,7 @@ void main()
 	vec3 bloomColor = texture(bloomBuffer, UV).rgb;
 	if(bloom) 
 	{
-		hdrColor += bloomColor; // additive blending
+		hdrColor += bloomColor * bloomIntensity; // additive blending
 	}
 	
 	if (hdr)

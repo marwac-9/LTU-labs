@@ -27,7 +27,7 @@ SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/bin")
 
 ADD_EXECUTABLE(deferred_hdr_bloom_particles_scenegraph ${ALLSRCS})
 SET_TARGET_PROPERTIES(deferred_hdr_bloom_particles_scenegraph PROPERTIES FOLDER "LABS")
-TARGET_LINK_LIBRARIES(deferred_hdr_bloom_particles_scenegraph camera frustum graphics_manager scene gl_window app particle camera_manager)
+TARGET_LINK_LIBRARIES(deferred_hdr_bloom_particles_scenegraph camera frustum graphics_manager scene gl_windowd app particle camera_manager)
 #ADD_DEPENDENCIES(deferred_particles_hdr core render)
 
 

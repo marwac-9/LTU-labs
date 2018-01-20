@@ -100,15 +100,15 @@ namespace SimpleWater
 		Mesh* GenerateWaterMesh(int width, int height);
 		void UpdateTextureBuffers(int windowWidth, int windowHeight);
 		//shader variables:
-		mwm::Vector3 water_color = mwm::Vector3(0.0, 0.6, 0.5);
+		mwm::Vector3F water_color = mwm::Vector3F(0.0f, 0.6f, 0.5f);
 		float water_speed = 0.16f;
 		float speed_multiplier = 1.0f;
 		float water_tiling = 8.f;
 		float sun_angle = 260.f;
 		float sun_height = 2.f;
 		float light_power = 1.f;
-		mwm::Vector3 light_color = mwm::Vector3(1.0, 0.89, 0.74);
-		mwm::Vector3 lightInvDir = mwm::Vector3(-15.f, 2.f, 0.f);
+		mwm::Vector3F light_color = mwm::Vector3F(1.0f, 0.89f, 0.74f);
+		mwm::Vector3F lightInvDir = mwm::Vector3F(-15.f, 2.f, 0.f);
 		float wave_strength = 0.04f;
 		float wave_distortion = 4.f;
 		float max_depth_transparent = 4.f;
@@ -121,6 +121,7 @@ namespace SimpleWater
 		float gamma = 1.2f;
 		int waterSize = 2;
 		int bloomSize = 4;
+		float bloomIntensityF = 1.f;
 		bool post = true;
 #pragma pack (push)
 #pragma pack(1)

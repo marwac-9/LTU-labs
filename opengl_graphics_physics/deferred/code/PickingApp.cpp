@@ -136,8 +136,6 @@ namespace Picking
 		double fps_timer = 0;
 		Node initNode = Node();
 		Scene::Instance()->SceneObject->node.UpdateNodeTransform(initNode);
-		Scene::Instance()->MainPointLight->node.UpdateNodeTransform(initNode);
-		Scene::Instance()->MainDirectionalLight->node.UpdateNodeTransform(initNode);
 
         while (running)
         {
@@ -186,8 +184,7 @@ namespace Picking
 			}
 			
 			Scene::Instance()->SceneObject->node.UpdateNodeTransform(initNode);
-			Scene::Instance()->MainPointLight->node.UpdateNodeTransform(initNode);
-			Scene::Instance()->MainDirectionalLight->node.UpdateNodeTransform(initNode);
+
 			PassPickingTexture(); //picking
 
 			DrawGeometryPass();
@@ -376,21 +373,22 @@ namespace Picking
 			{
 				if (std::find(Scene::Instance()->pointLights.begin(), Scene::Instance()->pointLights.end(), lastPickedObject) == Scene::Instance()->pointLights.end()) //if it's not light
 				{
-					lastPickedObject->mat->color = Vector3(0.f, 0.f, 0.f);
+					lastPickedObject->mat->color = Vector3F(0.f, 0.f, 0.f);
 					lastPickedObject->mat->SetDiffuseIntensity(1.f);
 				}
 			}  
-			if(Scene::Instance()->objectsToRender.find(pickedID) != Scene::Instance()->objectsToRender.end())
+			if(Scene::Instance()->pickingList.find(pickedID) != Scene::Instance()->pickingList.end())
 			{
-				lastPickedObject = Scene::Instance()->objectsToRender[pickedID];
-				lastPickedObject->mat->color = Vector3(0.5f, 0.25f, 0.f);
+				lastPickedObject = Scene::Instance()->pickingList[pickedID];
+				lastPickedObject->mat->color = Vector3F(0.5f, 0.25f, 0.f);
 				lastPickedObject->mat->SetDiffuseIntensity(3.f);
-				Vector3 world_position;
+				Vector3F world_position;
 				FBOManager::Instance()->ReadWorldPos((unsigned int)leftMouseX, this->windowHeight - (unsigned int)leftMouseY, world_position.vect);
 				//Vector3 mouseInWorld = ConvertMousePosToWorld();
-			
-				Vector3 impulse = (world_position - currentCamera->GetPosition2()).vectNormalize();
-				if (RigidBody* body = this->lastPickedObject->GetComponent<RigidBody>()) body->ApplyImpulse(impulse, 20.f, world_position);
+				Vector3 dWorldPos = Vector3(world_position.x, world_position.y, world_position.z);
+				Vector3 impulse = (dWorldPos - currentCamera->GetPosition2()).vectNormalize();
+
+				if (RigidBody* body = this->lastPickedObject->GetComponent<RigidBody>()) body->ApplyImpulse(impulse, 20.f, dWorldPos);
 			}
         }
     }
@@ -407,7 +405,7 @@ namespace Picking
 		mouse_p0s[3] = 1.f;
 
 		Vector4 my_mouse_in_world_space = currentCamera->ProjectionMatrix.inverse() * mouse_p0s;
-		my_mouse_in_world_space = currentCamera->getViewMatrix().inverse() * my_mouse_in_world_space;
+		my_mouse_in_world_space = currentCamera->ViewMatrix.inverse() * my_mouse_in_world_space;
 		my_mouse_in_world_space = my_mouse_in_world_space / my_mouse_in_world_space[3];
 
 		Vector3 my_mouse_in_world_space_vec3(my_mouse_in_world_space[0],my_mouse_in_world_space[1], my_mouse_in_world_space[2]);
@@ -444,13 +442,13 @@ namespace Picking
     void
 	PickingApp::Draw()
     {
-		Matrix4F View = currentCamera->getViewMatrix().toFloat();
+		Matrix4F View = currentCamera->ViewMatrix.toFloat();
 		GLuint currentShaderID = ShaderManager::Instance()->GetCurrentShaderID();
 		GLuint ViewMatrixHandle = glGetUniformLocation(currentShaderID, "V");
 		glUniformMatrix4fv(ViewMatrixHandle, 1, GL_FALSE, &View[0][0]);
 		
         objectsRendered = 0;
-        for(auto& obj : Scene::Instance()->objectsToRender)
+        for(auto& obj : Scene::Instance()->pickingList)
         {
 			if (FrustumManager::Instance()->isBoundingSphereInView(obj.second->GetWorldPosition(), obj.second->radius)) {
 				Render::draw(obj.second, CameraManager::Instance()->ViewProjection, currentShaderID);
@@ -464,7 +462,7 @@ namespace Picking
 		GLuint currentShaderID = ShaderManager::Instance()->GetCurrentShaderID();
 
 		objectsRendered = 0;
-		for (auto& obj : Scene::Instance()->objectsToRender)
+		for (auto& obj : Scene::Instance()->pickingList)
 		{
 			if (FrustumManager::Instance()->isBoundingSphereInView(obj.second->GetWorldPosition(), obj.second->radius)) {
 				Render::drawGeometry(obj.second, CameraManager::Instance()->ViewProjection, currentShaderID);
@@ -484,20 +482,20 @@ namespace Picking
 		ShaderManager::Instance()->SetCurrentShader(wireframeShader);
 		for (auto& obj : PhysicsManager::Instance()->satOverlaps)
 		{
-			obj.rbody1->aabb.color = Vector3(1.f, 0.f, 0.f);
-			obj.rbody2->aabb.color = Vector3(1.f, 0.f, 0.f);
+			obj.rbody1->aabb.color = Vector3F(1.f, 0.f, 0.f);
+			obj.rbody2->aabb.color = Vector3F(1.f, 0.f, 0.f);
 		}
 
-		for (auto& obj : Scene::Instance()->objectsToRender)
+		for (auto& obj : Scene::Instance()->pickingList)
 		{
 			if (FrustumManager::Instance()->isBoundingSphereInView(obj.second->GetWorldPosition(), obj.second->radius))
 			{
 				if (RigidBody* body = obj.second->GetComponent<RigidBody>())
 				{
 					boundingBox->mat->SetColor(body->obb.color);
-					boundingBox->Draw(Matrix4::scale(obj.second->GetMeshDimensions())*obj.second->node.TopDownTransform, currentCamera->getViewMatrix(), currentCamera->ProjectionMatrix, wireframeShader);
+					boundingBox->Draw(Matrix4::scale(obj.second->GetMeshDimensions())*obj.second->node.TopDownTransform, currentCamera->ViewMatrix, currentCamera->ProjectionMatrix, wireframeShader);
 					boundingBox->mat->SetColor(body->aabb.color);
-					boundingBox->Draw(body->aabb.model, currentCamera->getViewMatrix(), currentCamera->ProjectionMatrix, wireframeShader);
+					boundingBox->Draw(body->aabb.model, currentCamera->ViewMatrix, currentCamera->ProjectionMatrix, wireframeShader);
 				}
 			}
 		}
@@ -508,7 +506,7 @@ namespace Picking
 	PickingApp::UpdateComponents()
     {
 		Scene::Instance()->SceneObject->Update();
-		for(auto& obj : Scene::Instance()->objectsToRender)
+		for(auto& obj : Scene::Instance()->pickingList)
 		{
 			obj.second->Update();
 			obj.second->CalculateRadius();
@@ -608,7 +606,7 @@ namespace Picking
 	void PickingApp::Vortex()
 	{
 		/*
-		for (auto& obj : Scene::Instance()->objectsToRender)
+		for (auto& obj : Scene::Instance()->pickingList)
 		{
 			Vector3 dir = obj.second->GetPosition() - Vector3(0,-10,0);
 			obj.second->ApplyImpulse(dir*-20.f, obj.second->GetPosition());
@@ -666,7 +664,7 @@ namespace Picking
 		GLuint screenSize = glGetUniformLocation(pointLightS, "screenSize");
 		glUniform2f(screenSize, (float)windowWidth, (float)windowHeight);
 		GLuint CameraPos = glGetUniformLocation(pointLightS, "CameraPos");
-		Vector3 camPos = currentCamera->GetPosition2();
+		Vector3F camPos = currentCamera->GetPosition2().toFloat();
 		glUniform3fv(CameraPos, 1, &camPos.x);
 
 		GLuint directionalLightS = ShaderManager::Instance()->shaderIDs["directionalLight"];
@@ -685,13 +683,12 @@ namespace Picking
 	void PickingApp::DrawPointLights()
 	{
 		glEnable(GL_STENCIL_TEST);
-		int pointLightsNum = Scene::Instance()->pointLights.size();
 		lightsRendered = 0;
-		for (int i = 0; i < pointLightsNum; i++)
+		for (auto& pointLight : Scene::Instance()->pointLights)
 		{
-			if (FrustumManager::Instance()->isBoundingSphereInView(Scene::Instance()->pointLights[i]->GetWorldPosition(), Scene::Instance()->pointLights[i]->radius)) {
-				StencilPass(Scene::Instance()->pointLights[i]); //sets up stencil pass
-				PointLightPass(Scene::Instance()->pointLights[i]); //sets up point light pass	
+			if (FrustumManager::Instance()->isBoundingSphereInView(pointLight->GetWorldPosition(), pointLight->radius)) {
+				StencilPass(pointLight); //sets up stencil pass
+				PointLightPass(pointLight); //sets up point light pass	
 				lightsRendered++;
 			}
 		}
@@ -838,7 +835,7 @@ namespace Picking
 	{
 		if (Scene::Instance()->pointLights.size() < 500)
 		{
-			Object* pointLight = Scene::Instance()->addPointLight(Scene::Instance()->generateRandomIntervallVectorFlat(-20, 20, Scene::y), Scene::Instance()->generateRandomIntervallVectorCubic(0, 6000) / 6000.f);
+			Object* pointLight = Scene::Instance()->addPointLight(Scene::Instance()->generateRandomIntervallVectorFlat(-20, 20, Scene::y), Scene::Instance()->generateRandomIntervallVectorCubic(0, 6000).toFloat() / 6000.f);
 			Object* sphere = Scene::Instance()->addObjectToScene("sphere", pointLight->GetLocalPosition());
 			sphere->SetScale(Vector3(0.1f, 0.1f, 0.1f));
 			sphere->mat->diffuseIntensity = 2.f;
@@ -875,7 +872,7 @@ namespace Picking
 		CameraManager::Instance()->SetCurrentCamera("default");
 		currentCamera->ProjectionMatrix = Matrix4::OpenGLPersp(45.0f, (float)this->windowWidth / (float)this->windowHeight, 0.1f, 200.0f);
 		DebugDraw::Instance()->Projection = &currentCamera->ProjectionMatrix;
-		DebugDraw::Instance()->View = &currentCamera->getViewMatrix();
+		DebugDraw::Instance()->View = &currentCamera->ViewMatrix;
 	}
 
 	void PickingApp::LoadShaders()

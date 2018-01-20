@@ -9,6 +9,7 @@ uniform mat4 M;
 
 uniform vec4 MaterialProperties;
 uniform vec3 MaterialColor;
+uniform vec2 tiling;
 
 out vec2 TexCoord0;
 out vec3 Normal0;
@@ -20,7 +21,7 @@ out vec4 diffIntAmbIntShineSpecInt0;
 void main()
 {
 	gl_Position = MVP * vec4(Position, 1.0);
-	TexCoord0 = TexCoord;
+	TexCoord0 = TexCoord * tiling;
 	Normal0 = (M * vec4(Normal, 0.0)).xyz;
 	WorldPos0 = (M * vec4(Position, 1.0)).xyz;
 

@@ -4,9 +4,9 @@ class Edge;
 class Vertex
 {
 public:
-	mwm::Vector3 pos, normal, newPos;
-	mwm::Vector2 tex;
-	mwm::Vector4 color;
+	mwm::Vector3F pos, normal, newPos;
+	mwm::Vector2F tex;
+	mwm::Vector4F color;
 	Edge * edge;
 	Vertex();
 	~Vertex();

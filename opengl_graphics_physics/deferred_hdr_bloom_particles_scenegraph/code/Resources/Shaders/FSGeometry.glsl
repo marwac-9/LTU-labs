@@ -13,8 +13,10 @@ layout(location = 1) out vec3 DiffuseOut;
 layout(location = 2) out vec3 NormalOut;
 
 layout(location = 3) out vec4 diffIntAmbIntShineSpecIntOut;
+layout(location = 4) out uint PickingOut;
 
 uniform sampler2D myTextureSampler;
+uniform uint objectID;
 
 void main()
 {
@@ -23,4 +25,5 @@ void main()
 	NormalOut = normalize(Normal0);
 
 	diffIntAmbIntShineSpecIntOut = diffIntAmbIntShineSpecInt0;
+	PickingOut = objectID;
 }

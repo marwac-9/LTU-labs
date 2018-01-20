@@ -21,7 +21,7 @@ private:
 	std::vector<Vertex*> vertices;
 	std::vector<Edge*> edges;
 	std::vector<Face*> faces;
-	bool checkIfSameVect(mwm::Vector3 &vect1, mwm::Vector3 &vect2);
+	bool checkIfSameVect(mwm::Vector3F &vect1, mwm::Vector3F &vect2);
 	void SplitHalfEdges();
 	void CalculateOldPosition();
 	void CalculateMidpointPosition();

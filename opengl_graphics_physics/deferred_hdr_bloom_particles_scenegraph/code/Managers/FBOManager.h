@@ -41,6 +41,10 @@ public:
 	GLuint blurFrameBufferHandle[2];
 	GLuint blurBufferHandle[2];
 
+	GLuint blurFrameBufferHandle2[2];
+	GLuint blurBufferHandle2[2];
+	float scaleBlur = 1.f;
+	float scaleBlur2 = 1.f;
 private:
 	FBOManager();
 	~FBOManager();

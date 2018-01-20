@@ -421,7 +421,7 @@ namespace SimpleWater
 
 		currentCamera->ProjectionMatrix = Matrix4::OpenGLPersp(45.0f, (float)this->windowWidth / (float)this->windowHeight, this->near, this->far);
 		DebugDraw::Instance()->Projection = &currentCamera->ProjectionMatrix;
-		DebugDraw::Instance()->View = &currentCamera->getViewMatrix();
+		DebugDraw::Instance()->View = &currentCamera->ViewMatrix;
 	}
 
 	void
@@ -594,6 +594,7 @@ namespace SimpleWater
 		ImGui::Checkbox("HDR", &hdrEnabled);
 		ImGui::Checkbox("Bloom", &bloomEnabled);
 		ImGui::SliderInt("Bloom Size", &bloomSize, 0, 10);
+		ImGui::SliderFloat("Bloom Intensity", &bloomIntensityF, 0.0f, 5.f);
 		ImGui::SliderFloat("Exposure", &exposure, 0.0f, 5.0f);
 		ImGui::SliderFloat("Gamma", &gamma, 0.0f, 5.0f);
 
@@ -603,7 +604,7 @@ namespace SimpleWater
 		ImGui::SliderFloat("Sun Power", &light_power, 0.0f, 10.0f);
 		ImGui::SliderFloat("Sun Height", &sun_height, 0.0f, 45.0f);
 		ImGui::SliderFloat("Rotate Sun", &sun_angle, 0.0f, 360.0f);
-		lightInvDir = Matrix3::rotateAngle(Vector3(0.f, 1.f, 0.f), sun_angle) * (Vector3(-25.f, sun_height, 0.f) - Vector3(0.f, 0.f, 0.f));
+		lightInvDir = Matrix3F::rotateAngle(Vector3F(0.f, 1.f, 0.f), sun_angle) * (Vector3F(-25.f, sun_height, 0.f) - Vector3F(0.f, 0.f, 0.f));
 
 
 		ImGui::NewLine();
@@ -642,7 +643,7 @@ namespace SimpleWater
 		ShaderManager::Instance()->SetCurrentShader(currentShader);
 
 		glDepthMask(GL_FALSE);
-		Matrix4 View = currentCamera->getViewMatrix();
+		Matrix4 View = currentCamera->ViewMatrix;
 		Matrix4 Projection = currentCamera->ProjectionMatrix;
 
 		View[3][0] = 0;
@@ -662,7 +663,7 @@ namespace SimpleWater
 	SimpleWaterApp::Draw()
 	{
 
-		Matrix4 View = currentCamera->getViewMatrix();
+		Matrix4 View = currentCamera->ViewMatrix;
 		Matrix4 Projection = currentCamera->ProjectionMatrix;
 		Matrix4 ViewProjection = View*Projection;
 
@@ -681,11 +682,11 @@ namespace SimpleWater
 
 		GLuint CameraPos = glGetUniformLocation(currentShaderID, "CameraPos");
 		Matrix4 viewModel = View.inverse();
-		Vector3 camPos = viewModel.getPosition();
+		Vector3F camPos = viewModel.getPosition().toFloat();
 		glUniform3fv(CameraPos, 1, &camPos.x);
 
 		GLuint screenSize = glGetUniformLocation(currentShaderID, "screenSize");
-		Vector2 scrSize = Vector2((float)windowWidth, (float)windowHeight);
+		Vector2F scrSize = Vector2F((float)windowWidth, (float)windowHeight);
 		glUniform2fv(screenSize, 1, &scrSize.x);
 
 		GLuint LightDir = glGetUniformLocation(currentShaderID, "LightInvDirection_worldspace");
@@ -698,7 +699,7 @@ namespace SimpleWater
 		glUniform3fv(liColor, 1, &light_color.x);
 
 		objectsRendered = 0;
-		for (auto& obj : Scene::Instance()->objectsToRender)
+		for (auto& obj : Scene::Instance()->pickingList)
 		{
 			if (FrustumManager::Instance()->isBoundingSphereInView(obj.second->GetWorldPosition(), obj.second->radius)) {
 				Render::draw(obj.second, ViewProjection, currentShaderID);
@@ -718,7 +719,7 @@ namespace SimpleWater
 		glEnable(GL_CLIP_PLANE0);
 
 		glCullFace(GL_FRONT);
-		Matrix4 View = currentCamera->getViewMatrix();
+		Matrix4 View = currentCamera->ViewMatrix;
 
 		Vector3 pos = currentCamera->GetInitPos();
 		pos.y = -pos.y;
@@ -766,7 +767,7 @@ namespace SimpleWater
 
 		GLuint CameraPos = glGetUniformLocation(currentShaderID, "CameraPos");
 		Matrix4 viewModel = View.inverse();
-		Vector3 camPos = viewModel.getPosition();
+		Vector3F camPos = viewModel.getPosition().toFloat();
 		glUniform3fv(CameraPos, 1, &camPos.x);
 
 		GLuint screenSize = glGetUniformLocation(currentShaderID, "screenSize");
@@ -782,7 +783,7 @@ namespace SimpleWater
 		glUniform3fv(liColor, 1, &light_color.x);
 
 		FrustumManager::Instance()->ExtractPlanes(ViewProjection); //we do frustum culling against reflected frustum planes
-		for (auto& obj : Scene::Instance()->objectsToRender)
+		for (auto& obj : Scene::Instance()->pickingList)
 		{
 			if (FrustumManager::Instance()->isBoundingSphereInView(obj.second->GetWorldPosition(), obj.second->radius)) {
 				Render::draw(obj.second, ViewProjection, currentShaderID);
@@ -806,7 +807,7 @@ namespace SimpleWater
 		glEnable(GL_CLIP_PLANE0);
 
 
-		Matrix4F View = currentCamera->getViewMatrix().toFloat();
+		Matrix4F View = currentCamera->ViewMatrix.toFloat();
 
 		GLuint planeHandle = glGetUniformLocation(currentShaderID, "plane");
 		glUniform4fv(planeHandle, 1, &plane[0]);
@@ -816,7 +817,7 @@ namespace SimpleWater
 		GLuint fTime = glGetUniformLocation(currentShaderID, "fTime");
 		glUniform1f(fTime, (float)Time::currentTime);
 		GLuint CameraPos = glGetUniformLocation(currentShaderID, "CameraPos");
-		Vector3 camPos = currentCamera->GetPosition2();
+		Vector3F camPos = currentCamera->GetPosition2().toFloat();
 		glUniform3fv(CameraPos, 1, &camPos.x);
 		GLuint screenSize = glGetUniformLocation(currentShaderID, "screenSize");
 		glUniform2f(screenSize, (float)windowWidth, (float)windowHeight);
@@ -832,7 +833,7 @@ namespace SimpleWater
 
 		FrustumManager::Instance()->ExtractPlanes(CameraManager::Instance()->ViewProjection);
 
-		for (auto& obj : Scene::Instance()->objectsToRender)
+		for (auto& obj : Scene::Instance()->pickingList)
 		{
 			if (FrustumManager::Instance()->isBoundingSphereInView(obj.second->GetWorldPosition(), obj.second->radius)) {
 				Render::draw(obj.second, CameraManager::Instance()->ViewProjection, currentShaderID);
@@ -873,7 +874,7 @@ namespace SimpleWater
 		glUniform1i(depthSampler, 4);
 
 		GLuint CameraPos = glGetUniformLocation(currentShaderID, "CameraPos");
-		Vector3 camPos = currentCamera->GetPosition2();
+		Vector3F camPos = currentCamera->GetPosition2().toFloat();
 		glUniform3fv(CameraPos, 1, &camPos.x);
 		GLuint screenSize = glGetUniformLocation(currentShaderID, "screenSize");
 		glUniform2f(screenSize, (float)windowWidth, (float)windowHeight);
@@ -1026,11 +1027,13 @@ namespace SimpleWater
 		GLuint bloomEnabled = glGetUniformLocation(hdrBloom, "bloom");
 		GLuint exposure = glGetUniformLocation(hdrBloom, "exposure");
 		GLuint gamma = glGetUniformLocation(hdrBloom, "gamma");
+		GLuint bloomIntensity = glGetUniformLocation(hdrBloom, "bloomIntensity");		
 
 		glUniform1i(hdrEnabled, this->hdrEnabled);
 		glUniform1f(exposure, this->exposure);
 		glUniform1f(gamma, this->gamma);
 		glUniform1i(bloomEnabled, this->bloomEnabled);
+		glUniform1f(bloomIntensity, this->bloomIntensityF);
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, hdrBufferTextureHandle);
 		GLuint hdrBuffer = glGetUniformLocation(hdrBloom, "hdrBuffer");
@@ -1161,7 +1164,7 @@ namespace SimpleWater
 		glGenBuffers(1, &waterMesh->elementbuffer);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, waterMesh->elementbuffer);
 		glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), &indices[0], GL_STATIC_DRAW);
-		waterMesh->indicesSize = indices.size();
+		waterMesh->indicesSize = (unsigned int)indices.size();
 
 		//Unbind the VAO now that the VBOs have been set up
 		glBindVertexArray(0);

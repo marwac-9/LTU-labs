@@ -139,7 +139,7 @@ void Subdivide(HalfEdgeMesh* mesh, int count)
 	GetProcessMemoryInfo(GetCurrentProcess(), &pmc, sizeof(pmc));
 	//SIZE_T virtualMemUsedByMe = pmc.PrivateUsage;
 	SIZE_T physMemUsedByMe = pmc.WorkingSetSize;
-	printf("Memory usage: %lu kB\n", physMemUsedByMe / 1024);
+	printf("Memory usage: %llu kB\n", physMemUsedByMe / 1024);
 
 #endif	
     }

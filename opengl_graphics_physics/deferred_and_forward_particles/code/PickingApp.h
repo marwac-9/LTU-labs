@@ -99,7 +99,7 @@ namespace Picking
 		GLuint LightID;
 
 		loadedScene currentScene = none;
-		mwm::Vector3 lightInvDir = mwm::Vector3(-1.f, 1.f, 1.f);
+		mwm::Vector3F lightInvDir = mwm::Vector3F(-1.f, 1.f, 1.f);
 		float planeDir = -1;
 		std::vector<ParticleSystem*> particleSystems;
 	};

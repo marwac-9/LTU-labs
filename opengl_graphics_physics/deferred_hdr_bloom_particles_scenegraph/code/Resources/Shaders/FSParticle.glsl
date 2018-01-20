@@ -1,6 +1,5 @@
 #version 330 core
 
-// Interpolated values from the vertex shaders
 in vec2 UV;
 in vec4 particlecolor;
 

@@ -75,6 +75,6 @@ namespace Picking
 		BoundingBox* boundingBox;
 		GLuint LightID;
 		bool scene4loaded = false;
-		mwm::Vector3 lightInvDir = mwm::Vector3(-1.f, 1.f, 1.f);
+		mwm::Vector3F lightInvDir = mwm::Vector3F(-1.f, 1.f, 1.f);
     };
 } // namespace Example
