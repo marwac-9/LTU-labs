@@ -204,35 +204,6 @@ namespace SimpleWater
 			else if (key == GLFW_KEY_1) {
 				LoadScene1();
 			}
-			else if (key == GLFW_KEY_TAB) {
-				if (wireframe)
-				{
-					wireframe = false;
-					printf("\nSHADED MODE\n");
-					glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-				}
-				else
-				{
-					wireframe = true;
-					printf("\nWIREFRAME MODE\n");
-					glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-				}
-			}
-			else if (key == GLFW_KEY_S && window->GetKey(GLFW_KEY_LEFT_CONTROL)) {
-				GraphicsManager::SaveToOBJ(GraphicsStorage::objects.back());
-				std::cout << "Last Mesh Saved" << std::endl;
-			}
-			else if (key == GLFW_KEY_F5)
-			{
-				if (DebugDraw::Instance()->debug) DebugDraw::Instance()->debug = false;
-				else DebugDraw::Instance()->debug = true;
-			}
-
-			else if (key == GLFW_KEY_E)
-			{
-				Object* cube = Scene::Instance()->addPhysicObject("cube", Vector3(0.f, 8.f, 0.f));
-				cube->SetPosition(Vector3(0.f, (float)Scene::Instance()->idCounter * 2.f - 10.f + 0.001f, 0.f));
-			}
 		}
 	}
 
@@ -245,9 +216,6 @@ namespace SimpleWater
 		currentCamera->holdingLeft = (window->GetKey(GLFW_KEY_A) == GLFW_PRESS);
 		currentCamera->holdingUp = (window->GetKey(GLFW_KEY_SPACE) == GLFW_PRESS);
 		currentCamera->holdingDown = (window->GetKey(GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS);
-
-		if (window->GetKey(GLFW_KEY_KP_ADD) == GLFW_PRESS) if (selectedObject) selectedObject->Translate(Vector3(0.f, 0.1f, 0.1f));
-		if (window->GetKey(GLFW_KEY_KP_SUBTRACT) == GLFW_PRESS) if (selectedObject) selectedObject->Translate(Vector3(0.f, -0.1f, -0.1f));
 
 		if (windowLocked)
 		{
