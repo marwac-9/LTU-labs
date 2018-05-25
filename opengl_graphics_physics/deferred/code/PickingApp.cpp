@@ -134,8 +134,7 @@ namespace Picking
 		currentScene = scene2Loaded;
 
 		double fps_timer = 0;
-		Node initNode = Node();
-		Scene::Instance()->SceneObject->node.UpdateNodeTransform(initNode);
+		Scene::Instance()->Update();
 
         while (running)
         {
@@ -176,14 +175,12 @@ namespace Picking
 			PhysicsManager::Instance()->SortAndSweep();
 			PhysicsManager::Instance()->NarrowTestSAT((float)Time::dtInv);
 			
-			UpdateComponents();
-			UpdateLightsComponents();
 			if (lightsPhysics) 
 			{
 				if (Time::currentTime - fps_timer >= 0.2 && currentScene == scene2Loaded) Vortex();
 			}
 			
-			Scene::Instance()->SceneObject->node.UpdateNodeTransform(initNode);
+			Scene::Instance()->Update();
 
 			PassPickingTexture(); //picking
 
@@ -501,17 +498,6 @@ namespace Picking
 		}
 		glDepthMask(GL_FALSE);
 	}
-
-    void 
-	PickingApp::UpdateComponents()
-    {
-		Scene::Instance()->SceneObject->Update();
-		for(auto& obj : Scene::Instance()->pickingList)
-		{
-			obj.second->Update();
-			obj.second->CalculateRadius();
-		}
-    }
 
 	void 
 	PickingApp::LoadScene1()
@@ -842,15 +828,6 @@ namespace Picking
 			sphere->mat->ambientIntensity = 1.5f;
 			sphere->mat->specularIntensity = 4.f;
 			sphere->mat->shininess = 10.f;
-		}
-	}
-
-	void PickingApp::UpdateLightsComponents()
-	{
-		for (auto& obj : Scene::Instance()->pointLights)
-		{
-			obj->Update();
-			obj->CalculateRadius();
 		}
 	}
 

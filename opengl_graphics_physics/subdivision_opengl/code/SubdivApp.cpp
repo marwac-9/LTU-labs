@@ -111,8 +111,7 @@ namespace Subdivision
 		SetUpCamera();
 
 		double fps_timer = 0;
-		Node initNode = Node();
-		Scene::Instance()->SceneObject->node.UpdateNodeTransform(initNode);
+		Scene::Instance()->Update();
 
 		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 		wireframe = true;
@@ -135,7 +134,7 @@ namespace Subdivision
 			FrustumManager::Instance()->ExtractPlanes(CameraManager::Instance()->ViewProjection);
 			
 
-			Scene::Instance()->SceneObject->node.UpdateNodeTransform(initNode);
+			Scene::Instance()->Update();
 
 			Draw();
 
@@ -335,7 +334,7 @@ namespace Subdivision
 	void
 	SubdivisionApp::Subdivide(OBJ* objToSubdivide)
 	{
-		Object* ObjectHalfMesh = Scene::Instance()->addChildTo(Scene::Instance()->SceneObject); //Object added to scene for rendering
+		Object* ObjectHalfMesh = Scene::Instance()->addObjectToScene(); //Object added to scene for rendering
 		
 		printf("\nConstructing half edge mesh\n");
 		HalfEdgeMesh* newHMesh = new HalfEdgeMesh();
@@ -383,7 +382,7 @@ namespace Subdivision
 		printf("\nDONE\n");
 
 		printf("\nCreating proxy mesh\n");
-		Object* ObjectHalfMeshProxy = Scene::Instance()->addChildTo(ObjectHalfMesh); //we create the object for proxy
+		Object* ObjectHalfMeshProxy = Scene::Instance()->addObjectTo(ObjectHalfMesh); //we create the object for proxy
 
 		Mesh* proxyMesh = new Mesh(); //and a new mesh for proxy
 		GraphicsManager::LoadOBJToVBO(constructedOBJ, proxyMesh); //proxy will use the originally generated OBJ from constructed half edge mesh

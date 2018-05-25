@@ -51,8 +51,6 @@ namespace Picking
 		void PointLightPass(Object* pointLight);
 		void BlitToScreenPass();
 
-		void UpdateComponents();
-		void UpdateLightsComponents();
         void InitGL();
         void ClearBuffers();
         void KeyCallback(int key, int scancode, int action, int mods);

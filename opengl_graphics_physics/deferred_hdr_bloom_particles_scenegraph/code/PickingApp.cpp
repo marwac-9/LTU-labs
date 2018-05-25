@@ -32,7 +32,6 @@
 #include <fstream>
 #include <time.h>
 
-
 using namespace mwm;
 using namespace Display;
 namespace Picking
@@ -1219,6 +1218,27 @@ namespace Picking
 		glDepthMask(GL_FALSE);
 		//glDisable(GL_DEPTH_TEST);
 		FBOManager::Instance()->UnbindFrameBuffer(draw); //we don't have to unbind we work all the way with the buffer but i prefer to do it anyway and enable when needed
+	}
+
+	void PickingApp::PIDController()
+	{
+		int measured_value; //current value
+		int setpoint; //target
+		int dt; //delta time
+		int error; //distance to target? //proportional component calculated from error
+		int integral; //integral component
+		int derivative; //derivative component
+		int output;
+		int previous_error = 0;
+		int Kp, Ki, Kd; //proprotional gain, integral gain, derivative gain consts
+		
+		error = setpoint - measured_value; //proportional component
+		integral = integral + error * dt;
+		derivative = (error - previous_error) / dt;
+		output = Kp * error + Ki * integral + Kd * derivative;
+		previous_error = error;
+		//wait(dt); //should wait until delta time passes before we continue
+		
 	}
 
 	void

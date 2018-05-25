@@ -97,6 +97,7 @@ namespace SimpleWater
 	void
 	SimpleWaterApp::Run()
 	{
+
 		InitGL();
 		SetUpFrameBuffer(this->windowWidth, this->windowHeight);
 		SetUpPostBuffer(this->windowWidth, this->windowHeight);
