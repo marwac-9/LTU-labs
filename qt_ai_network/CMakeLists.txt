@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.2)
+cmake_minimum_required(VERSION 3.11.1)
 PROJECT(qt_ai_network)
 SET_PROPERTY(GLOBAL PROPERTY USE_FOLDERS ON)
 
@@ -11,3 +11,4 @@ ADD_SUBDIRECTORY(deps)
 ADD_SUBDIRECTORY(ai2_pathfinding)
 ADD_SUBDIRECTORY(ai1_statemachine)
 ADD_SUBDIRECTORY(network_gameclient)
+ADD_SUBDIRECTORY(ai2_pathfinding_squaredhc)

@@ -19,5 +19,5 @@ private:
 public:
 	TurnLeft(){}
 	~TurnLeft(){}
-	std::vector<Face*> TurnLeftSearch(cop4530::Vector<Face*>&, Face*, Face*);
+	void TurnLeftSearch(cop4530::Vector<Face*>&, Face*, Face*, std::vector<Face*>& nodePath);
 };

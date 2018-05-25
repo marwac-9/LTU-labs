@@ -19,5 +19,5 @@ private:
 public:
 	Random(){}
 	~Random(){}
-	std::vector<Face*> RandomSearch(cop4530::Vector<Face*>&, Face*, Face*);
+	void RandomSearch(cop4530::Vector<Face*>&, Face*, Face*, std::vector<Face*>& nodePath);
 };

@@ -15,7 +15,7 @@
 #include <string>
 #include <list>
 #include "Vector.h"
-
+#include <thread>
 class HalfEdgeMesh2D;
 
 class Ai_Lab2_qtv2 : public QMainWindow
@@ -31,17 +31,18 @@ public slots:
 	void loadSelectedMap();
 	void optimize();
 	void quad(int state);
+	void quadrangulate();
 	void calculateAndDrawPath();
 	void drawmap();
 private:
 	Ui::Ai_Lab2_qtv2Class ui;
-	void drawfaces(const cop4530::Vector<Face*> &faces, QColor &color);
-	void drawgoals(const cop4530::Vector<Face*> &faces, QColor &color);
+	void drawfaces(const cop4530::Vector<Face*> &faces, const QColor &color);
+	void drawgoals(const cop4530::Vector<Face*> &faces, const QColor &color);
 	void clearMap();
-	void drawfaces(const std::list<Face*> &faces, QColor &color);
+	void drawfaces(const std::list<Face*> &faces, const QColor &color);
 	void drawPathFaces(const std::vector<Face*>& faces, QColor &color);
 	void drawPathFaces(const std::list<Face*>& faces, QColor &color);
-	QGraphicsPolygonItem* drawface(Face* face, QColor &color);
+	QGraphicsPolygonItem* drawface(Face* face, const QColor &color);
 	void drawpath(const std::vector<Face*> &path, const mwm::Vector2 &start, const mwm::Vector2 &end);
 	HalfEdgeMesh2D* mesh = NULL;
 	std::vector<QGraphicsPolygonItem*> polygons;

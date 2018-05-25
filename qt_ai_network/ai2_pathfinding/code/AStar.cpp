@@ -2,7 +2,7 @@
 #include "Face.h"
 #include "Edge.h"
 
-std::vector<Face*> AStar::AStarSearch(Face* start, Face* end) {
+void AStar::AStarSearch(Face* start, Face* end, std::vector<Face*>& nodePath) {
 
 	visitedNodes = std::vector<Edge*>();
 	Face* currentNode = start;
@@ -104,10 +104,13 @@ std::vector<Face*> AStar::AStarSearch(Face* start, Face* end) {
 		}
 	}
 	//Build the final path
-	std::vector<Face*> returnVector;
 	Edge* tempEdge = previousEdge;
-	returnVector.push_back(end);
-	returnVector.push_back(previousEdge->face);
+	nodePath.push_back(end);
+	if (previousEdge != NULL)
+	{
+		nodePath.push_back(previousEdge->face);
+	}
+	
 	while (tempEdge != NULL) {
 		int index = getIndex(tempEdge, visitedNodes);
 		if (index == -1)
@@ -120,12 +123,10 @@ std::vector<Face*> AStar::AStarSearch(Face* start, Face* end) {
 			break;
 		}
 
-		returnVector.push_back(path.at(index)->face);
+		nodePath.push_back(path.at(index)->face);
 		tempEdge = path.at(index);
 	}
-	//returnVector.push_back(start);
-	return returnVector;
-
+	nodePath.pop_back();
 }
 
 bool AStar::checkIfVisited(Edge* pairNode) {

@@ -25,5 +25,5 @@ private:
 public:
 	AStar(){}
 	~AStar(){}
-	std::vector<Face*> AStarSearch(Face*, Face*);
+	void AStarSearch(Face*, Face*, std::vector<Face*>& nodePath);
 };

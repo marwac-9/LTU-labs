@@ -26,5 +26,5 @@ private:
 public:
 	Dijkstra(){}
 	~Dijkstra(){}
-	std::vector<Face*> DijSearch(Face*, const std::set<Face*>& goalsSet);
+	void DijSearch(Face*, Face* goal, std::vector<Face*>& nodePath);
 };

@@ -10,10 +10,9 @@ DepthFirst::~DepthFirst()
 {
 }
 
-std::vector<Face*> DepthFirst::DFS(Face* start, Face* end)
+void DepthFirst::DFS(Face* start, Face* end, std::vector<Face*>& nodePath)
 {
 	std::vector<Face*> stack;
-	std::vector<Face*> nodePath;
 	stack.push_back(start);
 	Face* currentNode;
 	Face* pairNode;
@@ -31,12 +30,12 @@ std::vector<Face*> DepthFirst::DFS(Face* start, Face* end)
 		{
 			//returns the path if we have come to our goal
 			if (currentNode == end) {
-				for (int i = stack.size() - 1; i > -1; i--)
+				for (int i = stack.size() - 1; i > 0; i--)
 				{
 					nodePath.push_back(stack.at(i));
 				}
 				//returns the path we want
-				return nodePath;
+				return;
 			}
 
 			pairNode = NULL;
@@ -65,8 +64,6 @@ std::vector<Face*> DepthFirst::DFS(Face* start, Face* end)
 		}
 
 	}
-	return nodePath;
-
 }
 
 bool DepthFirst::checkIfVisited(Face* pairNode) {

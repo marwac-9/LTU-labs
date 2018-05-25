@@ -12,5 +12,5 @@ private:
 public:
 	DepthFirst();
 	~DepthFirst();
-	std::vector<Face*> DFS(Face*, Face*);
+	void DFS(Face*, Face*, std::vector<Face*>& nodePath);
 };

@@ -5,7 +5,7 @@
 
 using namespace cop4530;
 
-std::vector<Face*> Random::RandomSearch(Vector<Face*> &allNodes, Face* start, Face* end) {
+void Random::RandomSearch(Vector<Face*> &allNodes, Face* start, Face* end, std::vector<Face*>& nodePath) {
 
 	visitedNodes = std::vector<Edge*>();
 	Face* currentNode = start;
@@ -46,15 +46,12 @@ std::vector<Face*> Random::RandomSearch(Vector<Face*> &allNodes, Face* start, Fa
 		currentNode = currentEdge->face;
 	}
 
-	visitedNodes.push_back(currentEdge);
+	//visitedNodes.push_back(currentEdge);
 	//Build the final path
-	std::vector<Face*> returnVector;
-	for (int i = visitedNodes.size() - 1; i > -1; i--)
+	for (int i = visitedNodes.size() - 1; i > 0; i--)
 	{
-		returnVector.push_back(visitedNodes.at(i)->face);
+		nodePath.push_back(visitedNodes.at(i)->face);
 	}
-	return returnVector;
-
 }
 
 int Random::getIndex(Face* searchNode, std::vector<Face*> &searchVector) {

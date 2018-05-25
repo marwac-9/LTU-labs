@@ -14,7 +14,7 @@ NetworkLabb4::NetworkLabb4(QWidget *parent)
 {
 	ui.setupUi(this);
 	//setup gui
-	printf("setting up giu\n");
+	printf("setting up gui\n");
 	scene = new QGraphicsScene();
 	ui.graphicsView->setScene(scene);
 	ui.lineEdit->setMaxLength(MAXNAMELEN);

@@ -2,13 +2,13 @@
 #include "Face.h"
 #include "Edge.h"
 
-std::vector<Face*> Dijkstra::DijSearch(Face* start, const std::set<Face*>& goalsSet) {
+void Dijkstra::DijSearch(Face* start, Face* goal, std::vector<Face*>& nodePath) {
 
 	Face* currentNode = start;
 	Edge* previousEdge = NULL;
 
 	//As long as we are not in the end node
-	while (goalsSet.end() == goalsSet.find(currentNode))
+	while (goal != currentNode)
 	{
 		Edge* currentEdge = currentNode->edge;
 		//Looping through every edge in the current node
@@ -101,10 +101,13 @@ std::vector<Face*> Dijkstra::DijSearch(Face* start, const std::set<Face*>& goals
 		}
 	}
 	//Build the final path
-	std::vector<Face*> returnVector;
 	Edge* tempEdge = previousEdge;
-	returnVector.push_back(currentNode);
-	returnVector.push_back(previousEdge->face);
+	nodePath.push_back(currentNode);
+	if (previousEdge != NULL)
+	{
+		nodePath.push_back(previousEdge->face);
+	}
+	
 	while (tempEdge != NULL) {
 		int index = getIndex(tempEdge, visitedNodes);
 		if (index == -1)
@@ -117,12 +120,10 @@ std::vector<Face*> Dijkstra::DijSearch(Face* start, const std::set<Face*>& goals
 			break;
 		}
 
-		returnVector.push_back(path.at(index)->face);
+		nodePath.push_back(path.at(index)->face);
 		tempEdge = path.at(index);
 	}
-	//returnVector.push_back(start);
-	return returnVector;
-
+	nodePath.pop_back();
 }
 
 bool Dijkstra::checkIfVisited(Edge* pairNode) {

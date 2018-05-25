@@ -11,5 +11,5 @@ private:
 public:
 	BreadthFirst();
 	~BreadthFirst();
-	std::vector<Face*> BFS(Face* startFace, const std::set<Face*>& goalsSet);
+	void BFS(Face* startFace, Face* goal, int mapSize, std::vector<Face*>& nodePath);
 };

@@ -1,7 +1,7 @@
 #include "Breadth_First.h"
 #include "Face.h"
 #include "Edge.h"
-#include <map>
+#include <unordered_map>
 
 BreadthFirst::BreadthFirst()
 {
@@ -11,57 +11,67 @@ BreadthFirst::~BreadthFirst()
 {
 }
 
-std::vector<Face*> BreadthFirst::BFS(Face* start, const std::set<Face*>& goalsSet)
+void BreadthFirst::BFS(Face* start, Face* goal, int mapSize, std::vector<Face*>& nodePath)
 {
-	std::vector<Face*> queue;
-	queue.push_back(start);
-	Face* currentNode;
-	std::map<Face*, Face*> discoveryMap;
-	Face* pairNode;
-	//Vad blev upptäckt, av vem
-	while (queue.size() > 0) {
+	Face** Queue = new Face*[mapSize];
+	std::unordered_map<Face*, bool> discoveryMap;
+	discoveryMap.reserve(mapSize);
+	int Front = 0;
+	int Back = 0;
+	Queue[Back++] = start;
+	discoveryMap[start] = true;
+	//start->visited = true;
 
-		currentNode = queue.front();
+	Face* currentNode;
+
+	Face* pairNode = nullptr;
+
+	while (Front < Back)
+	{
+		currentNode = Queue[Front];
 		Edge* currentEdge = currentNode->edge;
 
 		do
 		{
 			//returns the path if we have come to our goal
-			std::set<Face*>::iterator end = goalsSet.find(currentNode);
-			if (goalsSet.end() != end)
+			if (goal == currentNode)
 			{
-				std::vector<Face*> nodePath;
-				nodePath.push_back(*end);
-				Face* currentPathNode = *end;
-				while (currentPathNode != start)
+				if (currentNode == start)
 				{
-					Face* nextNode = discoveryMap.at(currentPathNode);
+					delete[] Queue;
+					return;
+				}
+
+				nodePath.push_back(goal);
+				Face* currentPathNode = goal;
+				Face* nextNode = nullptr;
+				while ((nextNode = currentPathNode->previousFace) != start)
+				{
 					nodePath.push_back(nextNode);
 					currentPathNode = nextNode;
 				}
-				return nodePath;
+				delete[] Queue;
+				return;
 			}
 
-			pairNode = NULL;
+			pairNode = nullptr;
 
 			//checks if the edges are connected
-			if (currentEdge->pair != NULL) {
+			if (currentEdge->pair != nullptr) {
 				pairNode = currentEdge->pair->face;
 				//if pairnode has not been visited, add it to the nodes we want to visit
-				if (discoveryMap.find(pairNode) == discoveryMap.end()) {
-					queue.push_back(pairNode);
-					discoveryMap.insert(std::pair<Face*, Face*>(pairNode, currentNode));
+				//if (!pairNode->visited)
+				if (!discoveryMap[pairNode]) {
+					Queue[Back++] = pairNode;
+					pairNode->previousFace = currentNode;
+					//pairNode->visited = true;
+					discoveryMap[pairNode] = true;
 				}
 			}
-
 			currentEdge = currentEdge->next;
 
 		} while (currentEdge != currentNode->edge);
-
-		queue.erase(queue.begin());
-
+		Front++;
 	}
-	std::vector<Face*> nodePath;
-	return nodePath;
-
+	delete[] Queue;
 }

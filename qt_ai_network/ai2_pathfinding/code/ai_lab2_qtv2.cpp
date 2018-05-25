@@ -14,6 +14,7 @@
 #include <QElapsedTimer>
 #include <time.h>
 #include <set>
+#include <QGraphicsScene>
 
 using namespace cop4530;
 using namespace mwm;
@@ -61,16 +62,16 @@ Ai_Lab2_qtv2::~Ai_Lab2_qtv2()
 
 }
 
-void Ai_Lab2_qtv2::drawfaces(const Vector<Face*> &path, QColor& color)
+void Ai_Lab2_qtv2::drawfaces(const Vector<Face*> &path, const QColor& color)
 {
-	for (int i = 0; i < path.size(); i++)
+	for (auto& node : path)
 	{
-		QGraphicsPolygonItem* PolygonItem = drawface(path.at(i), color);
+		QGraphicsPolygonItem* PolygonItem = drawface(node, color);
 		polygons.push_back(PolygonItem);
 	}
 }
 
-void Ai_Lab2_qtv2::drawgoals(const Vector<Face*> &path, QColor& color)
+void Ai_Lab2_qtv2::drawgoals(const Vector<Face*> &path, const QColor& color)
 {
 	for (int i = 0; i < path.size(); i++)
 	{
@@ -99,7 +100,7 @@ void Ai_Lab2_qtv2::clearMap()
 }
 
 
-void Ai_Lab2_qtv2::drawfaces(const std::list<Face*>& faces, QColor& color)
+void Ai_Lab2_qtv2::drawfaces(const std::list<Face*>& faces, const QColor& color)
 {
 	for (std::list<Face*>::const_iterator iterator = faces.begin(), end = faces.end(); iterator != end; ++iterator) {
 		QGraphicsPolygonItem* PolygonItem = drawface(*iterator, color);
@@ -124,7 +125,7 @@ void Ai_Lab2_qtv2::drawPathFaces(const std::vector<Face*>& path, QColor& color)
 	}
 }
 
-QGraphicsPolygonItem* Ai_Lab2_qtv2::drawface(Face* face, QColor& color)
+QGraphicsPolygonItem* Ai_Lab2_qtv2::drawface(Face* face, const QColor& color)
 {
 	QPolygonF polygon = buildPolygon(face);
 
@@ -168,7 +169,6 @@ QPolygonF Ai_Lab2_qtv2::buildPolygon(Face* face)
 		Vertex* vert1 = currentEdge->vertex;
 		polygon.append(QPointF(vert1->pos.vect[0] * cellSize, vert1->pos.vect[1] * cellSize));
 		currentEdge = currentEdge->next;
-
 	} while (currentEdge != face->edge);
 	return polygon;
 }
@@ -188,8 +188,7 @@ void Ai_Lab2_qtv2::loadSelectedMap()
 	ui.doubleGenerationTime->setValue(timer.elapsed());
 	if (ui.checkBoxQuad->isChecked())
 	{
-		mesh->quadrangulate();
-		drawmap();
+		quadrangulate();
 	}
 	else
 	{
@@ -251,15 +250,7 @@ void Ai_Lab2_qtv2::optimize()
 {
 	if (mesh != NULL)
 	{
-		if (ui.checkBoxQuad->isChecked())
-		{
-			mesh->optimizeMesh();
-		}
-		else
-		{
-			mesh->optimizeMesh();
-			mesh->optimizeMesh();
-		}
+		mesh->optimizeMesh();
 		clearMap();
 		drawfaces(mesh->faces, QColor(255, 0, 0, 100));
 	}
@@ -267,26 +258,23 @@ void Ai_Lab2_qtv2::optimize()
 
 void Ai_Lab2_qtv2::quad(int state)
 {
-	if (state == 2)
-	{
-		loadSelectedMap();
-		mesh->quadrangulate();
-		clearMap();
-		drawfaces(mesh->faces, QColor(255, 0, 0, 100));
-	}
-	else
-	{
-		loadSelectedMap();
-		clearMap();
-		drawfaces(mesh->faces, QColor(255, 0, 0, 100));
-	}
+	loadSelectedMap();
+}
+
+void Ai_Lab2_qtv2::quadrangulate()
+{
+	clearScene();
+	start = drawface(mesh->startFace, QColor(0, 255, 0, 200));
+	drawgoals(mesh->goals, QColor(255, 255, 0, 200));
+	mesh->quadrangulate();
+	drawfaces(mesh->faces, QColor(255, 0, 0, 100));
 }
 
 float Ai_Lab2_qtv2::calculatePathLength(const std::vector<Face*>& path)
 {
 
 	float length = 0;
-	for (size_t i = 0; i < path.size() - 1; i++)
+ 	for (int i = 0; i < path.size() - 1; i++)
 	{
 		length += (path.at(i)->getMidPointMiniMaxi() - path.at(i + 1)->getMidPointMiniMaxi()).vectLengt();
 	}
@@ -316,71 +304,72 @@ void Ai_Lab2_qtv2::calculateAndDrawPath()
 	if (ui.radioAStar->isChecked())
 	{
 		timer.start();
+		Face* startFace = mesh->findNode(mesh->startFacePos);
 		for (int i = 0; i < mesh->goals.size(); i++)
 		{
-			Face* startFace = mesh->findNode(mesh->startFacePos);
 			Face* endFace = mesh->findNode(mesh->goalsPos.at(i));
-			std::vector<Face*> path = AStar().AStarSearch(startFace, endFace);
+			std::vector<Face*> path;
+			AStar().AStarSearch(startFace, endFace, path);
 			paths.push_back(path);
 		}			
 	}
 	else if (ui.radioDijkstra->isChecked())
 	{
-		
-		std::set<Face*> goalsSet;
+		timer.start();
 		Face* startFace = mesh->findNode(mesh->startFacePos);
 		for (int i = 0; i < mesh->goals.size(); i++)
 		{
 			Face* endFace = mesh->findNode(mesh->goalsPos.at(i));
-			goalsSet.insert(endFace);
-		}
-		timer.start();
-		std::vector<Face*> path = Dijkstra().DijSearch(startFace, goalsSet);
-		paths.push_back(path);
+			std::vector<Face*> path;
+			Dijkstra().DijSearch(startFace, endFace, path);
+			paths.push_back(path);
+		}		
 	}
 	else if (ui.radioBreadth->isChecked())
 	{
-		std::set<Face*> goalsSet;
+		timer.start();
 		Face* startFace = mesh->findNode(mesh->startFacePos);
 		for (int i = 0; i < mesh->goals.size(); i++)
 		{
 			Face* endFace = mesh->findNode(mesh->goalsPos.at(i));
-			goalsSet.insert(endFace);
+			std::vector<Face*> path;
+			BreadthFirst().BFS(startFace, endFace, mesh->faces.size(), path);
+			paths.push_back(path);
 		}
-		timer.start();
-		std::vector<Face*> path = BreadthFirst().BFS(startFace, goalsSet);
-		paths.push_back(path);
 	}
 	else if (ui.radioDepth->isChecked())
 	{
 		timer.start();
+		Face* startFace = mesh->findNode(mesh->startFacePos);
 		for (int i = 0; i < mesh->goals.size(); i++)
 		{
-			Face* startFace = mesh->findNode(mesh->startFacePos);
 			Face* endFace = mesh->findNode(mesh->goalsPos.at(i));
-			std::vector<Face*> path = DepthFirst().DFS(startFace, endFace);
+			std::vector<Face*> path;
+			DepthFirst().DFS(startFace, endFace, path);
 			paths.push_back(path);
 		}
 	}
 	else if (ui.radioTurnLeft->isChecked())
 	{
 		timer.start();
+		Face* startFace = mesh->findNode(mesh->startFacePos);
 		for (int i = 0; i < mesh->goals.size(); i++)
 		{
-			Face* startFace = mesh->findNode(mesh->startFacePos);
 			Face* endFace = mesh->findNode(mesh->goalsPos.at(i));
-			std::vector<Face*> path = TurnLeft().TurnLeftSearch(mesh->faces, startFace, endFace);
+			std::vector<Face*> path;
+			TurnLeft().TurnLeftSearch(mesh->faces, startFace, endFace, path);
 			paths.push_back(path);
 		}
 	}
 	else if (ui.radioRandom->isChecked())
 	{
 		timer.start();
+		Face* startFace = mesh->findNode(mesh->startFacePos);
 		for (int i = 0; i < mesh->goals.size(); i++)
 		{
-			Face* startFace = mesh->findNode(mesh->startFacePos);
 			Face* endFace = mesh->findNode(mesh->goalsPos.at(i));
-			std::vector<Face*> path = Random().RandomSearch(mesh->faces, startFace, endFace);
+			std::vector<Face*> path;
+			Random().RandomSearch(mesh->faces, startFace, endFace, path);
 			paths.push_back(path);
 		}
 	}
@@ -390,9 +379,12 @@ void Ai_Lab2_qtv2::calculateAndDrawPath()
 		std::vector<float> lengths;
 		for (int i = 0; i < paths.size(); i++)
 		{
-			float length = calculatePathLength(paths.at(i));
-			lengths.push_back(length);
-			mini = min(length, mini);
+			if (paths.at(i).size() > 0)
+			{
+				float length = calculatePathLength(paths.at(i));
+				lengths.push_back(length);
+				mini = min(length, mini);
+			}
 		}
 		int index = indexOfShortestGoal(lengths, mini);
 		ui.doublePathLength->setValue(mini);
@@ -402,13 +394,16 @@ void Ai_Lab2_qtv2::calculateAndDrawPath()
 			finalpath = paths.at(index);
 			//we make sure the node at the end of path(which is in the front of the container) is one of the goals and then we assign goal to that node position
 			//needed for dijkstra as it only does one search while others do number of goals searches and return more paths 
-			for (int z = 0; z < mesh->goals.size(); z++)
+			if (finalpath.size() > 0)
 			{
-				Face* goalTest = mesh->findNode(mesh->goalsPos.at(z));
-				if (goalTest == finalpath.front())
+				for (int z = 0; z < mesh->goals.size(); z++)
 				{
-					goal = mesh->goalsPos.at(z);
-					break;
+					Face* goalTest = mesh->findNode(mesh->goalsPos.at(z));
+					if (goalTest == finalpath.front())
+					{
+						goal = mesh->goalsPos.at(z);
+						break;
+					}
 				}
 			}
 		}
