@@ -14,14 +14,14 @@ Each project builds to its own bin folder copying over the required resources so
   
 > ### Graphics
   - Deferred Shading
-  - Shadow Mapping, VSM
+  - VSM Shadow Mapping in Forward and ⚠Deferred rendering (PCF Point light shadows)
   - Per-pixel picking
   - Geometry Subdivision
   - Scene graph
   - Double & Single Precision Math lib
   - ⚠Particles
   - ⚠HDR
-  - ⚠Bloom
+  - ⚠Bloom 
   
 ## Network
   - Socket programming for Windows & Linux
@@ -35,7 +35,7 @@ Each project builds to its own bin folder copying over the required resources so
   - Pathfinding algorithms, performance and usecase analysis
 
 ### Key-bindings for OpenGL projects
-- 1-5 - Changing scenes(number of scenes may vary for each project)
+- 0-9 - Changing scenes(number of scenes may vary for each project)
 - WASD - Camera movement.
 - Backspace - Enable physics for lights(deferred project only)
 - LShift - Descend
@@ -47,6 +47,7 @@ Each project builds to its own bin folder copying over the required resources so
 - T - Reset time-step (60Hz)
 - P - Pause
 - O - Toggle drawing of bounding boxes.
+- L - Toggle drawing of lines.
 - F5 - Toggle drawing of contact points, collision normals, and clip planes.
 - TAB - Toggle wireframe/shaded drawing modes.
 - E - Spawn a cube.
