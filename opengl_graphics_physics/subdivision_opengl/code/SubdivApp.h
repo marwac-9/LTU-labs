@@ -41,6 +41,12 @@ namespace Subdivision
 		void LoadScene1();
 		void LoadScene2();
 		void LoadScene3();
+		void LoadScene4();
+		void LoadScene5();
+		void LoadScene6();
+		void LoadScene7();
+		void LoadScene8();
+		void LoadScene9();
 		void Subdivide(OBJ* objToSubdivide);
 		void LoadShaders();
 		bool altButtonToggle = true;
@@ -54,12 +60,12 @@ namespace Subdivision
 		int windowHeight;
 		float windowMidX;
 		float windowMidY;
-
+		float near = 0.1f;
+		float far = 2000.f;
+		float fov = 45.0f;
 		Camera* currentCamera;
 
 		int objectsRendered = 0;
-
-		GLuint LightID;
 
 		std::vector<OBJ*> dynamicOBJs;
 		std::vector<Mesh*> dynamicMeshes;

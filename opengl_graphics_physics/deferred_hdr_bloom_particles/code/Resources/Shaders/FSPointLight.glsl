@@ -8,11 +8,12 @@ uniform vec3 CameraPos;
 uniform sampler2D diffuseSampler;
 uniform sampler2D positionSampler;
 uniform sampler2D normalsSampler;
-uniform sampler2D diffIntAmbIntShinSpecIntSampler;
+uniform sampler2D metDiffIntShinSpecIntSampler;
 
 uniform float lightRadius;
 uniform float lightPower;
 uniform vec3 lightColor;
+uniform float ambient;
 
 // Ouput data
 layout(location = 0) out vec4 color;
@@ -25,7 +26,7 @@ void main()
 	vec3 MaterialDiffuseColor = texture(diffuseSampler, TexCoord).xyz;
 	vec3 Normal_worldSpace = texture(normalsSampler, TexCoord).xyz;
 	// Material properties
-	vec4 MatPropertiesDiffAmbShinSpec = texture(diffIntAmbIntShinSpecIntSampler, TexCoord);
+	vec4 MatPropertiesMetDiffShinSpec = texture(metDiffIntShinSpecIntSampler, TexCoord);
 
 	// Vector that goes from the vertex to the camera, in world space.
 	vec3 EyeDirection_worldSpace = CameraPos - WorldPos;
@@ -86,13 +87,14 @@ void main()
 	//float attenuation = (1.0 / (0.3 + 0.007 * distance + 0.00008 * distance * distance));
 
 	//values here are material properties of an object
-	float Ambient = MatPropertiesDiffAmbShinSpec.x;
-	float Diffuse = MatPropertiesDiffAmbShinSpec.y * cosTheta;
-	float Specular = MatPropertiesDiffAmbShinSpec.z * pow(cosAlpha, MatPropertiesDiffAmbShinSpec.w);
+	float Metallic = MatPropertiesMetDiffShinSpec.x;
+	float Diffuse = MatPropertiesMetDiffShinSpec.y * cosTheta;
+	float Specular = MatPropertiesMetDiffShinSpec.z * pow(cosAlpha, MatPropertiesMetDiffShinSpec.w);
+	vec3 SpecularColor = mix(vec3(1.0), MaterialDiffuseColor, Metallic); //roughness parameter and reflection map will help with black metallic objects
 
-	//color with point light only
+	//point light only
 	//light power is the diffuse intensity of an light
-	color = vec4(MaterialDiffuseColor * lightColor * lightPower * (Ambient + Diffuse + Specular) * attenuation, 1.0);
+	color = vec4(lightColor * lightPower * (MaterialDiffuseColor * (ambient + Diffuse) + SpecularColor * Specular) * attenuation, 1.0);
 	float brightness = dot(color.rgb, vec3(0.2126, 0.7152, 0.0722));
 	if (brightness > 1.0)
 		brightColor = color;

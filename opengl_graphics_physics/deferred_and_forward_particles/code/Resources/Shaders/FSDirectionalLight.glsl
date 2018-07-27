@@ -1,9 +1,5 @@
 #version 330
 
-//in vec4 ShadowCoord;
-//in vec2 UV;
-
-//uniform mat4 V;
 uniform vec2 screenSize;
 uniform vec3 LightInvDirection_worldspace;
 uniform vec3 CameraPos;
@@ -11,51 +7,14 @@ uniform vec3 CameraPos;
 uniform sampler2D diffuseSampler;
 uniform sampler2D positionSampler;
 uniform sampler2D normalsSampler;
-//uniform sampler2D shadowMapSampler;
-
-uniform sampler2D diffIntAmbIntShinSpecIntSampler;
+uniform sampler2D metDiffIntShinSpecIntSampler;
 
 uniform float lightPower;
 uniform vec3 lightColor;
+uniform float ambient;
 
 // Ouput data
 layout(location = 0) out vec3 color;
-
-float linstep(float low, float high, float v){
-	return clamp((v - low) / (high - low), 0.0, 1.0);
-}
-
-float ChebyshevUpperBound(vec2 moments, float t)
-{
-	// One-tailed inequality valid if t > moments.x  
-	float p = (t <= moments.x) ? 1 : 0;
-	//float p = smoothstep(t-0.02, t, moments.x);
-
-	// Compute variance.  
-	float minVariance = 0.0000005;
-	//float minVariance = -0.001;
-	float variance = moments.y - (moments.x*moments.x);
-	variance = max(variance, minVariance);
-
-	// Compute probabilistic upper bound.  
-	float d = t - moments.x;
-	float p_max = variance / (variance + d*d);
-
-	p_max = smoothstep(0.2, 1.0, p_max);
-	//p_max = linstep(0.2, 1.0, p_max);
-
-	return max(p, p_max);
-	//return clamp(max(p, p_max), 0.0, 1.0);
-}
-/*
-float ShadowContribution(vec2 LightTexCoord, float DistanceToLight)
-{
-	// Read the moments from the variance shadow map.  
-	vec2 moments = texture2D(shadowMapSampler, LightTexCoord).rg;
-	// Compute the Chebyshev upper bound.  
-	return ChebyshevUpperBound(moments, DistanceToLight);
-}
-*/
 
 void main()
 {
@@ -64,7 +23,7 @@ void main()
 	vec3 MaterialDiffuseColor = texture(diffuseSampler, TexCoord).xyz;
 	vec3 Normal_worldSpace = texture(normalsSampler, TexCoord).xyz;
 	// Material properties
-	vec4 MatPropertiesDiffAmbShinSpec = texture(diffIntAmbIntShinSpecIntSampler, TexCoord);
+	vec4 MatPropertiesMetDiffShinSpec = texture(metDiffIntShinSpecIntSampler, TexCoord);
 
 	// Vector that goes from the vertex to the camera, in world space.
 	vec3 EyeDirection_worldSpace = CameraPos - WorldPos;
@@ -90,32 +49,11 @@ void main()
 	//  - Looking elsewhere -> < 1
 	float cosAlpha = clamp(dot(E, R), 0, 1);
 
-	//float visibility = ShadowContribution(ShadowCoord.xy, ShadowCoord.z);
-	//float depth = texture( shadowMapSampler, ShadowCoord.xy).r;
-	//float bias = 0.0005f;
+	float Metallic = MatPropertiesMetDiffShinSpec.x;
+	float Diffuse = MatPropertiesMetDiffShinSpec.y * cosTheta;
+	float Specular = MatPropertiesMetDiffShinSpec.z * pow(cosAlpha, MatPropertiesMetDiffShinSpec.w);
+	vec3 SpecularColor = mix(vec3(1.0), MaterialDiffuseColor, Metallic); //roughness parameter and reflection map will help with black metallic objects 
 
-	//float visibility = 1.0;
-
-	//if ( depth  <  ShadowCoord.z - bias){
-	//	visibility = 0.5f;
-	//}
-	//vec3 Ambient = lightColor * lightPower * MaterialAmbientIntensity;
-	//vec3 Diffuse = lightColor * lightPower * MaterialDiffuseIntensityValue * cosTheta;
-	//vec3 SpecularColor = MaterialSpecularColor * lightColor * lightPower * pow(cosAlpha, shininess);
-	//specular sent to shader should be only the specular strength but we can try to specify color as well to fake translucent paint effect
-	//these are only light calculations
-	//we add the texture color later
-
-	float Ambient = MatPropertiesDiffAmbShinSpec.x;
-	float Diffuse = MatPropertiesDiffAmbShinSpec.y * cosTheta;
-	float SpecularColor = MatPropertiesDiffAmbShinSpec.z * pow(cosAlpha, MatPropertiesDiffAmbShinSpec.w);
-
-	//color with directional only
-	color = MaterialDiffuseColor * lightColor * lightPower * (Ambient + Diffuse + SpecularColor);
-		// Ambient : simulates indirect lighting
-		//MaterialAmbientColor * MaterialDiffuseIntensityValue +
-		// Diffuse : "color" of the object
-		//MaterialDiffuseColor * lightColor * lightPower * cosTheta * MaterialDiffuseIntensityValue +
-		// Specular : reflective highlight, like a mirror
-		//MaterialSpecularColor * lightColor * lightPower * pow(cosAlpha, shininess);
+	//directional only
+	color = lightColor * lightPower * (MaterialDiffuseColor * (ambient + Diffuse) + SpecularColor * Specular);
 }

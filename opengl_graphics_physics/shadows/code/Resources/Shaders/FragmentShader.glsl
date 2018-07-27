@@ -16,40 +16,40 @@ uniform vec4 MaterialProperties;
 uniform vec3 MaterialColor;
 uniform vec3 LightInvDirection_worldspace;
 uniform vec3 CameraPos;
+uniform float shadowDistance;
+
+uniform float transitionDistance;
 
 float linstep(float low, float high, float v){
 	return clamp((v - low) / (high - low), 0.0, 1.0);
 }
 
-float ChebyshevUpperBound(vec2 moments, float t)  
-{  
-	// One-tailed inequality valid if t > moments.x  
-	float p = (t <= moments.x) ? 1 : 0;
-	//float p = smoothstep(t-0.02, t, moments.x);
-	
-	// Compute variance.  
-	float minVariance = 0.0000005;
-	//float minVariance = -0.001;
-	float variance = moments.y - (moments.x*moments.x);  
-	variance = max(variance, minVariance);  
-	
-	// Compute probabilistic upper bound.  
-	float d = t - moments.x;  
-	float p_max = variance / (variance + d*d);  
-	
-	p_max = smoothstep(0.1, 1.0, p_max);
-	//p_max = linstep(0.2, 1.0, p_max);
-	
-	return max(p, p_max); 
-	//return clamp(max(p, p_max), 0.0, 1.0);
-}  
-
 float ShadowContribution(vec2 LightTexCoord, float DistanceToLight)  
 {  
 	// Read the moments from the variance shadow map.  
-	vec2 moments = texture2D(shadowMapSampler, LightTexCoord ).rg;
+	vec2 moments = texture2D(shadowMapSampler, LightTexCoord).rg;
 	// Compute the Chebyshev upper bound.  
-	return ChebyshevUpperBound(moments, DistanceToLight);  
+
+	// One-tailed inequality valid if DistanceToLight > moments.x  
+	//float p = (DistanceToLight <= moments.x) ? 1 : 0;
+	float p = step(DistanceToLight, moments.x);
+	//float p = smoothstep(t-0.02, DistanceToLight, moments.x);
+
+	// Compute variance.  
+	float minVariance = 0.0000005;
+	//float minVariance = -0.001;
+	float variance = moments.y - (moments.x*moments.x);
+	variance = max(variance, minVariance);
+
+	// Compute probabilistic upper bound.  
+	float d = DistanceToLight - moments.x;
+	float p_max = variance / (variance + d * d);
+
+	//p_max = smoothstep(0.1, 1.0, p_max);
+	p_max = linstep(0.2, 1.0, p_max);
+
+	return min(max(p, p_max), 1.0);
+	//return clamp(max(p, p_max), 0.0, 1.0);
 }  
 
 void main(){
@@ -58,7 +58,7 @@ void main(){
 	// You probably want to put them as uniforms
 	vec3 LightColor = vec3(1,1,1);
 	float LightPower = 1.0f;
-	
+	const float Ambient = 0.25; 
 	// Material properties
 	vec3 MaterialDiffuseColor = texture2D(myTextureSampler, UV).rgb + MaterialColor;
 
@@ -85,8 +85,21 @@ void main(){
 	//  - Looking into the reflection -> 1
 	//  - Looking elsewhere -> < 1
 	float cosAlpha = clamp( dot( E,R ), 0,1 );
+
+	float distance = length(EyeDirection_worldSpace);
+
+	float visibility = 1.0;
+	float shadowMapColor = 0.0;
+	float shadowFadeFactor = 0.0;
+	if (ShadowCoord.z <= 1.0 && ShadowCoord.y <= 1.0 && ShadowCoord.x <= 1.0 && ShadowCoord.z >= 0.0 && ShadowCoord.y >= 0.0 && ShadowCoord.x >= 0.0) //instead of using a white border on texture we simply ignore testing if any component is outside of shadow map texture
+	{
+		visibility = ShadowContribution(ShadowCoord.xy, ShadowCoord.z); //calculate visibility
+		shadowFadeFactor = linstep(shadowDistance - transitionDistance, shadowDistance, distance); //fade shadows out around us
+		visibility = mix(visibility, 1.0, shadowFadeFactor); //fade shadows out around us, we also need to fade shadows only if we want shadowmap to move with us
+		//if we won't move them then no need for fading and then we can see them from afar
+		shadowMapColor = 1.0;
+	}
 	
-	float visibility = ShadowContribution(ShadowCoord.xy,ShadowCoord.z);
 	//float depth = texture( shadowMapSampler, ShadowCoord.xy).r;
 	//float bias = 0.0005f;
 
@@ -97,10 +110,11 @@ void main(){
 	//}
 	
 	//just directional light
-	float Ambient = MaterialProperties.x;
+	float Metallic = MaterialProperties.x;
 	float Diffuse = MaterialProperties.y * cosTheta;
-	float SpecularColor = MaterialProperties.z * pow(cosAlpha, MaterialProperties.w);
+	float Specular = MaterialProperties.z * pow(cosAlpha, MaterialProperties.w);
+	//vec3 SpecularColor = mix(MaterialDiffuseColor, vec3(1.0), MaterialProperties.x);
+	vec3 SpecularColor = mix(vec3(1.0), MaterialDiffuseColor, Metallic); //roughness parameter and reflection map will help with black metallic objects 
 
-	color = MaterialDiffuseColor * LightColor * LightPower * (Ambient + (Diffuse + SpecularColor) * visibility);
-
+	color = LightColor * LightPower * (vec3(0.0, 0.2, 0.2) * shadowMapColor + vec3(0.0, 0.2, 0.0) * shadowFadeFactor + MaterialDiffuseColor * Ambient + (MaterialDiffuseColor * Diffuse + SpecularColor * Specular) * visibility);
 }

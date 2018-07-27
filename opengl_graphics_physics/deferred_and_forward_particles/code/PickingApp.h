@@ -10,6 +10,8 @@ class ParticleSystem;
 class BoundingBox;
 class Object;
 class Camera;
+class Texture;
+class FrameBuffer;
 
 enum loadedScene
 {
@@ -36,40 +38,31 @@ namespace Picking
     private:
 		void Clear();
 
-		void Draw();
+		void DrawPicking();
 		void DrawDebug();
 
 		void PassPickingTexture();
         void PickingTest();
 
 		void DrawGeometryPass();
-
 		void DrawLightPass();
-		void DrawPointLights();
-		void DrawDirectionalLights();
-		void StencilPass(Object* pointLight);
-		void PointLightPass(Object* pointLight);
 		void BlitToScreenPass();
 		void FireLightProjectile();
+		void DrawGeometryMaps(int windowWidth, int windowHeight);
 
-		void UpdateComponents();
-		void UpdateLightsComponents();
         void InitGL();
         void ClearBuffers();
+		void SetUpBuffers(int windowWidth, int windowHeight);
         void KeyCallback(int key, int scancode, int action, int mods);
 		void MouseCallback(double mouseX, double mouseY);
 		void Monitor(Display::Window* window);
 		void SetUpCamera();
-		mwm::Vector3 ConvertMousePosToWorld();
 		void LoadScene1();
 		void LoadScene2();
 		void LoadScene3();
 		void Vortex();
 		
-		void ActivateTextures();
 		void MovePlaneUpNDown();
-		void DisableTextures();
-		void DrawGeometry();
 		void SpawnSomeLights();
 		void LoadShaders();
 		bool altButtonToggle = true;
@@ -78,7 +71,6 @@ namespace Picking
 		Camera* currentCamera;
         bool running = false;
 		bool debug = false;
-		bool paused = false;
         Display::Window* window;
         bool isLeftMouseButtonPressed = false;
         double leftMouseX;
@@ -89,18 +81,29 @@ namespace Picking
 		float windowMidY;
 		bool wireframe = false;
 		bool lightsPhysics = false;
+		float near = 0.1f;
+		float far = 2000.f;
+		float fov = 45.0f;
 
         Object* lastPickedObject = nullptr;
 		Object* plane = nullptr;
 		int objectsRendered = 0;
 		int lightsRendered = 0;
 		unsigned int pickedID = 0;
-		BoundingBox* boundingBox;
-		GLuint LightID;
 
 		loadedScene currentScene = none;
 		mwm::Vector3F lightInvDir = mwm::Vector3F(-1.f, 1.f, 1.f);
 		float planeDir = -1;
 		std::vector<ParticleSystem*> particleSystems;
+
+		FrameBuffer* geometryBuffer;
+		FrameBuffer* pickingBuffer;
+
+		Texture* pickingTexture;
+		Texture* worldPosTexture;
+
+		GLuint diffuseTextureHandle;
+		GLuint normalTextureHandle;
+		GLuint metDiffIntShinSpecIntTextureHandle;
 	};
 } // namespace Example

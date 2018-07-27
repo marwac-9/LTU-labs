@@ -21,11 +21,11 @@ void main(){
 	// Output position of the vertex, in clip space : MVP * position
 	gl_Position =  MVP * vec4(vertexPosition_modelspace,1);
 	
-	// Same, but with the light's view matrix
-	ShadowCoord = DepthBiasMVP * vec4(vertexPosition_modelspace,1);
-	
 	// Position of the vertex, in worldspace : M * position
 	Position_worldspace = (M * vec4(vertexPosition_modelspace,1)).xyz;
+
+	// Same, but with the light's view matrix
+	ShadowCoord = DepthBiasMVP * vec4(Position_worldspace, 1);
 
 	// Normal of the the vertex, in camera space
 	Normal_worldspace = (M * vec4(vertexNormal_modelspace,0)).xyz; // Only correct if ModelMatrix does not scale the model ! Use its inverse transpose if not.

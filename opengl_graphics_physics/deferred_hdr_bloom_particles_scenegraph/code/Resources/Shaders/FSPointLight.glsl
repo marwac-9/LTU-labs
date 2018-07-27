@@ -8,11 +8,21 @@ uniform vec3 CameraPos;
 uniform sampler2D diffuseSampler;
 uniform sampler2D positionSampler;
 uniform sampler2D normalsSampler;
-uniform sampler2D diffIntAmbIntShinSpecIntSampler;
+uniform sampler2D metDiffIntShinSpecIntSampler;
 
 uniform float lightRadius;
 uniform float lightPower;
 uniform vec3 lightColor;
+uniform float ambient;
+
+struct Attenuation
+{
+	float constant;
+	float linear;
+	float exponential;
+};
+
+uniform Attenuation pointAttenuation;
 
 // Ouput data
 layout(location = 0) out vec4 color;
@@ -25,7 +35,7 @@ void main()
 	vec3 MaterialDiffuseColor = texture(diffuseSampler, TexCoord).xyz;
 	vec3 Normal_worldSpace = texture(normalsSampler, TexCoord).xyz;
 	// Material properties
-	vec4 MatPropertiesDiffAmbShinSpec = texture(diffIntAmbIntShinSpecIntSampler, TexCoord);
+	vec4 MatPropertiesMetDiffShinSpec = texture(metDiffIntShinSpecIntSampler, TexCoord);
 
 	// Vector that goes from the vertex to the camera, in world space.
 	vec3 EyeDirection_worldSpace = CameraPos - WorldPos;
@@ -58,51 +68,20 @@ void main()
 	//  - Looking elsewhere -> < 1
 	float cosAlpha = max(dot(E, R), 0.0);
 
-	//float visibility = ShadowContribution(ShadowCoord.xy, ShadowCoord.z);
-	//float depth = texture( shadowMapSampler, ShadowCoord.xy).r;
-	//float bias = 0.0005f;
-
-	//float visibility = 1.0;
-
-	//if ( depth  <  ShadowCoord.z - bias){
-	//	visibility = 0.5f;
-	//}
 	float radius = lightRadius - 0.5;
-	//Linear Attenuation, based on distance.
-	//Distance is divided by the max radius of the light which must be <= scale of the light mesh
-	//float attenuation = max((1.0f - distance / (lightRadius - 0.5f)), 0.0);
-	//vec3 att = LightDirection_worldSpace / (lightRadius - 0.5);
-	//float attenuation = max(0.0, (1.0 - dot(att, att)) / (distance*distance*distance));
-	//float attenuation = max((1.0 - distance / radius) / (((distance*distance*distance*lightPower) / (radius*radius/10.0))), 0.0);
-	float attenuation = max((1.0 - distance / radius) / (distance*distance), 0.0);
-	//float attenuation = max(1.0 / (distance*distance), 0.0);
-	//float attenuation = pow(max(1.0 - (distance * distance) / (radius * radius), 0.0), 2.0);
-	//float attenuation = 1 / ((((distance / (1 - ((distance / lightRadius)*(distance / lightRadius)))) / lightRadius) + 1)*(((distance / (1 - ((distance / lightRadius)*(distance / lightRadius)))) / lightRadius) + 1));
-	//float attenuation = max(0.0, (1.0 - dot(att, att)) / (distance*distance*distance));
-	//float attenuation = max(1.0 - ((distance*distance) / ((lightRadius - 0.5)*(lightRadius - 0.5))), 0.0);
-	//float attenuation = smoothstep(radius, 0, distance);
-	//float compression = 3.0;
-	//float attenuation = pow(smoothstep(radius, 0, distance), compression);
-	//float attenuation = (1.0 / (0.3 + 0.007 * distance + 0.00008 * distance * distance));
 
-	//values here are material properties of an object
-	float Ambient = MatPropertiesDiffAmbShinSpec.x;
-	float Diffuse = MatPropertiesDiffAmbShinSpec.y * cosTheta;
-	float Specular = MatPropertiesDiffAmbShinSpec.z * pow(cosAlpha, MatPropertiesDiffAmbShinSpec.w);
+	float attenuation = 1.0 / (pointAttenuation.constant + pointAttenuation.linear * distance + pointAttenuation.exponential * distance * distance);
+	attenuation = max((1.0 - distance / radius) * attenuation, 0.0); //i should come up with a way to manipulate point light attenuation in c++ so it never reaches sphere radius, this is a quick fix
 
-	//color with point light only
-	//light power is the diffuse intensity of an light
-	color = vec4(MaterialDiffuseColor * lightColor * lightPower * (Ambient + Diffuse + Specular) * attenuation, 1.0);
+	float Metallic = MatPropertiesMetDiffShinSpec.x;
+	float Diffuse = MatPropertiesMetDiffShinSpec.y * cosTheta;
+	float Specular = MatPropertiesMetDiffShinSpec.z * pow(cosAlpha, MatPropertiesMetDiffShinSpec.w);
+	vec3 SpecularColor = mix(vec3(1.0), MaterialDiffuseColor, Metallic);
+
+	color = vec4(lightColor * lightPower * (MaterialDiffuseColor * (ambient + Diffuse) + SpecularColor * Specular) * attenuation, 1.0);
 	float brightness = dot(color.rgb, vec3(0.2126, 0.7152, 0.0722));
 	if (brightness > 1.0)
 		brightColor = color;
 	else
 		brightColor = vec4(0.0, 0.0, 0.0, 1.0);
-	//color = 
-	// Ambient : simulates indirect lighting
-	//MaterialAmbientColor * MaterialDiffuseIntensityValue +
-	// Diffuse : "color" of the object
-	//MaterialDiffuseColor * lightColor * lightPower * cosTheta * attenuation * MaterialDiffuseIntensityValue +
-	// Specular : reflective highlight, like a mirror
-	//MaterialSpecularColor * lightColor * lightPower * pow(cosAlpha, shininess) * attenuation;
 }

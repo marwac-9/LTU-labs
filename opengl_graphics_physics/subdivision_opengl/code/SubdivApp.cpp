@@ -4,7 +4,6 @@
 
 #include "SubdivApp.h"
 #include <cstring>
-#include <time.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <iostream>
@@ -26,6 +25,7 @@
 #include "Render.h"
 #include "CameraManager.h"
 #include <chrono>
+#include "Times.h"
 
 using namespace mwm;
 using namespace Display;
@@ -76,8 +76,7 @@ namespace Subdivision
 			this->windowMidX = windowWidth / 2.0f;
 			this->windowMidY = windowHeight / 2.0f;
 			this->window->SetSize(this->windowWidth, this->windowHeight);
-			float aspect = (float)this->windowWidth / (float)this->windowHeight;
-			currentCamera->ProjectionMatrix = Matrix4::OpenGLPersp(45.f, aspect, 0.1f, 100.f);
+
 			currentCamera->UpdateSize(width, height);
 		});
 
@@ -102,7 +101,7 @@ namespace Subdivision
 		LoadScene1();
 		
 		// For speed computation (FPS)
-		double lastTime = glfwGetTime();
+		Times::Instance()->currentTime = glfwGetTime();
 
 		//camera rotates based on mouse movement, setting initial mouse pos will always focus camera at the beginning in specific position
 		window->SetCursorPos(windowMidX, windowMidY + 100);
@@ -110,42 +109,30 @@ namespace Subdivision
 
 		SetUpCamera();
 
-		double fps_timer = 0;
 		Scene::Instance()->Update();
 
 		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 		wireframe = true;
 		//glfwSwapInterval(0); //unlock fps
-
+		ShaderManager::Instance()->SetCurrentShader(ShaderManager::Instance()->shaderIDs["color"]);
 		while (running)
 		{
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 			this->window->Update();
 
-			// Measure FPS
-			Time::currentTime = glfwGetTime();
-			Time::deltaTime = Time::currentTime - lastTime;
+			Times::Instance()->Update(glfwGetTime());
 
 			Monitor(this->window);
 
-			//is cursor window locked
-			if (altButtonToggle) CameraManager::Instance()->Update();
+			CameraManager::Instance()->Update(Times::Instance()->deltaTime);
 			FrustumManager::Instance()->ExtractPlanes(CameraManager::Instance()->ViewProjection);
 			
-
 			Scene::Instance()->Update();
 
 			Draw();
 
-			if (Time::currentTime - fps_timer >= 0.2){
-				this->window->SetTitle("Objects rendered: " + std::to_string(objectsRendered) + " FPS: " + std::to_string(1.0 / Time::deltaTime));
-				fps_timer = Time::currentTime;
-			}
-
 			this->window->SwapBuffers();
-
-			lastTime = Time::currentTime;
 		}
 		this->ClearBuffers();
 		GraphicsStorage::ClearMaterials();
@@ -190,6 +177,24 @@ namespace Subdivision
 			else if (key == GLFW_KEY_3) {
 				LoadScene3();
 			}
+			else if (key == GLFW_KEY_4) {
+				LoadScene4();
+			}
+			else if (key == GLFW_KEY_5) {
+				LoadScene5();
+			}
+			else if (key == GLFW_KEY_6) {
+				LoadScene6();
+			}
+			else if (key == GLFW_KEY_7) {
+				LoadScene7();
+			}
+			else if (key == GLFW_KEY_8) {
+				LoadScene8();
+			}
+			else if (key == GLFW_KEY_9) {
+				LoadScene9();
+			}
 			else if (key == GLFW_KEY_TAB) {
 				if (wireframe)
 				{
@@ -225,12 +230,16 @@ namespace Subdivision
 	void
 	SubdivisionApp::Monitor(Display::Window* window)
 	{
-		currentCamera->holdingForward = (window->GetKey(GLFW_KEY_W) == GLFW_PRESS);
-		currentCamera->holdingBackward = (window->GetKey(GLFW_KEY_S) == GLFW_PRESS);
-		currentCamera->holdingRight = (window->GetKey(GLFW_KEY_D) == GLFW_PRESS);
-		currentCamera->holdingLeft = (window->GetKey(GLFW_KEY_A) == GLFW_PRESS);
-		currentCamera->holdingUp = (window->GetKey(GLFW_KEY_SPACE) == GLFW_PRESS);
-		currentCamera->holdingDown = (window->GetKey(GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS);
+		if (altButtonToggle)
+		{
+			currentCamera->holdingForward = (window->GetKey(GLFW_KEY_W) == GLFW_PRESS);
+			currentCamera->holdingBackward = (window->GetKey(GLFW_KEY_S) == GLFW_PRESS);
+			currentCamera->holdingRight = (window->GetKey(GLFW_KEY_D) == GLFW_PRESS);
+			currentCamera->holdingLeft = (window->GetKey(GLFW_KEY_A) == GLFW_PRESS);
+			currentCamera->holdingUp = (window->GetKey(GLFW_KEY_SPACE) == GLFW_PRESS);
+			currentCamera->holdingDown = (window->GetKey(GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS);
+		}
+		currentCamera->SetFarNearFov(fov, near, far);
 	}
 
 	void
@@ -249,9 +258,6 @@ namespace Subdivision
 		glEnable(GL_CULL_FACE);
 
 		LoadShaders();
-		ShaderManager::Instance()->SetCurrentShader(ShaderManager::Instance()->shaderIDs["color"]);
-		LightID = glGetUniformLocation(ShaderManager::Instance()->shaderIDs["color"], "LightPosition_worldspace");
-		glUniform3f(LightID, 0.f, 0.f, 0.f);
 
 		this->window->GetWindowSize(&this->windowWidth, &this->windowHeight);
 		windowMidX = windowWidth / 2.0f;
@@ -269,16 +275,8 @@ namespace Subdivision
 		GLuint cameraPos = glGetUniformLocation(currentShaderID, "CameraPos");
 		Vector3F camPos = currentCamera->GetPosition2().toFloat();
 		glUniform3fv(cameraPos, 1, &camPos.x);
-		objectsRendered = 0;
-		for (auto& obj : Scene::Instance()->pickingList)
-		{
-			obj.second->CalculateRadius();
-			if (FrustumManager::Instance()->isBoundingSphereInView(obj.second->GetWorldPosition(), obj.second->radius)) {
-				Render::draw(obj.second, CameraManager::Instance()->ViewProjection, currentShaderID);
-				printf("%d : %f\n", objectsRendered, obj.second->radius);
-				objectsRendered++;
-			}
-		}
+
+		objectsRendered = Render::Instance()->draw(Scene::Instance()->renderList, CameraManager::Instance()->ViewProjection, currentShaderID);
 	}
 
 	void
@@ -314,7 +312,7 @@ namespace Subdivision
 	SubdivisionApp::LoadScene1()
 	{
 		Clear();
-		Subdivide(GraphicsStorage::objects[5]);
+		Subdivide(GraphicsStorage::objects[0]);
 	}
 
 	void
@@ -332,9 +330,51 @@ namespace Subdivision
 	}
 
 	void
+	SubdivisionApp::LoadScene4()
+	{
+		Clear();
+		Subdivide(GraphicsStorage::objects[3]);
+	}
+
+	void
+	SubdivisionApp::LoadScene5()
+	{
+		Clear();
+		Subdivide(GraphicsStorage::objects[4]);
+	}
+
+	void
+	SubdivisionApp::LoadScene6()
+	{
+		Clear();
+		Subdivide(GraphicsStorage::objects[5]);
+	}
+
+	void
+	SubdivisionApp::LoadScene7()
+	{
+		Clear();
+		Subdivide(GraphicsStorage::objects[6]);
+	}
+
+	void
+	SubdivisionApp::LoadScene8()
+	{
+		Clear();
+		Subdivide(GraphicsStorage::objects[7]);
+	}
+
+	void
+	SubdivisionApp::LoadScene9()
+	{
+		Clear();
+		Subdivide(GraphicsStorage::objects[8]);
+	}
+
+	void
 	SubdivisionApp::Subdivide(OBJ* objToSubdivide)
 	{
-		Object* ObjectHalfMesh = Scene::Instance()->addObjectToScene(); //Object added to scene for rendering
+		Object* ObjectHalfMesh = Scene::Instance()->addObject(); //Object added to scene for rendering
 		
 		printf("\nConstructing half edge mesh\n");
 		HalfEdgeMesh* newHMesh = new HalfEdgeMesh();
@@ -378,7 +418,6 @@ namespace Subdivision
 		ObjectHalfMesh->AssignMaterial(newMaterial);
 		ObjectHalfMesh->SetScale(Vector3(4.0f, 4.0f, 4.0f));
 		ObjectHalfMesh->SetPosition(Vector3(0.f, 0.f, -10.f));
-		ObjectHalfMesh->mat->SetAmbientIntensity(0.5f);
 		printf("\nDONE\n");
 
 		printf("\nCreating proxy mesh\n");
@@ -411,7 +450,7 @@ namespace Subdivision
 	SubdivisionApp::SetUpCamera()
 	{
 		currentCamera = new Camera(Vector3(0.0, 3.0, 16.0), windowWidth, windowHeight);
-		currentCamera->Update(Time::timeStep);
+		currentCamera->Update(Times::Instance()->timeStep);
 		window->SetCursorPos(windowMidX, windowMidY);
 		CameraManager::Instance()->AddCamera("default", currentCamera);
 		CameraManager::Instance()->SetCurrentCamera("default");

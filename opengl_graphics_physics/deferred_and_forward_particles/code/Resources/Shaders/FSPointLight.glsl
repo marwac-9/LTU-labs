@@ -8,12 +8,12 @@ uniform vec3 CameraPos;
 uniform sampler2D diffuseSampler;
 uniform sampler2D positionSampler;
 uniform sampler2D normalsSampler;
-
-uniform sampler2D diffIntAmbIntShinSpecIntSampler;
+uniform sampler2D metDiffIntShinSpecIntSampler;
 
 uniform float lightRadius;
 uniform float lightPower;
 uniform vec3 lightColor;
+uniform float ambient;
 
 // Ouput data
 layout(location = 0) out vec3 color;
@@ -25,16 +25,16 @@ void main()
 	vec3 MaterialDiffuseColor = texture(diffuseSampler, TexCoord).xyz;
 	vec3 Normal_worldSpace = texture(normalsSampler, TexCoord).xyz;
 	// Material properties
-	vec4 MatPropertiesDiffAmbShinSpec = texture(diffIntAmbIntShinSpecIntSampler, TexCoord);
-
-	// Distance to the light
-	float distance = length(LightPosition_worldspace - WorldPos);
+	vec4 MatPropertiesMetDiffShinSpec = texture(metDiffIntShinSpecIntSampler, TexCoord);
 
 	// Vector that goes from the vertex to the camera, in world space.
 	vec3 EyeDirection_worldSpace = CameraPos - WorldPos;
 
 	// Vector that goes from the vertex to the light, in world space. M is ommited because it's identity.
 	vec3 LightDirection_worldSpace = LightPosition_worldspace - WorldPos;
+
+	// Distance to the light
+	float distance = length(LightDirection_worldSpace);
 
 	//vec3 Normal_cameraspace = (V * vec4(Normal_worldSpace,0)).xyz;
 	// Normal of the computed fragment, in camera space
@@ -70,18 +70,21 @@ void main()
 
 	//Linear Attenuation, based on distance.
 	//Distance is divided by the max radius of the light which must be <= scale of the light mesh
-	float attenuation = clamp((1.0f - distance / (lightRadius-0.5f)), 0.0, 1.0);
-	//color with pointlight
+	//float attenuation = clamp((1.0f - distance / (lightRadius-0.5f)), 0.0, 1.0);
+	
+	float radius = lightRadius - 0.5;
 
-	float Ambient = MatPropertiesDiffAmbShinSpec.x;
-	float Diffuse = MatPropertiesDiffAmbShinSpec.y * cosTheta;
-	float SpecularColor = MatPropertiesDiffAmbShinSpec.z * pow(cosAlpha, MatPropertiesDiffAmbShinSpec.w); // yea should make specular intensity a float only screw in specular color
-	//specular sent to shader should be only the specular strength but we can try to specify color as well to fake translucent paint effect
-	//these are only light calculations
-	//we add the texture color later
+	float attenuation = max((1.0 - distance / radius) / (distance*distance), 0.0);
 
-	//color with point light only
-	color = MaterialDiffuseColor * lightColor * lightPower * (Ambient + Diffuse + SpecularColor) * attenuation;
+	//pointlight only
+
+	float Metallic = MatPropertiesMetDiffShinSpec.x;
+	float Diffuse = MatPropertiesMetDiffShinSpec.y * cosTheta;
+	float Specular = MatPropertiesMetDiffShinSpec.z * pow(cosAlpha, MatPropertiesMetDiffShinSpec.w);
+	vec3 SpecularColor = mix(vec3(1.0), MaterialDiffuseColor, Metallic); //roughness parameter and reflection map will help with black metallic objects 
+
+	//point light only
+	color = lightColor * lightPower * (MaterialDiffuseColor * (ambient + Diffuse) + SpecularColor * Specular) * attenuation;
 
 	//color = 
 	// Ambient : simulates indirect lighting

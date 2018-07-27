@@ -37,7 +37,7 @@ void main(){
 	//vec2 TexCoord = (clipUV.xy / clipUV.z) / 2.0 + 0.5; //just another way to get coordinates
 
 	float depthToBottom = texture(depthMapSampler, TexCoord).r; //depth from camera to the bottom of lake
-	float floorDistance = 2.0 * near * far / (far + near - (2.0 * depthToBottom - 1.0) * (far - near)); //depth converted to distance from camera to botton of lake
+	float floorDistance = 2.0 * near * far / (far + near - (2.0 * depthToBottom - 1.0) * (far - near)); //depth converted to distance from camera to bottom of lake
 
 	float depthToFragment = gl_FragCoord.z;
 	float waterDistance = 2.0 * near * far / (far + near - (2.0 * depthToFragment - 1.0) * (far - near)); //depth converted to distance from camera to the surface of water

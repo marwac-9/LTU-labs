@@ -12,14 +12,18 @@ uniform vec2 scaleUniform;
 
 void main(){
 	vec3 blur = vec3(0.0);
-		
-	blur += texture(blurMapSampler, UV + vec2(-3.0*scaleUniform.x, -3.0*scaleUniform.y)).rgb * 0.015625;
-	blur += texture(blurMapSampler, UV + vec2(-2.0*scaleUniform.x, -2.0*scaleUniform.y)).rgb * 0.09375;
-	blur += texture(blurMapSampler, UV + vec2(-1.0*scaleUniform.x, -1.0*scaleUniform.y)).rgb * 0.234375;
-	blur += texture(blurMapSampler, UV + vec2(0.0, 0.0)).rgb * 0.3125;
-	blur += texture(blurMapSampler, UV + vec2(1.0*scaleUniform.x, 1.0*scaleUniform.y)).rgb * 0.234375;
-	blur += texture(blurMapSampler, UV + vec2(2.0*scaleUniform.x, 2.0*scaleUniform.y)).rgb * 0.09375;
-	blur += texture(blurMapSampler, UV + vec2(3.0*scaleUniform.x, -3.0*scaleUniform.y)).rgb * 0.015625;
+	
+	blur += texture(blurMapSampler, UV + vec2(-5.0*scaleUniform.x, -3.0*scaleUniform.y)).rgb * 0.0093;
+	blur += texture(blurMapSampler, UV + vec2(-4.0*scaleUniform.x, -3.0*scaleUniform.y)).rgb * 0.028002;
+	blur += texture(blurMapSampler, UV + vec2(-3.0*scaleUniform.x, -3.0*scaleUniform.y)).rgb * 0.065984;
+	blur += texture(blurMapSampler, UV + vec2(-2.0*scaleUniform.x, -2.0*scaleUniform.y)).rgb * 0.121703;
+	blur += texture(blurMapSampler, UV + vec2(-1.0*scaleUniform.x, -1.0*scaleUniform.y)).rgb * 0.175713;
+	blur += texture(blurMapSampler, UV + vec2(0.0, 0.0)).rgb * 0.198596;
+	blur += texture(blurMapSampler, UV + vec2(1.0*scaleUniform.x, 1.0*scaleUniform.y)).rgb * 0.175713;
+	blur += texture(blurMapSampler, UV + vec2(2.0*scaleUniform.x, 2.0*scaleUniform.y)).rgb * 0.121703;
+	blur += texture(blurMapSampler, UV + vec2(3.0*scaleUniform.x, -3.0*scaleUniform.y)).rgb * 0.065984;
+	blur += texture(blurMapSampler, UV + vec2(4.0*scaleUniform.x, -3.0*scaleUniform.y)).rgb * 0.028002;
+	blur += texture(blurMapSampler, UV + vec2(5.0*scaleUniform.x, -3.0*scaleUniform.y)).rgb * 0.0093;
 
 	color = blur;
 }

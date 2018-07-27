@@ -15,7 +15,6 @@
 #include "Mesh.h"
 #include "OBJ.h"
 #include "HalfEdgeMesh.h"
-#include "Scene.h"
 #include <chrono>
 #include <ctime>
 #include "PoolParty.h"
@@ -28,10 +27,7 @@ using namespace std;
 int
 main(int argc, const char** argv)
 {
-  
-  
-    Object* Scene = Scene::Instance()->build();
-    Object* HalfMeshObj = Scene::Instance()->addChildTo(Scene);
+    Object* HalfMeshObj = new Object();
 
     //load all objs
     printf("\nLOADING OBJs\n");
@@ -80,32 +76,6 @@ main(int argc, const char** argv)
 	Subdivide(reinterpret_cast<HalfEdgeMesh*>(HalfMeshObj->mesh),i);
     }
     
-    /*
-    Vector3 vectors[100000];
-    for(int i = 0; i < 100000; ++i)
-    {
-      vectors[i].vect[0]=5;
-      vectors[i].vect[1]=5;
-      vectors[i].vect[2]=5;      
-    }
-    
-    
-    std::chrono::time_point<std::chrono::high_resolution_clock> start, end;
-    start = std::chrono::high_resolution_clock::now();
-    
-    
-    for(int i = 0; i < 100000; ++i)
-    {
-      vectors[i].NormalizeSSE();
-    }
-    
-    
-    end = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> elapsed_seconds = end-start;
-    //std::time_t end_time = std::chrono::high_resolution_clock::to_time_t(end);
-    
-    std::cout << "\nNormalized in: " << elapsed_seconds.count() << "s\n";
-    */
     return 0;
 }
 

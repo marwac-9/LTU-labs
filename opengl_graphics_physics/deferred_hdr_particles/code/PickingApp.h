@@ -10,6 +10,8 @@ class ParticleSystem;
 class BoundingBox;
 class Object;
 class Camera;
+class FrameBuffer;
+class Texture;
 
 enum loadedScene
 {
@@ -36,7 +38,7 @@ namespace Picking
     private:
 		void Clear();
 
-		void Draw();
+		void DrawPicking();
 		void DrawDebug();
 
 		void PassPickingTexture();
@@ -45,33 +47,25 @@ namespace Picking
 		void DrawGeometryPass();
 
 		void DrawLightPass();
-		void DrawPointLights();
-		void DrawDirectionalLights();
-		void StencilPass(Object* pointLight);
-		void PointLightPass(Object* pointLight);
 		void BlitToScreenPass();
 		void FireLightProjectile();
+		void DrawGeometryMaps(int width, int height);
 
 		void DrawHDR();
 
-		void UpdateComponents();
-		void UpdateLightsComponents();
         void InitGL();
         void ClearBuffers();
+		void SetUpBuffers(int windowWidth, int windowHeight);	
         void KeyCallback(int key, int scancode, int action, int mods);
 		void MouseCallback(double mouseX, double mouseY);
 		void Monitor(Display::Window* window);
 		void SetUpCamera();
-		mwm::Vector3 ConvertMousePosToWorld();
 		void LoadScene1();
 		void LoadScene2();
 		void LoadScene3();
 		void Vortex();
 		
-		void ActivateTextures();
 		void MovePlaneUpNDown();
-		void DisableTextures();
-		void DrawGeometry();
 		void DrawParticles();
 		void SpawnSomeLights();
 		void LoadShaders();
@@ -81,7 +75,6 @@ namespace Picking
 		Camera* currentCamera;
         bool running = false;
 		bool debug = false;
-		bool paused = false;
         Display::Window* window;
         bool isLeftMouseButtonPressed = false;
         double leftMouseX;
@@ -92,18 +85,38 @@ namespace Picking
 		float windowMidY;
 		bool wireframe = false;
 		bool lightsPhysics = false;
+		float near = 0.1f;
+		float far = 2000.f;
+		float fov = 45.0f;
+
+		bool hdrEnabled = GL_TRUE;
+		float exposure = 1.0f;
+		float gamma = 1.2f;
 
         Object* lastPickedObject = nullptr;
 		Object* plane = nullptr;
 		int objectsRendered = 0;
 		int lightsRendered = 0;
 		unsigned int pickedID = 0;
-		BoundingBox* boundingBox;
-		GLuint LightID;
+
 		Object* pointL;
 		loadedScene currentScene = none;
 		mwm::Vector3F lightInvDir = mwm::Vector3F(-1.f, 1.f, 1.f);
 		float planeDir = -1;
 		std::vector<ParticleSystem*> particleSystems;
+
+		FrameBuffer* lightAndPostBuffer;
+		GLuint finalColorTextureHandle;
+		GLuint brightLightTextureHandle;
+
+		FrameBuffer* geometryBuffer;
+		FrameBuffer* pickingBuffer;
+
+		Texture* pickingTexture;
+		Texture* worldPosTexture;
+
+		GLuint diffuseTextureHandle;
+		GLuint normalTextureHandle;
+		GLuint metDiffIntShinSpecIntTextureHandle;
 	};
 } // namespace Example

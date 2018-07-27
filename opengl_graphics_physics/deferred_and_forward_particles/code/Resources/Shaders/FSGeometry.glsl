@@ -6,7 +6,6 @@ in vec3 WorldPos0;
 
 in vec4 diffIntAmbIntShineSpecInt0;
 in vec3 materialColor0;
-in vec3 specularColor0;
 
 layout(location = 0) out vec3 WorldPosOut;
 layout(location = 1) out vec3 DiffuseOut;

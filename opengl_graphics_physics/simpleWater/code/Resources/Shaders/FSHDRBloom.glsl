@@ -16,6 +16,7 @@ void main()
 {
 	vec3 hdrColor = texture(hdrBuffer, UV).rgb;
 	vec3 bloomColor = texture(bloomBuffer, UV).rgb;
+
 	if(bloom) 
 	{
 		hdrColor += bloomColor * bloomIntensity; // additive blending

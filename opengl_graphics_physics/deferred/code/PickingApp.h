@@ -2,6 +2,8 @@
 // Created by marwac-9 on 9/16/15.
 //
 #include "app.h"
+#include <imgui.h>
+#include "imgui_impl_glfw_gl3.h"
 #include "gl_window.h"
 #include "MyMathLib.h"
 #include <vector>
@@ -10,6 +12,8 @@ class ParticleSystem;
 class BoundingBox;
 class Object;
 class Camera;
+class FrameBuffer;
+class Texture;
 
 enum loadedScene
 {
@@ -35,38 +39,31 @@ namespace Picking
         void Run();
     private:
 		void Clear();
-
-		void Draw();
+		void DrawPicking();
 		void DrawDebug();
 
 		void PassPickingTexture();
         void PickingTest();
 
 		void DrawGeometryPass();
-
+		
 		void DrawLightPass();
-		void DrawPointLights();
-		void DrawDirectionalLights();
-		void StencilPass(Object* pointLight);
-		void PointLightPass(Object* pointLight);
 		void BlitToScreenPass();
-
+		void DrawGeometryMaps(int windowWidth, int windowHeight);
+		void GenerateGUI();
         void InitGL();
         void ClearBuffers();
+		void SetUpBuffers(int windowWidth, int windowHeight);
         void KeyCallback(int key, int scancode, int action, int mods);
 		void MouseCallback(double mouseX, double mouseY);
 		void Monitor(Display::Window* window);
 		void SetUpCamera();
-		mwm::Vector3 ConvertMousePosToWorld();
 		void LoadScene1();
 		void LoadScene2();
 		void LoadScene3();
 		void Vortex();
-		
-		void ActivateTextures();
+	
 		void MovePlaneUpNDown();
-		void DisableTextures();
-		void DrawGeometry();
 		void SpawnSomeLights();
 		void LoadShaders();
 		bool altButtonToggle = true;
@@ -74,8 +71,7 @@ namespace Picking
         int cameraMode = 1;
 		Camera* currentCamera;
         bool running = false;
-		bool debug = false;
-		bool paused = false;
+		bool debug = true;
         Display::Window* window;
         bool isLeftMouseButtonPressed = false;
         double leftMouseX;
@@ -92,11 +88,26 @@ namespace Picking
 		int objectsRendered = 0;
 		int lightsRendered = 0;
 		unsigned int pickedID = 0;
-		BoundingBox* boundingBox;
-		GLuint LightID;
+
+		Object* directionalLightObject;
+		Object* planeObject;
+
 
 		loadedScene currentScene = none;
 		mwm::Vector3F lightInvDir = mwm::Vector3F(-1.f, 1.f, 1.f);
 		float planeDir = -1;
+		float near = 0.1f;
+		float far = 2000.f;
+		float fov = 45.0f;
+
+		FrameBuffer* geometryBuffer;
+		FrameBuffer* pickingBuffer;
+
+		Texture* pickingTexture;
+		Texture* worldPosTexture;
+
+		GLuint diffuseTextureHandle;
+		GLuint normalTextureHandle;
+		GLuint metDiffIntShinSpecIntTextureHandle;
 	};
 } // namespace Example

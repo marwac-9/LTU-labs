@@ -14,14 +14,13 @@ uniform sampler2D myTextureSampler;
 uniform vec4 MaterialProperties;
 uniform vec3 MaterialColor;
 
-uniform vec2 screenSize;
-
 uniform float lightPower;
 uniform vec3 lightColor;
 
+const float Ambient = 0.25; //is light property
+
 void main(){
 
-	vec2 TexCoord = gl_FragCoord.xy / screenSize;
 	// Material properties
 	vec3 MaterialDiffuseColor = texture2D(myTextureSampler, UV).rgb + MaterialColor;
 
@@ -39,13 +38,12 @@ void main(){
 
 	float specularFactor = clamp(dot(vertexToCamera, reflectedLightDir), 0, 1);
 
-	float Ambient = MaterialProperties.x; //ambient intensity
+	float Metallic = MaterialProperties.x; //metallic
 	float Diffuse = MaterialProperties.y * diffuseFactor; //diffuse intensity
 	float Specular = MaterialProperties.z * pow(specularFactor, MaterialProperties.w); //specular intensity, specular shininess
+	vec3 SpecularColor = mix(vec3(1.0), MaterialDiffuseColor, Metallic); //roughness parameter and reflection map will help with black metallic objects 
 
-	float totalLight = (Ambient + Diffuse + Specular);
-
-	color = vec4(MaterialDiffuseColor * lightColor * lightPower * totalLight, 0.1f);
+	color = vec4(lightColor * lightPower * (MaterialDiffuseColor * (Ambient + Diffuse) + SpecularColor * Specular), 0.1f);
 	float brightness = dot(color.rgb, vec3(0.2126, 0.7152, 0.0722));
 	if (brightness > 1.0)
 		brightColor = color;

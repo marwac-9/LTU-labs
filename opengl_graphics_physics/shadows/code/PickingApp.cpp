@@ -4,7 +4,6 @@
 
 #include "PickingApp.h"
 #include <cstring>
-#include <time.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <iostream>
@@ -12,6 +11,7 @@
 #include "GraphicsStorage.h"
 #include "Node.h"
 #include "Material.h"
+#include "Texture.h"
 #include "Mesh.h"
 #include "OBJ.h"
 #include <fstream>
@@ -25,6 +25,8 @@
 #include "Frustum.h"
 #include "Render.h"
 #include "CameraManager.h"
+#include "FrameBuffer.h"
+#include "Times.h"
 
 using namespace mwm;
 using namespace Display;
@@ -74,10 +76,9 @@ namespace Picking
 			this->windowMidX = windowWidth / 2.0f;
 			this->windowMidY = windowHeight / 2.0f;
             this->window->SetSize(this->windowWidth, this->windowHeight);
-            float aspect = (float)this->windowWidth / (float)this->windowHeight;
-			currentCamera->ProjectionMatrix = Matrix4::OpenGLPersp(45.f, aspect, 0.1f, 100.f);
-
+           
 			FBOManager::Instance()->UpdateTextureBuffers(this->windowWidth, this->windowHeight);
+
 			currentCamera->UpdateSize(width, height);
         });
 
@@ -111,19 +112,15 @@ namespace Picking
 
         InitGL();
 
-        FBOManager::Instance()->SetUpFrameBuffer(this->windowWidth, this->windowHeight);
-		FBOManager::Instance()->SetUpBlurFrameBuffer(this->windowWidth, this->windowHeight);
-
+		SetUpBuffers(this->windowWidth, this->windowHeight);
+		
 		GraphicsManager::LoadAllAssets();
 
 		DebugDraw::Instance()->LoadPrimitives();
-
-		boundingBox = &DebugDraw::Instance()->boundingBox;
 		
-		LoadScene1();
+		LoadScene6();
 
-        // For speed computation (FPS)
-		double lastTime = glfwGetTime();
+		Times::Instance()->currentTime = glfwGetTime();
 
 		//camera rotates based on mouse movement, setting initial mouse pos will always focus camera at the beginning in specific position
 		window->SetCursorPos(windowWidth/2.f, windowHeight/2.f+100); 
@@ -131,98 +128,54 @@ namespace Picking
 
 		SetUpCamera();
 
-		double fps_timer = 0;
-		Node initNode = Node();
-		Scene::Instance()->SceneObject->node.UpdateNodeTransform(initNode);
+		Scene::Instance()->Update();
+
+		ImGui_ImplGlfwGL3_Init(this->window->GetGLFWWindow(), false);
 
         while (running)
         {
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             this->window->Update();
+			ImGui_ImplGlfwGL3_NewFrame();
 
-			// Measure FPS
-			Time::currentTime = glfwGetTime();
-			Time::deltaTime = Time::currentTime - lastTime;
+			Times::Instance()->Update(glfwGetTime());
 			
 			Monitor(this->window);
 
 			//is cursor window locked
-			if (altButtonToggle) CameraManager::Instance()->Update();
+			CameraManager::Instance()->Update(Times::Instance()->deltaTime);
 			FrustumManager::Instance()->ExtractPlanes(CameraManager::Instance()->ViewProjection);
-			
-			Time::timeStep = 0.016 + Time::timeModifier;
-			if (Time::timeStep == 0.0) Time::dtInv = 0.0;
-			else Time::dtInv = 1.0 / Time::timeStep;
 
-			if (paused) Time::timeStep = 0.0, Time::dtInv = 0.0;
-
-			if (scene4loaded) if (Time::currentTime - fps_timer >= 0.2) Vortex();
+			if (scene4loaded) Vortex();
 			
-			PhysicsManager::Instance()->SortAndSweep();
-			PhysicsManager::Instance()->NarrowTestSAT((float)Time::dtInv);
+			Scene::Instance()->Update();
+			PhysicsManager::Instance()->Update(Times::Instance()->dtInv);
 			
-			UpdateComponents();
-			Scene::Instance()->SceneObject->node.UpdateNodeTransform(initNode);
+			GenerateGUI(); // <-- (generate) to screen
 			
 			PassPickingTexture(); //picking
-			PickingTest();
+			if (altButtonToggle) PickingTest();
 
-			DrawDepthPass(); 
-			BlurShadowMap();
+			DrawDepthPass();
+
+			if(blurShadowMap) blurredShadowTexture = Render::Instance()->PingPongBlur(shadowTexture, shadowMapBlurLevel, blurShadowMapSize, ShaderManager::Instance()->shaderIDs["fastBlurShadow"]);
 			//render to screen
 			//glViewport(0, 0, windowWidth, windowHeight);
 			//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); i clear screen above instead, fbo is cleared inside passes
 			DrawColorDebugPass(); // color || debug
 			DebugDraw::Instance()->DrawCrossHair(windowWidth, windowHeight);
-			FBOManager::Instance()->DrawShadowMap(windowWidth, windowHeight);
-			if (Time::currentTime - fps_timer >= 0.2){
-				this->window->SetTitle("Objects rendered: " + std::to_string(objectsRendered) + " FPS: " + std::to_string(1.0 / Time::deltaTime) + " TimeStep: " + std::to_string(Time::timeStep) + " PickedID: " + std::to_string(pickedID) + (paused ? " PAUSED" : ""));
-				fps_timer = Time::currentTime;
-			}
-            
+			DrawMaps(windowWidth, windowHeight);
+
+			ImGui::Render(); // <-- (draw) to screen
+
             this->window->SwapBuffers();
-	    
-			lastTime = Time::currentTime;
         }
         this->ClearBuffers();
 		GraphicsStorage::ClearMaterials();
 		GraphicsStorage::ClearOBJs();
         this->window->Close();
     }
-
-	void 
-	PickingApp::BlurShadowMap()
-	{
-		ShaderManager::Instance()->SetCurrentShader(ShaderManager::Instance()->shaderIDs["blur"]);
-		GLuint scaleUniform = glGetUniformLocation(ShaderManager::Instance()->GetCurrentShaderID(), "scaleUniform");
-
-		for (int i = 0; i < 2; i++){
-
-			FBOManager::Instance()->BindBlurFrameBuffer(draw);
-			glDrawBuffer(GL_COLOR_ATTACHMENT0);
-			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-			glUniform2f(scaleUniform, 1.0f / (float)windowWidth, 0.0f); //horizontally
-
-			//Bind shadow map to be blurred
-			glActiveTexture(GL_TEXTURE0);
-			glBindTexture(GL_TEXTURE_2D, FBOManager::Instance()->shadowMapHandle);
-			
-			DebugDraw::Instance()->DrawQuad(); 
-
-			FBOManager::Instance()->BindFrameBuffer(draw);
-			glDrawBuffer(GL_COLOR_ATTACHMENT2);
-			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-			glUniform2f(scaleUniform, 0.0f, 1.0f / (float)windowHeight); //vertically
-
-			//Bind shadow map to be blurredblurred
-			glActiveTexture(GL_TEXTURE0);
-			glBindTexture(GL_TEXTURE_2D, FBOManager::Instance()->shadowMapBlurdHandle);
-
-			DebugDraw::Instance()->DrawQuad();
-		}
-		FBOManager::Instance()->UnbindFrameBuffer(draw);
-	}
-
+	
     void
     PickingApp::ClearBuffers()
     {
@@ -246,6 +199,12 @@ namespace Picking
 			else if (key == GLFW_KEY_LEFT_ALT) {
 				if (altButtonToggle) {
 					altButtonToggle = false;
+					currentCamera->holdingForward = false;
+					currentCamera->holdingBackward = false;
+					currentCamera->holdingRight = false;
+					currentCamera->holdingLeft = false;
+					currentCamera->holdingUp = false;
+					currentCamera->holdingDown = false;
 					window->SetCursorMode(GLFW_CURSOR_NORMAL);
 				}
 				else {
@@ -273,6 +232,10 @@ namespace Picking
 			else if (key == GLFW_KEY_5) {
 				scene4loaded = false;
 				LoadScene5();
+			}
+			else if (key == GLFW_KEY_6) {
+				scene4loaded = false;
+				LoadScene6();
 			}
 			else if (key == GLFW_KEY_TAB) {
 				if (wireframe)
@@ -304,18 +267,12 @@ namespace Picking
 			}
 			else if (key == GLFW_KEY_P)
 			{
-				if (paused)
-				{
-					paused = false;
-				}
-				else
-				{
-					paused = true;
-				}
+				if (Times::Instance()->paused) Times::Instance()->paused = false;
+				else Times::Instance()->paused = true;
 			}
 			else if (key == GLFW_KEY_T)
 			{
-				Time::timeModifier = 0.0;
+				Times::Instance()->timeModifier = 0.0;
 			}
 			else if (key == GLFW_KEY_F5)
 			{
@@ -333,46 +290,64 @@ namespace Picking
     void
     PickingApp::Monitor(Display::Window* window)
     {
-		if (window->GetKey(GLFW_KEY_KP_ADD) == GLFW_PRESS) Time::timeModifier += 0.0005;
-		if (window->GetKey(GLFW_KEY_KP_SUBTRACT) == GLFW_PRESS) Time::timeModifier -= 0.0005;
+		if (window->GetKey(GLFW_KEY_KP_ADD) == GLFW_PRESS) Times::Instance()->timeModifier += 0.0005;
+		if (window->GetKey(GLFW_KEY_KP_SUBTRACT) == GLFW_PRESS) Times::Instance()->timeModifier -= 0.0005;
 		if (window->GetKey(GLFW_KEY_UP) == GLFW_PRESS) if (lastPickedObject) lastPickedObject->Translate(Vector3(0.f, 0.05f, 0.f));
 		if (window->GetKey(GLFW_KEY_DOWN) == GLFW_PRESS) if (lastPickedObject) lastPickedObject->Translate(Vector3(0.f, -0.05f, 0.f));
 		if (window->GetKey(GLFW_KEY_LEFT) == GLFW_PRESS) if (lastPickedObject) lastPickedObject->Translate(Vector3(0.05f, 0.f, 0.f));
 		if (window->GetKey(GLFW_KEY_RIGHT) == GLFW_PRESS) if (lastPickedObject) lastPickedObject->Translate(Vector3(-0.05f, 0.f, 0.f));
 		
-		currentCamera->holdingForward = (window->GetKey(GLFW_KEY_W) == GLFW_PRESS);
-		currentCamera->holdingBackward = (window->GetKey(GLFW_KEY_S) == GLFW_PRESS);
-		currentCamera->holdingRight = (window->GetKey(GLFW_KEY_D) == GLFW_PRESS);
-		currentCamera->holdingLeft = (window->GetKey(GLFW_KEY_A) == GLFW_PRESS);
-		currentCamera->holdingUp = (window->GetKey(GLFW_KEY_SPACE) == GLFW_PRESS);
-		currentCamera->holdingDown = (window->GetKey(GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS);
+		if (altButtonToggle)
+		{
+			currentCamera->holdingForward = (window->GetKey(GLFW_KEY_W) == GLFW_PRESS);
+			currentCamera->holdingBackward = (window->GetKey(GLFW_KEY_S) == GLFW_PRESS);
+			currentCamera->holdingRight = (window->GetKey(GLFW_KEY_D) == GLFW_PRESS);
+			currentCamera->holdingLeft = (window->GetKey(GLFW_KEY_A) == GLFW_PRESS);
+			currentCamera->holdingUp = (window->GetKey(GLFW_KEY_SPACE) == GLFW_PRESS);
+			currentCamera->holdingDown = (window->GetKey(GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS);
+		}
+		currentCamera->SetFarNearFov(fov, near, far);
     }
 
 	void
 	PickingApp::DrawDepthPass()
 	{
-
-		// Compute the MVP matrix from the light's point of view
-
-		//this projection and view work as directional light
-
 		//left right bottom top near far
-		float left = -100, right = 100, bottom = -100, top = 100, near = -100, far = 200;
-		Matrix4 depthProjectionMatrix = Matrix4::orthographic(near, far, left, right, top, bottom);
+		oleft = -orthoSize, oright = orthoSize, obottom = -orthoSize, otop = orthoSize, onear = -orthoSize, ofar = orthoSize;
+		Matrix4 lightProjectionMatrix = Matrix4::orthographic(onear, ofar, oleft, oright, otop, obottom);
 
-		//eye target up
-		Matrix4 depthViewMatrix = Matrix4::lookAt(Vector3(lightInvDir.x, lightInvDir.y, lightInvDir.z), Vector3(0.f, 0.f, 0.f), Vector3(0.f, 1.f, 0.f));
-		depthViewMatrix = Matrix4::translate(Vector3(-1.f, 0.f, -1.f)*(CameraManager::Instance()->GetCurrentCamera()->GetPosition2() + Vector3(0.f, -3.f, 26.f)))*depthViewMatrix;
-
-		FBOManager::Instance()->BindFrameBuffer(draw);
-		GLenum DrawBuffers[] = { GL_COLOR_ATTACHMENT2 };
-		glDrawBuffers(1, DrawBuffers);
-		//glViewport(0, 0, 2048, 2048);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		DrawDepth(depthProjectionMatrix, depthViewMatrix);
-		FBOManager::Instance()->UnbindFrameBuffer(draw);
+		Quaternion qRotX = Quaternion(xAngle, Vector3(1.f, 0.f, 0.f));
+		Quaternion qRotY = Quaternion(yAngle, Vector3(0.f, 1.f, 0.f));
 		
-		//DebugDraw::Instance()->DrawNormal(lightInvDir.vectNormalize(),Vector3(0,0,0));
+		if (directionalLightObject != nullptr)
+		{
+			directionalLightObject->SetOrientation(qRotY*qRotX); //object representing directional light and it's direction, we could just set all variables on object and then get later from it instead, both position and orientation
+		}
+
+		Matrix4 lightRotationMatrix = (qRotY*qRotX).ConvertToMatrix();
+
+		Vector3 lightForward = lightRotationMatrix.getForward(); //because back is forward, stupid me, this is positive forward
+		lightInvDir = -1.0 * lightForward.toFloat();
+
+		Matrix4 lightViewMatrix = Matrix4::lookAt(Vector3(), lightForward, Vector3(0,1,0));
+
+		FBOManager::Instance()->BindFrameBuffer(draw, Render::Instance()->dirShadowMapBuffer->handle);
+		GLenum DrawBuffers[] = { GL_COLOR_ATTACHMENT0 };
+		glDrawBuffers(1, DrawBuffers);
+		glViewport(0, 0, shadowTexture->width, shadowTexture->height);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		Matrix4 model = Matrix4::translate(-1.0 * currentCamera->GetPosition2());
+
+		Matrix4 ViewProjection = model * lightViewMatrix * lightProjectionMatrix;
+
+		biasedDirLightViewProjection = (ViewProjection*Matrix4::biasMatrix()).toFloat();
+	
+		DrawDepth(ViewProjection);
+
+		glViewport(0, 0, windowWidth, windowHeight);
+
+		FBOManager::Instance()->UnbindFrameBuffer(draw);
 	}
 
     void
@@ -380,27 +355,42 @@ namespace Picking
     {
 		//we set shadowMap for color shader only once for all objects
 		GLuint colorShader = ShaderManager::Instance()->shaderIDs["color"];
+		GLuint wireframeShader = ShaderManager::Instance()->shaderIDs["wireframe"];
 		ShaderManager::Instance()->SetCurrentShader(colorShader);
-		GLuint ShadowMapHandle = glGetUniformLocation(colorShader, "shadowMapSampler");
-		//depth texture
-		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, FBOManager::Instance()->shadowMapHandle);
-		glUniform1i(ShadowMapHandle, 1);
+
+		GLuint LightDir = glGetUniformLocation(colorShader, "LightInvDirection_worldspace");
+		glUniform3f(LightDir, lightInvDir.x, lightInvDir.y, lightInvDir.z);
 
 		GLuint CameraPos = glGetUniformLocation(colorShader, "CameraPos");
 		Vector3F camPos = currentCamera->GetPosition2().toFloat();
 		glUniform3fv(CameraPos, 1, &camPos.x);
 
+		GLuint shadowDistance = glGetUniformLocation(colorShader, "shadowDistance");
+		glUniform1f(shadowDistance, orthoSize);
+
+		GLuint shadowFadeSize = glGetUniformLocation(colorShader, "transitionDistance");
+		glUniform1f(shadowFadeSize, shadowFadeRange);
+
+		GLuint DepthBiasMatrixHandle = glGetUniformLocation(colorShader, "DepthBiasMVP");
+		glUniformMatrix4fv(DepthBiasMatrixHandle, 1, GL_FALSE, &biasedDirLightViewProjection[0][0]);
+
+		//depth texture
+		GLuint ShadowMapHandle = glGetUniformLocation(colorShader, "shadowMapSampler");
+		glActiveTexture(GL_TEXTURE1);
+		if (blurShadowMap) glBindTexture(GL_TEXTURE_2D, blurredShadowTexture->handle);
+		else glBindTexture(GL_TEXTURE_2D, shadowTexture->handle);
+		glUniform1i(ShadowMapHandle, 1);
+
 		if (debug)
 		{
-			ShaderManager::Instance()->SetCurrentShader(ShaderManager::Instance()->shaderIDs["color"]);
+			ShaderManager::Instance()->SetCurrentShader(colorShader);
 			Draw();
-			ShaderManager::Instance()->SetCurrentShader(ShaderManager::Instance()->shaderIDs["wireframe"]);
+			ShaderManager::Instance()->SetCurrentShader(wireframeShader);
 			DrawDebug();
 		}
 		else
 		{
-			ShaderManager::Instance()->SetCurrentShader(ShaderManager::Instance()->shaderIDs["color"]);
+			ShaderManager::Instance()->SetCurrentShader(colorShader);
 			Draw();
 		}
 		glActiveTexture(GL_TEXTURE1);
@@ -410,13 +400,12 @@ namespace Picking
     void
     PickingApp::PassPickingTexture()
     {
-		
-		FBOManager::Instance()->BindFrameBuffer(draw);
+		FBOManager::Instance()->BindFrameBuffer(draw, frameBuffer->handle);
 		GLenum DrawBuffers[] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
 		glDrawBuffers(2, DrawBuffers);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		ShaderManager::Instance()->SetCurrentShader(ShaderManager::Instance()->shaderIDs["picking"]);
-		Draw();
+		DrawPicking();
 		FBOManager::Instance()->UnbindFrameBuffer(draw);
     }
 
@@ -432,7 +421,7 @@ namespace Picking
 			//read pixel from picking texture
 			unsigned int Pixel;
 			//inverted y coordinate because glfw 0,0 starts at topleft while opengl texture 0,0 starts at bottomleft
-			FBOManager::Instance()->ReadPixelID((unsigned int)leftMouseX, this->windowHeight - (unsigned int)leftMouseY, &Pixel);
+			frameBuffer->ReadPixelData((unsigned int)leftMouseX, this->windowHeight - (unsigned int)leftMouseY, GL_RED_INTEGER, GL_UNSIGNED_INT, &Pixel, pickingTexture->attachment);
 			pickedID = Pixel;
 
 			//std::cout << pickedID << std::endl;
@@ -446,33 +435,13 @@ namespace Picking
 				lastPickedObject->mat->color = Vector3F(2.f, 1.f, 0.f);
 
 				Vector3F world_position;
-				FBOManager::Instance()->ReadWorldPos((unsigned int)leftMouseX, this->windowHeight - (unsigned int)leftMouseY, world_position.vect);
-				//Vector3 mouseInWorld = ConvertMousePosToWorld();
+				frameBuffer->ReadPixelData((unsigned int)leftMouseX, this->windowHeight - (unsigned int)leftMouseY, GL_RGB, GL_FLOAT, world_position.vect, worldPosTexture->attachment);
 				Vector3 dWorldPos = Vector3(world_position.x, world_position.y, world_position.z);
 				Vector3 impulse = (dWorldPos - currentCamera->GetPosition2()).vectNormalize();
 				if (RigidBody* body = this->lastPickedObject->GetComponent<RigidBody>()) body->ApplyImpulse(impulse, 20.f, dWorldPos);
 			}
         }
     }
-
-	Vector3
-	PickingApp::ConvertMousePosToWorld()
-	{
-		double x, y;
-		window->GetCursorPos(&x, &y);
-		Vector4 mouse_p0s(x, y, 0.0, 0.0);
-		mouse_p0s[0] = ((float)x / (float)windowWidth)*2.f - 1.f;
-		mouse_p0s[1] = (((float)windowHeight - (float)y) / windowHeight)*2.f - 1.f;
-		mouse_p0s[2] = -1.f;
-		mouse_p0s[3] = 1.f;
-		
-		Vector4 my_mouse_in_world_space = currentCamera->ProjectionMatrix.inverse() * mouse_p0s;
-		my_mouse_in_world_space = currentCamera->ViewMatrix.inverse() * my_mouse_in_world_space;
-		my_mouse_in_world_space = my_mouse_in_world_space / my_mouse_in_world_space[3];
-
-		Vector3 my_mouse_in_world_space_vec3(my_mouse_in_world_space[0], my_mouse_in_world_space[1], my_mouse_in_world_space[2]);
-		return my_mouse_in_world_space_vec3;
-	}
 
     void
     PickingApp::InitGL()
@@ -490,11 +459,6 @@ namespace Picking
         glEnable(GL_CULL_FACE);
 
 		LoadShaders();
-		ShaderManager::Instance()->SetCurrentShader(ShaderManager::Instance()->shaderIDs["color"]);
-		LightID = glGetUniformLocation(ShaderManager::Instance()->shaderIDs["color"], "LightPosition_worldspace");
-		GLuint LightDir = glGetUniformLocation(ShaderManager::Instance()->shaderIDs["color"], "LightInvDirection_worldspace");
-		glUniform3f(LightID, 0.f, 0.f, 0.f);
-		glUniform3f(LightDir, lightInvDir.x, lightInvDir.y, lightInvDir.z);
 
         this->window->GetWindowSize(&this->windowWidth, &this->windowHeight);
 		windowMidX = windowWidth / 2.0f;
@@ -504,69 +468,45 @@ namespace Picking
     void
 	PickingApp::Draw()
     {
-		Matrix4F View = currentCamera->ViewMatrix.toFloat();
 		GLuint currentShaderID = ShaderManager::Instance()->GetCurrentShaderID();
-		GLuint ViewMatrixHandle = glGetUniformLocation(currentShaderID, "V");
-		glUniformMatrix4fv(ViewMatrixHandle, 1, GL_FALSE, &View[0][0]);
-
-		objectsRendered = 0;
-		for (auto& obj : Scene::Instance()->pickingList)
-		{
-			if (FrustumManager::Instance()->isBoundingSphereInView(obj.second->GetWorldPosition(), obj.second->radius)) {
-				Render::draw(obj.second, CameraManager::Instance()->ViewProjection, currentShaderID);
-				objectsRendered++;
-			}
-		}
+		objectsRendered = Render::Instance()->draw(Scene::Instance()->renderList, CameraManager::Instance()->ViewProjection, currentShaderID);
     }
 
 	void
-	PickingApp::DrawDepth(const Matrix4& ProjectionMatrix, const Matrix4& ViewMatrix)
+	PickingApp::DrawPicking()
 	{
-		//Matrix4 model = Matrix4::translate(CameraManager::Instance()->GetCurrentCamera()->GetPosition2());
-		//Matrix4 ViewProjection = model*ViewMatrix*ProjectionMatrix;
-		Matrix4 ViewProjection = ViewMatrix*ProjectionMatrix;
+		GLuint currentShaderID = ShaderManager::Instance()->GetCurrentShaderID();
+		Render::Instance()->drawPicking(Scene::Instance()->pickingList, CameraManager::Instance()->ViewProjection, currentShaderID);
+	}
+
+	void
+	PickingApp::DrawDepth(const Matrix4& ViewProjection)
+	{
 		GLuint currentShaderID = ShaderManager::Instance()->shaderIDs["depth"];
 		ShaderManager::Instance()->SetCurrentShader(currentShaderID);
-		for (auto& obj : Scene::Instance()->pickingList)
-		{
-			Render::drawDepth(obj.second, ViewProjection, currentShaderID);
-		}
+
+		Render::Instance()->drawDepth(Scene::Instance()->renderList, ViewProjection, currentShaderID);
 	}
 
 	void
 	PickingApp::DrawDebug()
 	{
 		GLuint wireframeShader = ShaderManager::Instance()->shaderIDs["wireframe"];
-		for (auto& obj : PhysicsManager::Instance()->satOverlaps)
+
+		for (auto& obj : Scene::Instance()->renderList)
 		{
-			obj.rbody1->aabb.color = Vector3F(1.f, 0.f, 0.f);
-			obj.rbody2->aabb.color = Vector3F(1.f, 0.f, 0.f);
-		}
-		for (auto& obj : Scene::Instance()->pickingList)
-		{
-			if (FrustumManager::Instance()->isBoundingSphereInView(obj.second->GetWorldPosition(), obj.second->radius))
+			if (FrustumManager::Instance()->isBoundingSphereInView(obj->node.centeredPosition, obj->radius))
 			{
-				if (RigidBody* body = obj.second->GetComponent<RigidBody>())
+				if (RigidBody* body = obj->GetComponent<RigidBody>())
 				{
-					boundingBox->mat->SetColor(body->obb.color);
-					boundingBox->Draw(Matrix4::scale(obj.second->GetMeshDimensions())*obj.second->node.TopDownTransform, currentCamera->ViewMatrix, currentCamera->ProjectionMatrix, wireframeShader);
-					boundingBox->mat->SetColor(body->aabb.color);
-					boundingBox->Draw(body->aabb.model, currentCamera->ViewMatrix, currentCamera->ProjectionMatrix, wireframeShader);
+					Render::Instance()->boundingBox.mat->SetColor(body->obb.color);
+					Render::Instance()->boundingBox.Draw(Matrix4::scale(obj->GetMeshDimensions())*obj->node.TopDownTransform, CameraManager::Instance()->ViewProjection, wireframeShader);
+					Render::Instance()->boundingBox.mat->SetColor(body->aabb.color);
+					Render::Instance()->boundingBox.Draw(body->aabb.model, CameraManager::Instance()->ViewProjection, wireframeShader);
 				}
 			}
 		}
 	}
-
-    void 
-	PickingApp::UpdateComponents()
-    {
-		Scene::Instance()->SceneObject->Update();
-		for (auto& obj : Scene::Instance()->pickingList)
-		{
-			obj.second->Update();
-			obj.second->CalculateRadius();
-		}
-    }
 
 	void 
 	PickingApp::LoadScene1()
@@ -574,7 +514,7 @@ namespace Picking
 		//A plank suspended on a static box.	
 		Clear();
 
-		Object* plane = Scene::Instance()->addPhysicObject("cube", Vector3(0.f, -10.f, 0.f));
+		Object* plane = Scene::Instance()->addPhysicObject("cube");
 		RigidBody* body = plane->GetComponent<RigidBody>();
 		plane->SetScale(Vector3(200.f, 1.f, 200.f));
 		body->SetMass(FLT_MAX);
@@ -673,7 +613,68 @@ namespace Picking
 		Clear();
 		for (int i = 0; i < 700; i++)
 		{
-			Object* sphere = Scene::Instance()->addObjectToScene("sphere", Scene::Instance()->generateRandomIntervallVectorCubic(-20,20));
+			Object* sphere = Scene::Instance()->addObject("sphere", Scene::Instance()->generateRandomIntervallVectorCubic(-20,20));
+		}
+	}
+
+	void
+	PickingApp::LoadScene6()
+	{
+		Clear();
+
+		//Object* cube1 = Scene::Instance()->addObject("cube");
+		directionalLightObject = Scene::Instance()->addDirectionalLight();
+		
+
+		Object* plane = Scene::Instance()->addObject("fatplane", Vector3(0.f, -10.f, 0.f));
+		//Object* sphere1 = Scene::Instance()->addObject("sphere");
+		//sphere1->mat->SetShininess(20.f);
+		//sphere1->mat->SetSpecularIntensity(3.f);
+		//sphere1->SetScale(Vector3(30.0, 30.0, 30.0));
+
+		Material* newMaterial = new Material();
+		newMaterial->AssignTexture(GraphicsStorage::textures.at(5));
+		newMaterial->tileX = 50;
+		newMaterial->tileY = 50;
+		GraphicsStorage::materials.push_back(newMaterial);
+		plane->AssignMaterial(newMaterial);
+		plane->SetScale(Vector3(100.0, 1.0, 100.0));
+
+		Object* cone = Scene::Instance()->addObjectTo(directionalLightObject, "cone");
+		//cone->mat->SetColor(0.f, 100.f, 0.f);
+		//cone->mat->SetDiffuseIntensity(1.f);
+		cone->SetScale(Vector3(3, 3, 10));
+
+		float rS = 1.f;
+
+
+		for (int i = 0; i < 70; i++)
+		{
+
+			Vector3 pos = Scene::Instance()->generateRandomIntervallVectorSpherical(10, (100 + 0 + 22) * 100);
+
+
+			double len = pos.vectLengt();
+			Object* sphere = Scene::Instance()->addObject("icosphere", pos);
+			sphere->mat->SetShininess(20.f);
+			sphere->mat->SetSpecularIntensity(3.f);
+
+			for (int j = 0; j < 3; j++)
+			{
+				Vector3 childPos = Scene::Instance()->generateRandomIntervallVectorCubic((int)-len, (int)len) / 4.f;
+				double childLen = childPos.vectLengt();
+				Object* child = Scene::Instance()->addObjectTo(sphere, "icosphere", childPos);
+				child->mat->SetShininess(20.f);
+				child->mat->SetSpecularIntensity(3.f);
+
+				for (int k = 0; k < 5; k++)
+				{
+					Vector3 childOfChildPos = Scene::Instance()->generateRandomIntervallVectorCubic((int)-childLen, (int)childLen) / 2.f;
+					Object* childOfChild = Scene::Instance()->addObjectTo(child, "sphere", childOfChildPos);
+					childOfChild->mat->SetShininess(20.f);
+					childOfChild->mat->SetSpecularIntensity(3.f);
+				}
+			}
 		}
 	}
 
@@ -684,17 +685,18 @@ namespace Picking
 		PhysicsManager::Instance()->Clear();
 		GraphicsStorage::ClearMaterials();
 		lastPickedObject = nullptr;
+		directionalLightObject = nullptr;
 	}
 
 	void
 	PickingApp::Vortex()
 	{
-		for (auto& obj : Scene::Instance()->pickingList)
+		for (auto& obj : Scene::Instance()->renderList)
 		{
-			if (RigidBody* body = obj.second->GetComponent<RigidBody>())
+			if (RigidBody* body = obj->GetComponent<RigidBody>())
 			{
-				Vector3 dir = obj.second->GetWorldPosition() - Vector3(0.f, 0.f, 0.f);
-				body->ApplyImpulse(dir*-20.f, obj.second->GetWorldPosition());
+				Vector3 dir = obj->GetWorldPosition() - Vector3(0.f, 0.f, 0.f);
+				body->ApplyImpulse(dir*-1.f, obj->GetWorldPosition());
 			}
 		}
 	}
@@ -713,11 +715,10 @@ namespace Picking
 	PickingApp::SetUpCamera()
 	{
 		currentCamera = new Camera(Vector3(0.f, -3.f, 26.f), windowWidth, windowHeight);
-		currentCamera->Update((float)Time::timeStep);
+		currentCamera->Update(Times::Instance()->timeStep);
 		window->SetCursorPos(windowMidX, windowMidY);
 		CameraManager::Instance()->AddCamera("default", currentCamera);
 		CameraManager::Instance()->SetCurrentCamera("default");
-		currentCamera->ProjectionMatrix = Matrix4::OpenGLPersp(45.0f, (float)this->windowWidth / (float)this->windowHeight, 0.1f, 200.0f);
 		DebugDraw::Instance()->Projection = &currentCamera->ProjectionMatrix;
 		DebugDraw::Instance()->View = &currentCamera->ViewMatrix;
 	}
@@ -732,6 +733,64 @@ namespace Picking
 		ShaderManager::Instance()->AddShader("depth", GraphicsManager::LoadShaders("Resources/Shaders/VSDepth.glsl", "Resources/Shaders/FSDepth.glsl"));
 		ShaderManager::Instance()->AddShader("depthPanel", GraphicsManager::LoadShaders("Resources/Shaders/VSShadowMapPlane.glsl", "Resources/Shaders/FSShadowMapPlane.glsl"));
 		ShaderManager::Instance()->AddShader("blur", GraphicsManager::LoadShaders("Resources/Shaders/VSBlur.glsl", "Resources/Shaders/FSBlur.glsl"));
+		ShaderManager::Instance()->AddShader("fastBlurShadow", GraphicsManager::LoadShaders("Resources/Shaders/FastBlurShadowVS.glsl", "Resources/Shaders/FastBlurShadowFS.glsl"));
+
 	}
 
+	void
+	PickingApp::GenerateGUI()
+	{
+		ImGui::Begin("Properties", NULL, ImGuiWindowFlags_AlwaysAutoResize);
+		float start = 0;
+		float stop = 360;
+
+
+		ImGui::SliderFloat("xAngle", &xAngle, start, stop);
+		ImGui::SliderFloat("yAngle", &yAngle, start, stop);
+
+		ImGui::SliderFloat("Fov", &fov, 0.0f, 180.f);
+		ImGui::SliderFloat("Near plane", &near, 0.0f, 5.f);
+		ImGui::SliderFloat("Far plane", &far, 0.0f, 2000.f);
+		ImGui::SliderFloat("Ortho size", &orthoSize, 0.0f, 2000.f);
+		ImGui::Checkbox("Blur ShadowMap", &blurShadowMap);
+		ImGui::SliderFloat("Blur Shadow Size", &blurShadowMapSize, 0.0f, 5.f);
+		ImGui::SliderInt("Bloom Level", &shadowMapBlurLevel, 0, 3);
+		ImGui::SliderFloat("Shadow Fade Range", &shadowFadeRange, 0.0f, 50.f);
+
+		ImGui::End();
+	}
+
+	void
+	PickingApp::SetUpBuffers(int windowWidth, int windowHeight)
+	{
+		frameBuffer = FBOManager::Instance()->GenerateFBO();
+		pickingTexture = frameBuffer->RegisterTexture(new Texture(GL_TEXTURE_2D, 0, GL_R32UI, windowWidth, windowHeight, GL_RED_INTEGER, GL_UNSIGNED_INT, NULL, GL_COLOR_ATTACHMENT0)); //picking
+		pickingTexture->AddDefaultTextureParameters();
+		worldPosTexture = frameBuffer->RegisterTexture(new Texture(GL_TEXTURE_2D, 0, GL_RGB32F, windowWidth, windowHeight, GL_RGB, GL_FLOAT, NULL, GL_COLOR_ATTACHMENT1)); //position
+		worldPosTexture->AddDefaultTextureParameters();
+		Texture* depthTexture = frameBuffer->RegisterTexture(new Texture(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, windowWidth, windowHeight, GL_DEPTH_COMPONENT, GL_FLOAT, NULL, GL_DEPTH_ATTACHMENT)); //depth
+		depthTexture->AddDefaultTextureParameters();
+		frameBuffer->GenerateAndAddTextures();
+		frameBuffer->CheckAndCleanup();
+
+		FrameBuffer* shadowBuffer = Render::Instance()->AddDirectionalShadowMapBuffer(4096, 4096);
+		Render::Instance()->AddMultiBlurBuffer(this->windowWidth, this->windowHeight);
+		Render::Instance()->AddPingPongBuffer(4096, 4096);
+		shadowTexture = shadowBuffer->textures[0];
+	}
+
+	void
+	PickingApp::DrawMaps(int width, int height)
+	{
+		ShaderManager::Instance()->SetCurrentShader(ShaderManager::Instance()->shaderIDs["depthPanel"]);
+
+		float fHeight = (float)height;
+		float fWidth = (float)width;
+		int y = (int)(fHeight*0.1f);
+		int glWidth = (int)(fWidth *0.1f);
+		int glHeight = (int)(fHeight*0.1f);
+
+		if (blurShadowMap) DebugDraw::Instance()->DrawMap(0, 0, glWidth, glHeight, blurredShadowTexture->handle, width, height);
+		else DebugDraw::Instance()->DrawMap(0, 0, glWidth, glHeight, shadowTexture->handle, width, height);
+	}
 } // namespace Example

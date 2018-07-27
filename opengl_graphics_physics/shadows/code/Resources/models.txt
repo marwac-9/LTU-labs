@@ -9,3 +9,5 @@ Resources/models/spaceship.obj 0
 Resources/models/room.obj 0
 Resources/models/fatplane.obj 0
 Resources/models/plank.obj 0
+Resources/models/plane.obj 0
+Resources/models/cone.obj 0

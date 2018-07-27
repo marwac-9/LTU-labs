@@ -29,7 +29,7 @@ ADD_EXECUTABLE(${PROJECT_NAME} ${ALLSRCS})
 
 SET_TARGET_PROPERTIES(${PROJECT_NAME} PROPERTIES FOLDER "LABS")
 SET_TARGET_PROPERTIES(${PROJECT_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin)
-TARGET_LINK_LIBRARIES(${PROJECT_NAME} camera frustum shader_manager graphics_manager scene gl_window app time camera_manager)
+TARGET_LINK_LIBRARIES(${PROJECT_NAME} camera frustum shader_manager graphics_manager scene gl_window app camera_manager imgui)
 
 #create bin directory
 ADD_CUSTOM_COMMAND(TARGET ${PROJECT_NAME} PRE_BUILD

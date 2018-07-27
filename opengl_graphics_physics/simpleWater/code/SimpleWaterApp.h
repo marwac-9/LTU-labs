@@ -14,6 +14,8 @@ class OBJ;
 class Mesh;
 class HalfEdgeMesh;
 class Camera;
+class FrameBuffer;
+class Texture;
 
 namespace SimpleWater
 {
@@ -40,6 +42,19 @@ namespace SimpleWater
 		void SetUpCamera();
 		void LoadScene1();
 		void LoadShaders();
+
+		void SetUpBuffers(int windowWidth, int windowHeight);
+
+		void GenerateGUI();
+		void DrawSkybox();
+		void Draw();
+		void DrawReflection();
+		void DrawRefraction();
+		void DrawWater();
+		void DrawHDR(Texture* texture);
+		void DrawTextures(int width, int height);
+
+		Mesh* GenerateWaterMesh(int width, int height);
 		
 		bool windowLocked = true;
 
@@ -54,6 +69,7 @@ namespace SimpleWater
 		float windowMidY;
 		float near = 0.1f;
 		float far = 1000.f;
+		float fov = 45.f;
 
 		Camera* currentCamera;
 		
@@ -66,39 +82,22 @@ namespace SimpleWater
 		GLuint refractionBufferHandle;
 		GLuint depthTextureBufferHandle;
 		GLuint depthBufferHandle;
-		GLuint frameBufferHandle;
+		FrameBuffer* frameBuffer;
 
-		GLuint postFrameBufferHandle;
+		FrameBuffer* postFrameBuffer;
 		GLuint hdrBufferTextureHandle;
-		GLuint brightLightBufferHandle;
-		GLuint postDepthBufferHandle;
+		GLuint brightLightTextureHandle;
+		Texture* brightLightTexture;
 
-		GLuint blurFrameBufferHandle[2];
-		GLuint blurBufferHandle[2];
+		Texture* blurredBrightTexture;
 
 		Object* selectedObject = nullptr;
-		Object* skybox = nullptr;
+		
 		bool minimized = false;
 
 		std::vector<Object*> dynamicObjects;
 		std::vector<Mesh*> dynamicMeshes;
-		
-		void SetUpPostBuffer(int windowWidth, int windowHeight);
-		void SetUpBlurrBuffer(int windowWidth, int windowHeight);
-		void SetUpFrameBuffer(int windowWidth, int windowHeight);
-		
-		void DrawGUI();
-		void DrawSkybox();
-		void Draw();
-		void DrawReflection();
-		void DrawRefraction();
-		void DrawWater();
-		void BlurLight();
-		void DrawHDR();
-		void DrawTextures(int width, int height);
 
-		Mesh* GenerateWaterMesh(int width, int height);
-		void UpdateTextureBuffers(int windowWidth, int windowHeight);
 		//shader variables:
 		mwm::Vector3F water_color = mwm::Vector3F(0.0f, 0.6f, 0.5f);
 		float water_speed = 0.16f;
@@ -120,9 +119,11 @@ namespace SimpleWater
 		float exposure = 1.0f;
 		float gamma = 1.2f;
 		int waterSize = 2;
-		int bloomSize = 4;
-		float bloomIntensityF = 1.f;
+		float blurSize = 1.0f;
+		int blurLevel = 0;
+		float bloomIntensity = 1.f;
 		bool post = true;
+
 #pragma pack (push)
 #pragma pack(1)
 		struct VertexData
