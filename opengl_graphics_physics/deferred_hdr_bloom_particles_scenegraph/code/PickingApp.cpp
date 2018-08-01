@@ -154,7 +154,7 @@ namespace Picking
 		std::chrono::duration<double> elapsed_seconds;
 		
 		window->SetTitle("Deffered HDR Bloom Particles Scenegraph");
-
+		//glEnable(GL_POINT_SMOOTH);
 		while (running)
 		{
 			glDepthMask(GL_TRUE);
@@ -223,7 +223,6 @@ namespace Picking
 			//GenerateFastLines();
 			//if (skybox != nullptr) DrawSkybox();
 			
-
 			if (drawLines) DrawFastLineSystems(); 
 			if (drawPoints) DrawFastPointSystems();
 			if (drawParticles) DrawParticles();
@@ -442,6 +441,11 @@ namespace Picking
 			{
 				if (drawLines) drawLines = false;
 				else drawLines = true;
+			}
+			else if (key == GLFW_KEY_N)
+			{
+				if (drawPoints) drawPoints = false;
+				else drawPoints = true;
 			}
 			else if (key == GLFW_KEY_KP_ADD) increment+=20;//Times::timeModifier += 0.0005;
 			else if (key == GLFW_KEY_KP_SUBTRACT) increment-=20;//Times::timeModifier -= 0.0005;
@@ -734,7 +738,7 @@ namespace Picking
 		{
 			//Vector3 pos = Scene::Instance()->generateRandomIntervallVectorCubic(-gridSize + increment, gridSize + increment);
 			//Vector3 pos = Scene::Instance()->generateRandomIntervallVectorSpherical((gridSize + increment + 20) * 100, (gridSize + increment + 22) * 100);
-			Vector3 pos = Scene::Instance()->generateRandomIntervallVectorSpherical(10, (gridSize + increment + 22)*100);
+			Vector3 pos = Scene::Instance()->generateRandomIntervallVectorSpherical(10, (gridSize + increment + 22));
 			//pos.x += x*gridSize;//playerPos;
 			//pos.y += y*gridSize;//playerPos;
 			//pos.z += z*gridSize;//playerPos;
@@ -820,10 +824,10 @@ namespace Picking
 		pointLight->mat->SetDiffuseIntensity(100.f);
 
 		BoundingBoxSystem* bbSystem = new BoundingBoxSystem(3000);
-		LineSystem* lSystem = new LineSystem(4000);
 		bbSystems.push_back(bbSystem);
+		LineSystem* lSystem = new LineSystem(4000);
 		lineSystems.push_back(lSystem);
-		PointSystem* poSys = new PointSystem(1000);
+		PointSystem* poSys = new PointSystem(7000);
 		pointSystems.push_back(poSys);
 
 		float rS = 1.f;
@@ -851,10 +855,16 @@ namespace Picking
 			line->colorB = Vector4F(3.f, 3.f, 0.f, 1.f);
 		}
 
+		for (int i = 0; i < 5000; i++)
+		{
+			FastPoint* point = poSys->GetPoint();
+			point->node.position = Scene::Instance()->generateRandomIntervallVectorSpherical(1000, 1100);
+		}
 		lightsPhysics = true; //it has to update
 
 		Scene::Instance()->SceneObject->AddComponent(bbSystem);
 		Scene::Instance()->SceneObject->AddComponent(lSystem);
+		Scene::Instance()->SceneObject->AddComponent(poSys);
 		PhysicsManager::Instance()->gravity = Vector3();
 	}
 
@@ -1603,7 +1613,7 @@ namespace Picking
 		ImGui::SliderInt("Bloom Level", &bloomLevel, 0, 3);
 		ImGui::SliderFloat("Fov", &fov, 0.0f, 180.f);
 		ImGui::SliderFloat("Near plane", &near, 0.0f, 5.f);
-		ImGui::SliderFloat("Far plane", &far, 0.0f, 2000.f);
+		ImGui::SliderFloat("Far plane", &far, 0.0f, 5000.f);
 
 		ImGui::NewLine();
 		ImGui::Text("STATS:");
