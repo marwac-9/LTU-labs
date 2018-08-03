@@ -293,9 +293,31 @@ namespace Picking
 		FBOManager::Instance()->BindFrameBuffer(draw, lightAndPostBuffer->handle); //we bind the lightandposteffect buffer for drawing
 		GLenum DrawBuffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
 		glDrawBuffers(2, DrawBuffers);
+		glActiveTexture(GL_TEXTURE1);
+		depthTexture->Bind();
+		
 
 		GLuint particleShader = ShaderManager::Instance()->shaderIDs["particle"];
 		ShaderManager::Instance()->SetCurrentShader(particleShader);
+
+		GLuint depthSampler = glGetUniformLocation(particleShader, "depthTextureSampler");
+		glUniform1i(depthSampler, 1);
+
+		GLuint screenSize = glGetUniformLocation(particleShader, "screenSize");
+		glUniform2f(screenSize, windowWidth, windowHeight);
+
+		GLuint farPlane = glGetUniformLocation(particleShader, "far");
+		glUniform1f(farPlane, far);
+
+		GLuint nearPlane = glGetUniformLocation(particleShader, "near");
+		glUniform1f(nearPlane, near);
+
+		GLuint soft = glGetUniformLocation(particleShader, "softScale");
+		glUniform1f(soft, softScale);
+
+		GLuint contrast = glGetUniformLocation(particleShader, "contrastPower");
+		glUniform1f(contrast, contrastPower);
+
 		Vector3F right = currentCamera->getRight().toFloat();
 		Vector3F up = currentCamera->getUp().toFloat();	
 		Matrix4F viewProjection = CameraManager::Instance()->ViewProjection.toFloat();
@@ -446,6 +468,11 @@ namespace Picking
 			{
 				if (drawPoints) drawPoints = false;
 				else drawPoints = true;
+			}
+			else if (key == GLFW_KEY_B)
+			{
+				if (drawParticles) drawParticles = false;
+				else drawParticles = true;
 			}
 			else if (key == GLFW_KEY_KP_ADD) increment+=20;//Times::timeModifier += 0.0005;
 			else if (key == GLFW_KEY_KP_SUBTRACT) increment-=20;//Times::timeModifier -= 0.0005;

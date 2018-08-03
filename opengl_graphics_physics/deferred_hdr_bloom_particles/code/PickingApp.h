@@ -113,6 +113,8 @@ namespace Picking
 		bool hdrEnabled = GL_TRUE;
 		float exposure = 1.0f;
 		float gamma = 1.2f;
+		float softScale = 0.5f;
+		float contrastPower = 0.5f;
 
 		GLuint diffuseTextureHandle;
 		GLuint normalTextureHandle;
@@ -128,5 +130,6 @@ namespace Picking
 		FrameBuffer* pickingBuffer;
 		Texture* pickingTexture;
 		Texture* worldPosTexture;
+		Texture* depthTexture;
 	};
 } // namespace Example

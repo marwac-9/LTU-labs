@@ -222,9 +222,30 @@ namespace Picking
 		FBOManager::Instance()->BindFrameBuffer(draw, lightAndPostBuffer->handle); //we bind the lightandposteffect buffer for drawing
 		GLenum DrawBuffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
 		glDrawBuffers(2, DrawBuffers);
+		glActiveTexture(GL_TEXTURE1);
+		depthTexture->Bind();
 
 		GLuint particleShader = ShaderManager::Instance()->shaderIDs["particle"];
 		ShaderManager::Instance()->SetCurrentShader(particleShader);
+		
+		GLuint depthSampler = glGetUniformLocation(particleShader, "depthTextureSampler");
+		glUniform1i(depthSampler, 1);
+
+		GLuint screenSize = glGetUniformLocation(particleShader, "screenSize");
+		glUniform2f(screenSize, windowWidth, windowHeight);
+
+		GLuint farPlane = glGetUniformLocation(particleShader, "far");
+		glUniform1f(farPlane, far);
+
+		GLuint nearPlane = glGetUniformLocation(particleShader, "near");
+		glUniform1f(nearPlane, near);
+
+		GLuint soft = glGetUniformLocation(particleShader, "softScale");
+		glUniform1f(soft, softScale);
+		
+		GLuint contrast = glGetUniformLocation(particleShader, "contrastPower");
+		glUniform1f(contrast, contrastPower);
+
 		Vector3F right = currentCamera->getRight().toFloat();
 		Vector3F up = currentCamera->getUp().toFloat();
 		Matrix4F viewProjection = CameraManager::Instance()->ViewProjection.toFloat();
@@ -568,8 +589,9 @@ namespace Picking
 
 		ParticleSystem* pSystem = new ParticleSystem(100000, 1000);
 		pSystem->SetTexture(GraphicsStorage::textures[10]->handle);
-		pSystem->SetLifeTime(5.0f);
+		pSystem->SetLifeTime(3.0f);
 		pSystem->SetColor(Vector4F(1.f, 0.f, 0.f, 0.2f));
+		//pSystem->SetSize(30.f);
 		pointLight->AddComponent(pSystem);
 		particleSystems.push_back(pSystem);
 		lightsPhysics = true;
@@ -809,7 +831,7 @@ namespace Picking
 		Texture* diffuseTexture = geometryBuffer->RegisterTexture(new Texture(GL_TEXTURE_2D, 0, GL_RGB, windowWidth, windowHeight, GL_RGB, GL_FLOAT, NULL, GL_COLOR_ATTACHMENT1)); //diffuse
 		Texture* normalTexture = geometryBuffer->RegisterTexture(new Texture(GL_TEXTURE_2D, 0, GL_RGB32F, windowWidth, windowHeight, GL_RGB, GL_FLOAT, NULL, GL_COLOR_ATTACHMENT2)); //normal
 		Texture* materialPropertiesTexture = geometryBuffer->RegisterTexture(new Texture(GL_TEXTURE_2D, 0, GL_RGBA32F, windowWidth, windowHeight, GL_RGBA, GL_FLOAT, NULL, GL_COLOR_ATTACHMENT3)); //metDiffIntShinSpecInt
-		Texture* depthTexture = geometryBuffer->RegisterTexture(new Texture(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, windowWidth, windowHeight, GL_DEPTH_COMPONENT, GL_FLOAT, NULL, GL_DEPTH_STENCIL_ATTACHMENT)); //depth
+		depthTexture = geometryBuffer->RegisterTexture(new Texture(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, windowWidth, windowHeight, GL_DEPTH_COMPONENT, GL_FLOAT, NULL, GL_DEPTH_STENCIL_ATTACHMENT)); //depth
 		geometryBuffer->AddDefaultTextureParameters();
 		geometryBuffer->GenerateAndAddTextures();
 		geometryBuffer->CheckAndCleanup();
@@ -871,6 +893,8 @@ namespace Picking
 		ImGui::SliderFloat("Fov", &fov, 0.0f, 180.f);
 		ImGui::SliderFloat("Near plane", &near, 0.0f, 5.f);
 		ImGui::SliderFloat("Far plane", &far, 0.0f, 2000.f);
+		ImGui::SliderFloat("Soft Scale", &softScale, 0.f, 1.f);
+		ImGui::SliderFloat("Contrast Power", &contrastPower, 0.f, 5.f);
 
 		ImGui::NewLine();
 		ImGui::Text("STATS:");

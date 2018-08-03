@@ -116,7 +116,7 @@ namespace Picking
 		bool lightsPhysics = false;
 		bool drawLines = false;
 		bool drawPoints = false;
-		bool drawParticles = false;
+		bool drawParticles = true;
 		bool drawMaps = true;
         Object* lastPickedObject = nullptr;
 		int objectsRendered = 0;
@@ -179,6 +179,8 @@ namespace Picking
 		float spotLightOuterCutOff = 17.5;
 		float spotSZ = 50;
 
+		float softScale = 0.5f;
+		float contrastPower = 0.5f;
 
 		Object* skybox = nullptr;
 		bool post = true;
