@@ -14,12 +14,14 @@ Each project builds to its own bin folder copying over the required resources so
   
 > ### Graphics
   - Deferred Shading
-  - VSM Shadow Mapping in Forward and ⚠Deferred rendering (PCF Point light shadows)
+  - VSM (Forward)
+  - ⚠VSM (Deferred) (PCF Point light shadows)
   - Per-pixel picking
   - Geometry Subdivision
   - Scene graph
   - Double & Single Precision Math lib
   - ⚠Particles
+  - ⚠Soft Particles
   - ⚠HDR
   - ⚠Bloom 
   
