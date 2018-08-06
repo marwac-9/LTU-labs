@@ -121,6 +121,7 @@ namespace Picking
         Object* lastPickedObject = nullptr;
 		int objectsRendered = 0;
 		int lightsRendered = 0;
+		int particlesRendered = 0;
 		unsigned int pickedID = 0;
 
 		loadedScene currentScene = none;

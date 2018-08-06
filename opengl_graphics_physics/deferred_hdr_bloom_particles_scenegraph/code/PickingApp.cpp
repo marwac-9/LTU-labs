@@ -296,8 +296,7 @@ namespace Picking
 		glActiveTexture(GL_TEXTURE1);
 		depthTexture->Bind();
 		
-
-		GLuint particleShader = ShaderManager::Instance()->shaderIDs["particle"];
+		GLuint particleShader = ShaderManager::Instance()->shaderIDs["softparticle"];
 		ShaderManager::Instance()->SetCurrentShader(particleShader);
 
 		GLuint depthSampler = glGetUniformLocation(particleShader, "depthTextureSampler");
@@ -321,10 +320,11 @@ namespace Picking
 		Vector3F right = currentCamera->getRight().toFloat();
 		Vector3F up = currentCamera->getUp().toFloat();	
 		Matrix4F viewProjection = CameraManager::Instance()->ViewProjection.toFloat();
+		particlesRendered = 0;
 		for (auto& pSystem : particleSystems) //particles not affected by light, rendered in forward rendering
 		{
 			if (FrustumManager::Instance()->isBoundingSphereInView(pSystem->object->node.centeredPosition, 1.0)) {
-				pSystem->Draw(viewProjection, particleShader, up, right);
+				particlesRendered += pSystem->Draw(viewProjection, particleShader, up, right);
 			}
 		}
 
@@ -1509,6 +1509,7 @@ namespace Picking
 		ShaderManager::Instance()->AddShader("directionalLightShadow", GraphicsManager::LoadShaders("Resources/Shaders/VSDirectionalLightShadow.glsl", "Resources/Shaders/FSDirectionalLightShadow.glsl"));
 		ShaderManager::Instance()->AddShader("stencil", GraphicsManager::LoadShaders("Resources/Shaders/VSStencil.glsl", "Resources/Shaders/FSStencil.glsl"));
 		ShaderManager::Instance()->AddShader("particle", GraphicsManager::LoadShaders("Resources/Shaders/VSParticle.glsl", "Resources/Shaders/FSParticle.glsl"));
+		ShaderManager::Instance()->AddShader("softparticle", GraphicsManager::LoadShaders("Resources/Shaders/VSSoftParticle.glsl", "Resources/Shaders/FSSoftParticle.glsl"));
 		ShaderManager::Instance()->AddShader("hdrBloom", GraphicsManager::LoadShaders("Resources/Shaders/VSHDRBloom.glsl", "Resources/Shaders/FSHDRBloom.glsl"));
 		ShaderManager::Instance()->AddShader("fastLine", GraphicsManager::LoadShaders("Resources/Shaders/VSFastLine.glsl", "Resources/Shaders/FSFastLine.glsl"));
  		ShaderManager::Instance()->AddShader("fastBB", GraphicsManager::LoadShaders("Resources/Shaders/VSFastBB.glsl", "Resources/Shaders/FSFastBB.glsl"));
@@ -1654,6 +1655,7 @@ namespace Picking
 		
 		ImGui::Text("Objects rendered %d", objectsRendered);
 		ImGui::Text("Lights rendered %d", lightsRendered);
+		ImGui::Text("Particles rendered %d", particlesRendered);
 		ImGui::Text("Update Time %.3f", updateTime);
 		ImGui::Text("Render Time %.3f", Times::Instance()->deltaTime - updateTime);
 		ImGui::Text("FPS %.3f", 1.0 / Times::Instance()->deltaTime);

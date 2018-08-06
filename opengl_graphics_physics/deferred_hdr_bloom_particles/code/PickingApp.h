@@ -97,6 +97,7 @@ namespace Picking
 		Object* plane = nullptr;
 		int objectsRendered = 0;
 		int lightsRendered = 0;
+		int particlesRendered = 0;
 		unsigned int pickedID = 0;
 
 		Object* pointL;
@@ -115,6 +116,7 @@ namespace Picking
 		float gamma = 1.2f;
 		float softScale = 0.5f;
 		float contrastPower = 0.5f;
+		bool drawParticles = true;
 
 		GLuint diffuseTextureHandle;
 		GLuint normalTextureHandle;

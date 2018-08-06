@@ -191,7 +191,7 @@ namespace Picking
 			
 			DrawLightPass();
 
-			DrawParticles();
+			if (drawParticles) DrawParticles();
 			
 			blurredBrightTexture = Render::Instance()->MultiBlur(brightLightTexture, bloomLevel, blurBloomSize, ShaderManager::Instance()->shaderIDs["fastBlur"]);
 
@@ -225,7 +225,7 @@ namespace Picking
 		glActiveTexture(GL_TEXTURE1);
 		depthTexture->Bind();
 
-		GLuint particleShader = ShaderManager::Instance()->shaderIDs["particle"];
+		GLuint particleShader = ShaderManager::Instance()->shaderIDs["softparticle"];
 		ShaderManager::Instance()->SetCurrentShader(particleShader);
 		
 		GLuint depthSampler = glGetUniformLocation(particleShader, "depthTextureSampler");
@@ -249,9 +249,10 @@ namespace Picking
 		Vector3F right = currentCamera->getRight().toFloat();
 		Vector3F up = currentCamera->getUp().toFloat();
 		Matrix4F viewProjection = CameraManager::Instance()->ViewProjection.toFloat();
+		particlesRendered = 0;
 		for (auto& pSystem : particleSystems) //particles not affected by light, rendered in forward rendering
 		{
-			pSystem->Draw(viewProjection, particleShader, up, right);
+			particlesRendered += pSystem->Draw(viewProjection, particleShader, up, right);
 		}
 
 		FBOManager::Instance()->UnbindFrameBuffer(draw);
@@ -363,6 +364,11 @@ namespace Picking
 			{
 				Object* cube = Scene::Instance()->addPhysicObject("cube", Vector3(0.f, 8.f, 0.f));
 				cube->SetPosition(Vector3(0.f, (float)Scene::Instance()->idCounter * 2.f - 10.f + 0.001f, 0.f));
+			}
+			else if (key == GLFW_KEY_B)
+			{
+				if (drawParticles) drawParticles = false;
+				else drawParticles = true;
 			}
 		}
     }
@@ -786,6 +792,7 @@ namespace Picking
 		ShaderManager::Instance()->AddShader("directionalLight", GraphicsManager::LoadShaders("Resources/Shaders/VSDirectionalLight.glsl", "Resources/Shaders/FSDirectionalLight.glsl"));
 		ShaderManager::Instance()->AddShader("stencil", GraphicsManager::LoadShaders("Resources/Shaders/VSStencil.glsl", "Resources/Shaders/FSStencil.glsl"));
 		ShaderManager::Instance()->AddShader("particle", GraphicsManager::LoadShaders("Resources/Shaders/VSParticle.glsl", "Resources/Shaders/FSParticle.glsl"));
+		ShaderManager::Instance()->AddShader("softparticle", GraphicsManager::LoadShaders("Resources/Shaders/VSSoftParticle.glsl", "Resources/Shaders/FSSoftParticle.glsl"));
 		ShaderManager::Instance()->AddShader("hdrBloom", GraphicsManager::LoadShaders("Resources/Shaders/VSHDRBloom.glsl", "Resources/Shaders/FSHDRBloom.glsl"));
 		ShaderManager::Instance()->AddShader("fastBlur", GraphicsManager::LoadShaders("Resources/Shaders/FastBlurVS.glsl", "Resources/Shaders/FastBlurFS.glsl"));
 	}
@@ -902,6 +909,7 @@ namespace Picking
 
 		ImGui::Text("Objects rendered %d", objectsRendered);
 		ImGui::Text("Lights rendered %d", lightsRendered);
+		ImGui::Text("Particles Rendered %d", particlesRendered);
 		ImGui::Text("FPS %.3f", 1.0 / Times::Instance()->deltaTime);
 		ImGui::Text("TimeStep %.3f", 1.0 / Times::Instance()->timeStep);
 		ImGui::Text("PickedID %d", pickedID);
