@@ -754,7 +754,7 @@ namespace Picking
 		spotLight1 = Scene::Instance()->addSpotLight(true, Vector3(-25.f, 10.f, -50.f));
 		spotLight1->mat->SetColor(Vector3F(1.f, 0.7f, 0.8f));
 		spotLightComp = spotLight1->GetComponent<SpotLight>();
-		spotLightComp->blurShadowMap = false;
+		spotLightComp->shadowMapBlurActive = false;
 
 		lineSystems.push_back(new LineSystem(1500));
 		LineSystem* lSystem = lineSystems.front();
@@ -1292,7 +1292,7 @@ namespace Picking
 		spotLight1 = Scene::Instance()->addSpotLight(true, Vector3(-25.f, 10.f, -50.f));
 		spotLight1->mat->SetDiffuseIntensity(10.f);
 		spotLightComp = spotLight1->GetComponent<SpotLight>();
-		spotLightComp->blurShadowMap = false;
+		spotLightComp->shadowMapBlurActive = false;
 
 		qXCube1 = Scene::Instance()->addObject("cube");
 		qXCube1->mat->SetColor(Vector3F(1,0,0));
@@ -1587,7 +1587,9 @@ namespace Picking
 		if (spotLightComp != nullptr)
 		{
 			ImGui::NewLine();
-			ImGui::Checkbox("SpotCastShadow", &spotLightComp->castShadow);
+			ImGui::Checkbox("SpotCastShadow", &spotLightComp->shadowMapActive);
+			ImGui::Checkbox("SpotBlurShadow", &spotLightComp->shadowMapBlurActive);
+			ImGui::Text("FPS %.3f", 1.0 / Times::Instance()->deltaTime);
 			ImGui::SliderFloat("Spot X angle", &xAngles, start, stop);
 			ImGui::SliderFloat("Spot Y angle", &yAngles, start, stop);
 			ImGui::SliderFloat("Spot1PosX", &posX, -100, 100);
@@ -1608,7 +1610,7 @@ namespace Picking
 			ImGui::SliderFloat("Dir1 Y angle", &yAngled, start, stop);
 			ImGui::Checkbox("Dir1 Blur ShadowMap", &directionalLightComp->blurShadowMap);
 			ImGui::SliderFloat("Dir1 Shadow Blur Size", &directionalLightComp->blurIntensity, 0.0f, 10.0f);
-			ImGui::SliderInt("Dir1 Shadow Blur Level", &directionalLightComp->blurLevel, 0, 3);
+			ImGui::SliderInt("Dir1 Shadow Blur Level", &directionalLightComp->activeBlurLevel, 0, 3);
 			ImGui::SliderFloat("Dir1 Ortho Size", &directionalLightComp->radius, 0.0f, 2000.f);
 			ImGui::SliderFloat("Dir1 Shadow Fade Range", &directionalLightComp->shadowFadeRange, 0.0f, 50.f);
 			ImGui::SliderFloat("Dir1 Intensity", &directionalLightComp->object->mat->diffuseIntensity, 0, 10);
@@ -1622,7 +1624,7 @@ namespace Picking
 			ImGui::SliderFloat("Dir2 Y angle", &yAngled2, start, stop);
 			ImGui::Checkbox("Dir2 Blur ShadowMap", &directionalLightComp2->blurShadowMap);
 			ImGui::SliderFloat("Dir2 Shadow Blur Size", &directionalLightComp2->blurIntensity, 0.0f, 10.0f);
-			ImGui::SliderInt("Dir2 Shadow Blur Level", &directionalLightComp2->blurLevel, 0, 3);
+			ImGui::SliderInt("Dir2 Shadow Blur Level", &directionalLightComp2->activeBlurLevel, 0, 3);
 			ImGui::SliderFloat("Dir 2Ortho Size", &directionalLightComp2->radius, 0.0f, 2000.f);
 			ImGui::SliderFloat("Dir2 Shadow Fade Range", &directionalLightComp2->shadowFadeRange, 0.0f, 50.f);
 			ImGui::SliderFloat("Dir2 Intensity", &directionalLightComp2->object->mat->diffuseIntensity, 0, 10);
