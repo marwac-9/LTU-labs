@@ -36,7 +36,7 @@ void main(){
     fade = 0.5*pow(ToRaise, contrastPower); 
     fade = IsAboveHalf ? 1-fade : fade;
 
-	color = texture( myTextureSampler, UV ) * particlecolor * vec4(fade,fade,fade,1.0);
+	color = texture( myTextureSampler, UV ) * particlecolor * vec4(1.0, 1.0, 1.0, fade);
 	float brightness = dot(color.rgb, vec3(0.2126, 0.7152, 0.0722));
 	if (brightness > 1.0)
 		brightColor = color;
