@@ -220,8 +220,10 @@ namespace SimpleWater
 			currentCamera->UpdateOrientation(mouseX, mouseY);
 			window->SetCursorPos(windowMidX, windowMidY);
 		}
-		currentCamera->SetFarNearFov(fov, near, far);
-}
+		currentCamera->fov = fov;
+		currentCamera->near = near;
+		currentCamera->far = far;
+	}
 
 	void
 	SimpleWaterApp::InitGL()
@@ -481,9 +483,9 @@ namespace SimpleWater
 
 		Vector3 pos = currentCamera->GetInitPos();
 		pos.y = -pos.y;
-		Vector3 dir = currentCamera->getDirection();
+		Vector3 dir = currentCamera->direction;
 		dir.y = -dir.y;
-		Vector3 right = currentCamera->getRight();
+		Vector3 right = currentCamera->right;
 		Matrix4 View = Matrix4::lookAt(
 			pos,
 			pos + dir,

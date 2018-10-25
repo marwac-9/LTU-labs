@@ -1,17 +1,35 @@
-#version 330
-
-uniform vec2 screenSize;
-uniform vec3 LightInvDirection_worldspace;
-uniform vec3 CameraPos;
+#version 420
 
 uniform sampler2D diffuseSampler;
 uniform sampler2D positionSampler;
 uniform sampler2D normalsSampler;
 uniform sampler2D metDiffIntShinSpecIntSampler;
 
-uniform float lightPower;
-uniform vec3 lightColor;
-uniform float ambient;
+layout(std140, binding = 1) uniform LBVars
+{
+	vec3 lightInvDir;
+	float shadowTransitionSize;
+	float outerCutOff;
+	float innerCutOff;
+	float lightRadius;
+	float lightPower;
+	vec3 lightColor;
+	float ambient;
+	mat4 depthBiasMVP;
+	mat4 MVP;
+	vec3 lightPosition;
+	float constant;
+	float linear;
+	float exponential;
+};
+
+layout(std140, binding = 2) uniform CBVars
+{
+	vec2 screenSize;
+	float near;
+	float far;
+	vec3 cameraPos;
+};
 
 // Ouput data
 layout(location = 0) out vec3 color;
@@ -26,12 +44,12 @@ void main()
 	vec4 MatPropertiesMetDiffShinSpec = texture(metDiffIntShinSpecIntSampler, TexCoord);
 
 	// Vector that goes from the vertex to the camera, in world space.
-	vec3 EyeDirection_worldSpace = CameraPos - WorldPos;
+	vec3 EyeDirection_worldSpace = cameraPos - WorldPos;
 
 	// Normal of the computed fragment, in camera space
 	vec3 n = normalize(Normal_worldSpace);
 	// Direction of the light (from the vertex to the light)
-	vec3 l = normalize(LightInvDirection_worldspace);
+	vec3 l = normalize(lightInvDir);
 	// Cosine of the angle between the normal and the light direction, 
 	// clamped above 0
 	//  - light is at the vertical of the triangle -> 1

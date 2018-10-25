@@ -1,30 +1,37 @@
-#version 330
-
-uniform vec2 screenSize;
-uniform vec3 LightPosition_worldspace;
-uniform vec3 CameraPos;
+#version 420
 
 uniform sampler2D diffuseSampler;
 uniform sampler2D positionSampler;
 uniform sampler2D normalsSampler;
 uniform sampler2D metDiffIntShinSpecIntSampler;
-
 uniform samplerCube shadowMapSampler;
 
-uniform float lightRadius;
-uniform float lightPower;
-uniform vec3 lightColor;
-uniform float ambient;
-
-struct Attenuation
+layout(std140, binding = 1) uniform LBVars
 {
+	vec3 lightInvDir;
+	float shadowTransitionSize;
+	float outerCutOff;
+	float innerCutOff;
+	float lightRadius;
+	float lightPower;
+	vec3 lightColor;
+	float ambient;
+	mat4 depthBiasMVP;
+	mat4 MVP;
+	vec3 lightPosition;
 	float constant;
 	float linear;
 	float exponential;
 };
 
-uniform float far_plane;
-uniform Attenuation pointAttenuation;
+layout(std140, binding = 2) uniform CBVars
+{
+	vec2 screenSize;
+	float near;
+	float far;
+	vec3 cameraPos;
+};
+
 
 const vec3 sampleOffsetDirections[20] = vec3[]
 (
@@ -55,7 +62,7 @@ float ShadowContribution(vec3 LightToFragment, float viewDistance, vec3 fragPos)
 	for (int i = 0; i < samples; ++i)
 	{
 		float closestDepth = texture(shadowMapSampler, LightToFragment + sampleOffsetDirections[i] * diskRadius).r;
-		closestDepth *= far_plane;   // undo mapping [0;1]
+		closestDepth *= lightRadius;   // undo mapping [0;1]
 		if (currentDepth - bias > closestDepth)
 			shadow += 1.0;
 	}
@@ -85,10 +92,10 @@ void main()
 	vec4 MatPropertiesMetDiffShinSpec = texture(metDiffIntShinSpecIntSampler, TexCoord);
 
 	// Vector that goes from the vertex to the camera, in world space.
-	vec3 EyeDirection_worldSpace = CameraPos - WorldPos;
+	vec3 EyeDirection_worldSpace = cameraPos - WorldPos;
 
 	// Vector that goes from the vertex to the light, in world space. M is ommited because it's identity.
-	vec3 LightDirection_worldSpace = LightPosition_worldspace - WorldPos;
+	vec3 LightDirection_worldSpace = lightPosition - WorldPos;
 
 	// Distance to the light
 	float distance = length(LightDirection_worldSpace);
@@ -117,7 +124,7 @@ void main()
 
 	float radius = lightRadius - 0.5;
 
-	float attenuation = 1.0 / (pointAttenuation.constant + pointAttenuation.linear * distance + pointAttenuation.exponential * distance * distance);
+	float attenuation = 1.0 / (constant + linear * distance + exponential * distance * distance);
 	attenuation = max((1.0 - distance / radius) * attenuation, 0.0);
 	
 	float visibility = 1.0 - ShadowContribution(-LightDirection_worldSpace, length(EyeDirection_worldSpace), WorldPos);

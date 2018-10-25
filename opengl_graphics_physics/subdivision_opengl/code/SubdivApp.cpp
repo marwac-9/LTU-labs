@@ -239,7 +239,9 @@ namespace Subdivision
 			currentCamera->holdingUp = (window->GetKey(GLFW_KEY_SPACE) == GLFW_PRESS);
 			currentCamera->holdingDown = (window->GetKey(GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS);
 		}
-		currentCamera->SetFarNearFov(fov, near, far);
+		currentCamera->fov = fov;
+		currentCamera->near = near;
+		currentCamera->far = far;
 	}
 
 	void

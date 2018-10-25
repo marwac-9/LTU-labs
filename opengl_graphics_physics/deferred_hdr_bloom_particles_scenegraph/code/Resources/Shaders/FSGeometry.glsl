@@ -1,4 +1,4 @@
-#version 330 core
+#version 420 core
 
 in vec2 TexCoord0;
 in vec3 Normal0;
@@ -11,10 +11,17 @@ layout(location = 2) out vec3 NormalOut;
 layout(location = 3) out vec4 metDiffIntShineSpecIntOut;
 layout(location = 4) out uint PickingOut;
 
-uniform vec4 MaterialProperties;
-uniform vec3 MaterialColor;
+layout(std140, binding = 0) uniform GBVars
+{
+	mat4 MVP;
+	mat4 M;
+	vec4 MaterialProperties;
+	vec3 MaterialColor;
+	vec2 tiling;
+	uint objectID;
+};
+
 uniform sampler2D myTextureSampler;
-uniform uint objectID;
 
 void main()
 {

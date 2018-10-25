@@ -1,28 +1,35 @@
-#version 330
-
-//uniform mat4 V;
-uniform vec2 screenSize;
-uniform vec3 LightPosition_worldspace;
-uniform vec3 CameraPos;
+#version 420
 
 uniform sampler2D diffuseSampler;
 uniform sampler2D positionSampler;
 uniform sampler2D normalsSampler;
 uniform sampler2D metDiffIntShinSpecIntSampler;
 
-uniform float lightRadius;
-uniform float lightPower;
-uniform vec3 lightColor;
-uniform float ambient;
-
-struct Attenuation
+layout(std140, binding = 1) uniform LBVars
 {
+	vec3 lightInvDir;
+	float shadowTransitionSize;
+	float outerCutOff;
+	float innerCutOff;
+	float lightRadius;
+	float lightPower;
+	vec3 lightColor;
+	float ambient;
+	mat4 depthBiasMVP;
+	mat4 MVP;
+	vec3 lightPosition;
 	float constant;
 	float linear;
 	float exponential;
 };
 
-uniform Attenuation pointAttenuation;
+layout(std140, binding = 2) uniform CBVars
+{
+	vec2 screenSize;
+	float near;
+	float far;
+	vec3 cameraPos;
+};
 
 // Ouput data
 layout(location = 0) out vec3 color;
@@ -37,10 +44,10 @@ void main()
 	vec4 MatPropertiesMetDiffShinSpec = texture(metDiffIntShinSpecIntSampler, TexCoord);
 
 	// Vector that goes from the vertex to the camera, in world space.
-	vec3 EyeDirection_worldSpace = CameraPos - WorldPos;
+	vec3 EyeDirection_worldSpace = cameraPos - WorldPos;
 
 	// Vector that goes from the vertex to the light, in world space. M is ommited because it's identity.
-	vec3 LightDirection_worldSpace = LightPosition_worldspace - WorldPos;
+	vec3 LightDirection_worldSpace = lightPosition - WorldPos;
 
 	// Distance to the light
 	float distance = length(LightDirection_worldSpace);
@@ -83,7 +90,7 @@ void main()
 
 	float radius = lightRadius - 0.5;
 
-	float attenuation = 1.0 / (pointAttenuation.constant + pointAttenuation.linear * distance + pointAttenuation.exponential * distance * distance);
+	float attenuation = 1.0 / (constant + linear * distance + exponential * distance * distance);
 	attenuation = max((1.0 - distance / radius) * attenuation, 0.0); //i should come up with a way to manipulate point light attenuation in c++ so it never reaches sphere radius, this is a quick fix
 
 	float Metallic = MatPropertiesMetDiffShinSpec.x;

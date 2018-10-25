@@ -175,6 +175,8 @@ namespace Picking
 				if (currentScene == scene2Loaded) Vortex();
 			}
 
+			Render::Instance()->UpdateEBOs();
+
 			GenerateGUI();
 
 			PassPickingTexture();
@@ -330,7 +332,9 @@ namespace Picking
 			currentCamera->holdingUp = (window->GetKey(GLFW_KEY_SPACE) == GLFW_PRESS);
 			currentCamera->holdingDown = (window->GetKey(GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS);
 		}
-		currentCamera->SetFarNearFov(fov,near,far);
+		currentCamera->fov = fov;
+		currentCamera->near = near;
+		currentCamera->far = far;
     }
 
 	void
@@ -394,13 +398,12 @@ namespace Picking
 			//inverted y coordinate because glfw 0,0 starts at topleft while opengl texture 0,0 starts at bottomleft
 			pickingBuffer->ReadPixelData((unsigned int)leftMouseX, this->windowHeight - (unsigned int)leftMouseY, GL_RED_INTEGER, GL_UNSIGNED_INT, &Pixel, pickingTexture->attachment);
 			pickedID = Pixel;
-
 			//std::cout << pickedID << std::endl;
 			if(lastPickedObject != nullptr) //reset previously picked object color
 			{
 				lastPickedObject->mat->color = Vector3F(0.f, 0.f, 0.f);
 				lastPickedObject->mat->SetDiffuseIntensity(1.f);
-			}  
+			}
 			if(Scene::Instance()->pickingList.find(pickedID) != Scene::Instance()->pickingList.end())
 			{
 				lastPickedObject = Scene::Instance()->pickingList[pickedID];
@@ -411,7 +414,7 @@ namespace Picking
 				Vector3 dWorldPos = Vector3(world_position.x, world_position.y, world_position.z);
 				Vector3 impulse = (dWorldPos - currentCamera->GetPosition2()).vectNormalize();
 
-				if (RigidBody* body = this->lastPickedObject->GetComponent<RigidBody>()) body->ApplyImpulse(impulse, 20.f, dWorldPos);
+				if (RigidBody* body = this->lastPickedObject->GetComponent<RigidBody>()) body->ApplyImpulse(impulse, 1.f, dWorldPos);
 			}
         }
     }
@@ -580,8 +583,8 @@ namespace Picking
 			if (RigidBody* body = obj->GetComponent<RigidBody>())
 			{
 				Vector3 dir = obj->GetWorldPosition() - Vector3(0.f, -10.f, 0.f);
-				body->ApplyImpulse(dir.vectNormalize()*-200.f, obj->GetWorldPosition());
-			}			
+				body->ApplyImpulse(dir.vectNormalize()*-200.f, Vector3(0.f, -10.f, 0.f));
+			}
 		}
 	}
 
@@ -705,6 +708,8 @@ namespace Picking
 		pickingBuffer->AddDefaultTextureParameters();
 		pickingBuffer->GenerateAndAddTextures();
 		pickingBuffer->CheckAndCleanup();
+
+		Render::Instance()->GenerateEBOs();
 	}
 
 

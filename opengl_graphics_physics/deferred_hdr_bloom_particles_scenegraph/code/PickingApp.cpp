@@ -146,14 +146,14 @@ namespace Picking
 		double customIntervalTime = 0;
 		Scene::Instance()->Update();
 
-		//glfwSwapInterval(0); //unlock fps
+		glfwSwapInterval(0); //unlock fps
 
 		ImGui_ImplGlfwGL3_Init(this->window->GetGLFWWindow(), false);
 
 		std::chrono::time_point<std::chrono::high_resolution_clock> start, end;
 		std::chrono::duration<double> elapsed_seconds;
 		
-		window->SetTitle("Deffered HDR Bloom Particles Scenegraph");
+		window->SetTitle("Deffered HDR Bloom Particles Scenegraph Uniform-Buffers");
 		//glEnable(GL_POINT_SMOOTH);
 		while (running)
 		{
@@ -212,6 +212,8 @@ namespace Picking
 			elapsed_seconds = end - start;
 			updateTime = elapsed_seconds.count();
 
+			Render::Instance()->UpdateEBOs();
+			
 			GenerateGUI();
 			DrawGeometryPass();
 			if (skybox != nullptr) DrawGSkybox();
@@ -317,8 +319,8 @@ namespace Picking
 		GLuint contrast = glGetUniformLocation(particleShader, "contrastPower");
 		glUniform1f(contrast, contrastPower);
 
-		Vector3F right = currentCamera->getRight().toFloat();
-		Vector3F up = currentCamera->getUp().toFloat();	
+		Vector3F right = currentCamera->right.toFloat();
+		Vector3F up = currentCamera->up.toFloat();	
 		Matrix4F viewProjection = CameraManager::Instance()->ViewProjection.toFloat();
 		particlesRendered = 0;
 		for (auto& pSystem : particleSystems) //particles not affected by light, rendered in forward rendering
@@ -498,7 +500,9 @@ namespace Picking
 			currentCamera->holdingUp = (window->GetKey(GLFW_KEY_SPACE) == GLFW_PRESS);
 			currentCamera->holdingDown = (window->GetKey(GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS);
 		}
-		currentCamera->SetFarNearFov(fov, near, far);
+		currentCamera->fov = fov;
+		currentCamera->near = near;
+		currentCamera->far = far;
 
 		Quaternion qXangles = Quaternion(xAngles, Vector3(1.0, 0.0, 0.0));
 		Quaternion qYangles = Quaternion(yAngles, Vector3(0.0, 1.0, 0.0));
@@ -583,7 +587,7 @@ namespace Picking
 			//inverted y coordinate because glfw 0,0 starts at topleft while opengl texture 0,0 starts at bottomleft
 			geometryBuffer->ReadPixelData((unsigned int)leftMouseX, this->windowHeight - (unsigned int)leftMouseY, GL_RED_INTEGER, GL_UNSIGNED_INT, &Pixel, pickingTexture->attachment);
 			pickedID = Pixel;
-
+			
 			//std::cout << pickedID << std::endl;
 			if (lastPickedObject != nullptr) //reset previously picked object color
 			{
@@ -599,7 +603,7 @@ namespace Picking
 				geometryBuffer->ReadPixelData((unsigned int)leftMouseX, this->windowHeight - (unsigned int)leftMouseY, GL_RGB, GL_FLOAT, world_position.vect, worldPosTexture->attachment);
 				Vector3 dWorldPos = Vector3(world_position.x, world_position.y, world_position.z);
 				Vector3 impulse = (dWorldPos - currentCamera->GetPosition2()).vectNormalize();
-				if (RigidBody* body = this->lastPickedObject->GetComponent<RigidBody>()) body->ApplyImpulse(impulse, 20.0, dWorldPos);
+				if (RigidBody* body = this->lastPickedObject->GetComponent<RigidBody>()) body->ApplyImpulse(impulse, 1.0, dWorldPos);
 			}
 		}
 	}
@@ -738,7 +742,6 @@ namespace Picking
 		pointLightTest->mat->SetDiffuseIntensity(20.f);
 		pointLightTest->SetScale(Vector3(100, 100, 100));
 		pointLightCompTest = pointLightTest->GetComponent<PointLight>();
-		pointLightCompTest->blurShadowMap = false;
 		
 		skybox = Scene::Instance()->addChild();
 		skybox->AssignMesh(GraphicsStorage::meshes["skybox"]);
@@ -750,12 +753,13 @@ namespace Picking
 
 		Object* directionalLight2 = Scene::Instance()->addDirectionalLight(true);
 		directionalLightComp2 = directionalLight2->GetComponent<DirectionalLight>();
-
+		
+		
 		spotLight1 = Scene::Instance()->addSpotLight(true, Vector3(-25.f, 10.f, -50.f));
 		spotLight1->mat->SetColor(Vector3F(1.f, 0.7f, 0.8f));
 		spotLightComp = spotLight1->GetComponent<SpotLight>();
 		spotLightComp->shadowMapBlurActive = false;
-
+		
 		lineSystems.push_back(new LineSystem(1500));
 		LineSystem* lSystem = lineSystems.front();
 
@@ -1319,19 +1323,19 @@ namespace Picking
 	void
 	PickingApp::FireLightProjectile()
 	{
-		Object* pointLight = Scene::Instance()->addPointLight(false, currentCamera->GetPosition2()+currentCamera->getDirection()*10.0, Vector3F(1.f, 1.f, 0.f));
+		Object* pointLight = Scene::Instance()->addPointLight(false, currentCamera->GetPosition2()+currentCamera->direction*10.0, Vector3F(1.f, 1.f, 0.f));
 		pointLight->mat->SetDiffuseIntensity(50.f);
 		pointLight->mat->SetColor(Vector3F(1.f,0.f,0.f));
 		pointLight->SetScale(Vector3(15.0, 15.0, 15.0));
 
 
 		Object* icos = Scene::Instance()->addPhysicObject("icosphere", currentCamera->GetPosition2());
-		Object* sphere = Scene::Instance()->addPhysicObject("sphere", currentCamera->GetPosition2() + currentCamera->getDirection()*10.0);
+		Object* sphere = Scene::Instance()->addPhysicObject("sphere", currentCamera->GetPosition2() + currentCamera->direction*10.0);
 
 		RigidBody* body = new RigidBody(pointLight);
 		pointLight->AddComponent(body);
 		body->SetCanSleep(false);
-		body->ApplyImpulse(currentCamera->getDirection()*3000.0, pointLight->GetLocalPosition());
+		body->ApplyImpulse(currentCamera->direction*3000.0, pointLight->GetLocalPosition());
 		
 		ParticleSystem* pSystem = new ParticleSystem(500, 170);
 		pointLight->AddComponent(pSystem);
@@ -1345,7 +1349,7 @@ namespace Picking
 		PointSystem* pos = pointSystems[0];
 		FastPoint* fpo = pos->GetPoint();
 		fpo->color = Vector4F(0.f, 50.f, 50.f, 1.0f);
-		fpo->node.position = currentCamera->GetPosition2() + currentCamera->getDirection()*16.0;
+		fpo->node.position = currentCamera->GetPosition2() + currentCamera->direction*16.0;
 
 		FastLine* line = lineSystems[0]->GetLine();
 		//Scene::Instance()->SceneObject->node.addChild(&line->nodeA);
@@ -1354,7 +1358,7 @@ namespace Picking
 		//we can attach lines to another objects 
 		line->AttachEndA(&icos->node);
 		//we can set positions of lines
-		line->SetPositionB(currentCamera->GetPosition2() + currentCamera->getDirection()*10.0);
+		line->SetPositionB(currentCamera->GetPosition2() + currentCamera->direction*10.0);
 
 		line->colorA = Vector4F(0.f, 5.f, 5.f, 1.f);
 		line->colorB = Vector4F(0.f, 5.f, 5.f, 1.f);
@@ -1363,9 +1367,9 @@ namespace Picking
 		//we can attach line to another line if line we are attaching to is using a node of an object
 		//line2->AttachEndA(line->nodeA);
 		line2->AttachEndA(&sphere->node);
-		line2->SetPositionB(currentCamera->GetPosition2() + currentCamera->getDirection()*20.0);
+		line2->SetPositionB(currentCamera->GetPosition2() + currentCamera->direction*20.0);
 		//we can apply some offsets to the attachments
-		line2->SetPositionA(currentCamera->getDirection()*5.0);
+		line2->SetPositionA(currentCamera->direction*5.0);
 		line2->colorA = Vector4F(5.f, 0.f, 0.f, 1.f);
 		line2->colorB = Vector4F(5.f, 0.f, 0.f, 1.f);
 	}
@@ -1387,8 +1391,8 @@ namespace Picking
 		{
 			if (RigidBody* body = obj->GetComponent<RigidBody>())
 			{
-				Vector3 dir = obj->GetWorldPosition() - Vector3(0.f, 0.f, 0.f);
-				body->ApplyImpulse(dir*-1.f, obj->GetWorldPosition());
+				Vector3 dir = obj->GetWorldPosition() - Vector3(0.f, -10.f, 0.f);
+				body->ApplyImpulse(dir*-1.f, Vector3(0.f, -10.f, 0.f));
 			}
 		}
 	}
@@ -1567,6 +1571,8 @@ namespace Picking
 		
 		if (pointLightTest != nullptr)
 		{
+			ImGui::Checkbox("PointCastShadow", &pointLightCompTest->shadowMapActive);
+			ImGui::Checkbox("PointBlurShadow", &pointLightCompTest->shadowMapBlurActive);
 			ImGui::SliderFloat("PointFar", &pointLightCompTest->fov, start, stop);
 			ImGui::SliderFloat("PointIntensity", &pointLightTest->mat->diffuseIntensity, start, stop);
 			ImGui::SliderFloat("PointSize", &pointScale, 1, 1000);
@@ -1595,6 +1601,10 @@ namespace Picking
 			ImGui::SliderFloat("Spot1PosX", &posX, -100, 100);
 			ImGui::SliderFloat("Spot1PosY", &posY, -100, 100);
 			ImGui::SliderFloat("Spot1PosZ", &posZ, -100, 100);
+			
+			ImGui::SliderFloat("Spot1Const", &spotLightComp->attenuation.Constant, 0, 1);
+			ImGui::SliderFloat("Spot1Lin", &spotLightComp->attenuation.Linear, 0, 1);
+			ImGui::SliderFloat("Spot1Exp", &spotLightComp->attenuation.Exponential, 0, 1);
 
 			ImGui::SliderFloat("Spot CutOff", &spotLightCutOff, 0, 360);
 			ImGui::SliderFloat("Spot OuterCutOff", &spotLightOuterCutOff, 0, 180);
@@ -1606,9 +1616,10 @@ namespace Picking
 		{
 			ImGui::NewLine();
 			ImGui::Text("DIR1:");
+			ImGui::Checkbox("Dir1 CastShadow", &directionalLightComp->shadowMapActive);
+			ImGui::Checkbox("Dir1 BlurShadow", &directionalLightComp->shadowMapBlurActive);
 			ImGui::SliderFloat("Dir1 X angle", &xAngled, start, stop);
 			ImGui::SliderFloat("Dir1 Y angle", &yAngled, start, stop);
-			ImGui::Checkbox("Dir1 Blur ShadowMap", &directionalLightComp->blurShadowMap);
 			ImGui::SliderFloat("Dir1 Shadow Blur Size", &directionalLightComp->blurIntensity, 0.0f, 10.0f);
 			ImGui::SliderInt("Dir1 Shadow Blur Level", &directionalLightComp->activeBlurLevel, 0, 3);
 			ImGui::SliderFloat("Dir1 Ortho Size", &directionalLightComp->radius, 0.0f, 2000.f);
@@ -1620,9 +1631,10 @@ namespace Picking
 		{
 			ImGui::NewLine();
 			ImGui::Text("DIR2:");
+			ImGui::Checkbox("Dir2 CastShadow", &directionalLightComp2->shadowMapActive);
+			ImGui::Checkbox("Dir2 BlurShadow", &directionalLightComp2->shadowMapBlurActive);
 			ImGui::SliderFloat("Dir2 X angle", &xAngled2, start, stop);
 			ImGui::SliderFloat("Dir2 Y angle", &yAngled2, start, stop);
-			ImGui::Checkbox("Dir2 Blur ShadowMap", &directionalLightComp2->blurShadowMap);
 			ImGui::SliderFloat("Dir2 Shadow Blur Size", &directionalLightComp2->blurIntensity, 0.0f, 10.0f);
 			ImGui::SliderInt("Dir2 Shadow Blur Level", &directionalLightComp2->activeBlurLevel, 0, 3);
 			ImGui::SliderFloat("Dir 2Ortho Size", &directionalLightComp2->radius, 0.0f, 2000.f);
@@ -1780,6 +1792,7 @@ namespace Picking
 		Render::Instance()->AddDirectionalShadowMapBuffer(4096, 4096);
 		Render::Instance()->AddMultiBlurBuffer(this->windowWidth, this->windowHeight);
 		Render::Instance()->AddPingPongBuffer(4096, 4096);
+		Render::Instance()->GenerateEBOs();
 	}
 
 	void PickingApp::DrawGeometryMaps(int width, int height)

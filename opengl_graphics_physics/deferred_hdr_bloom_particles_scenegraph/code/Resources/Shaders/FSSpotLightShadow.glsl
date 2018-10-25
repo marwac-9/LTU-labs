@@ -1,35 +1,36 @@
-#version 330
-
-uniform mat4 DepthBiasMVP;
-
-//uniform mat4 V;
-uniform vec2 screenSize;
-uniform vec3 LightPosition_worldspace;
-uniform vec3 CameraPos;
+#version 420
 
 uniform sampler2D diffuseSampler;
 uniform sampler2D positionSampler;
 uniform sampler2D normalsSampler;
 uniform sampler2D metDiffIntShinSpecIntSampler;
-
 uniform sampler2D shadowMapSampler;
 
-uniform float lightRadius;
-uniform float lightPower;
-uniform vec3 lightColor;
-uniform float ambient;
-
-struct Attenuation
+layout(std140, binding = 1) uniform LBVars
 {
+	vec3 lightInvDir;
+	float shadowTransitionSize;
+	float outerCutOff;
+	float innerCutOff;
+	float lightRadius;
+	float lightPower;
+	vec3 lightColor;
+	float ambient;
+	mat4 depthBiasMVP;
+	mat4 MVP;
+	vec3 lightPosition;
 	float constant;
 	float linear;
 	float exponential;
 };
 
-uniform vec3 SpotLightDirection_worldspace;
-uniform Attenuation spotAttenuation;
-uniform float SpotLightInnerCutOff;
-uniform float SpotLightOuterCutOff;
+layout(std140, binding = 2) uniform CBVars
+{
+	vec2 screenSize;
+	float near;
+	float far;
+	vec3 cameraPos;
+};
 
 // Ouput data
 layout(location = 0) out vec4 color;
@@ -77,10 +78,10 @@ void main()
 	vec4 MatPropertiesMetDiffShinSpec = texture(metDiffIntShinSpecIntSampler, TexCoord);
 
 	// Vector that goes from the vertex to the camera, in world space.
-	vec3 EyeDirection_worldSpace = CameraPos - WorldPos;
+	vec3 EyeDirection_worldSpace = cameraPos - WorldPos;
 
 	// Vector that goes from the vertex to the light, in world space. M is ommited because it's identity.
-	vec3 LightDirection_worldSpace = LightPosition_worldspace - WorldPos;
+	vec3 LightDirection_worldSpace = lightPosition - WorldPos;
 
 	// Distance to the light
 	float distance = length(LightDirection_worldSpace);
@@ -107,15 +108,15 @@ void main()
 	//  - Looking elsewhere -> < 1
 	float cosAlpha = max(dot(E, R), 0.0);
 
-	float spotTetha = clamp(dot(l, SpotLightDirection_worldspace), 0.0, 1.0);
-	float epsilon = (SpotLightInnerCutOff - SpotLightOuterCutOff);
-	float intensity = clamp((spotTetha - SpotLightOuterCutOff) / epsilon, 0.0, 1.0);
+	float spotTetha = clamp(dot(l, lightInvDir), 0.0, 1.0);
+	float epsilon = (innerCutOff - outerCutOff);
+	float intensity = clamp((spotTetha - outerCutOff) / epsilon, 0.0, 1.0);
 
 	float radius = lightRadius - 0.5;
 
-	float attenuation = 1.0 / (spotAttenuation.constant + spotAttenuation.linear * distance + spotAttenuation.exponential * distance * distance);
+	float attenuation = 1.0 / (constant + linear * distance + exponential * distance * distance);
 
-	vec4 ShadowCoord = DepthBiasMVP * vec4(WorldPos, 1);
+	vec4 ShadowCoord = depthBiasMVP * vec4(WorldPos, 1);
 	ShadowCoord.xyz = ShadowCoord.xyz / ShadowCoord.w;
 
 	float visibility = 1.0;

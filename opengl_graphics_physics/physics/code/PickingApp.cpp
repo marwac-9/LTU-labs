@@ -150,16 +150,19 @@ namespace Picking
 
 			CameraManager::Instance()->Update(Times::Instance()->deltaTime);
 			FrustumManager::Instance()->ExtractPlanes(CameraManager::Instance()->ViewProjection);
-
-			if (scene4loaded) Vortex();
-
-			GenerateGUI();
-
+			
 			PassPickingTexture();
 			if (altButtonToggle) PickingTest();
 
 			Scene::Instance()->Update();
+
 			PhysicsManager::Instance()->Update(Times::Instance()->dtInv);
+
+			if (scene4loaded) Vortex();
+
+			Render::Instance()->UpdateEBOs();
+
+			GenerateGUI();
 
 			DrawPass2(); // color || debug
 			DebugDraw::Instance()->DrawCrossHair(windowWidth, windowHeight);
@@ -302,7 +305,9 @@ namespace Picking
 			currentCamera->holdingUp = (window->GetKey(GLFW_KEY_SPACE) == GLFW_PRESS);
 			currentCamera->holdingDown = (window->GetKey(GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS);
 		}
-		currentCamera->SetFarNearFov(fov, near, far);
+		currentCamera->fov = fov;
+		currentCamera->near = near;
+		currentCamera->far = far;
 	}
 
     void
@@ -569,8 +574,8 @@ namespace Picking
 		{
 			if (RigidBody* body = obj->GetComponent<RigidBody>())
 			{
-				Vector3 dir = obj->GetWorldPosition() - Vector3(0.f, 0.f, 0.f);
-				body->ApplyImpulse(dir*-1.f, obj->GetWorldPosition());
+				Vector3 dir = obj->GetWorldPosition() - Vector3(0.f, -10.f, 0.f);
+				body->ApplyImpulse(dir*-1.0, Vector3(0.f, -10.f, 0.f));
 			}
 		}
 	}
@@ -612,6 +617,8 @@ namespace Picking
 		pickingBuffer->AddDefaultTextureParameters();
 		pickingBuffer->GenerateAndAddTextures();
 		pickingBuffer->CheckAndCleanup();
+
+		Render::Instance()->GenerateEBOs();
 	}
 
 	void PickingApp::GenerateGUI()
@@ -619,6 +626,7 @@ namespace Picking
 		ImGui::Begin("Properties", NULL, ImGuiWindowFlags_AlwaysAutoResize);
 		ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 		ImGui::Text("Objects rendered %d", objectsRendered);
+		ImGui::Text("Picked ID %d", pickedID);
 
 		float start = 0;
 		float stop = 360;

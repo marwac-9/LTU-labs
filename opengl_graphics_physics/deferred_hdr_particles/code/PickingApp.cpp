@@ -135,6 +135,9 @@ namespace Picking
 
 		Scene::Instance()->Update();
 		double customIntervalTime = 0.0;
+
+		//glfwSwapInterval(0); //unlock fps
+
         while (running)
         {
 			glDepthMask(GL_TRUE);
@@ -169,8 +172,11 @@ namespace Picking
 			
 			if (lightsPhysics) 
 			{
-				if (scene2Loaded) Vortex();
+				if (currentScene == scene2Loaded) Vortex();
+				if (currentScene == scene3Loaded) Vortex();
 			}
+
+			Render::Instance()->UpdateEBOs();
 			
 			PassPickingTexture();
 
@@ -210,14 +216,15 @@ namespace Picking
 
 		GLuint particleShader = ShaderManager::Instance()->shaderIDs["particle"];
 		ShaderManager::Instance()->SetCurrentShader(particleShader);
-		Vector3F right = currentCamera->getRight().toFloat();
-		Vector3F up = currentCamera->getUp().toFloat();
+		Vector3F right = currentCamera->right.toFloat();
+		Vector3F up = currentCamera->up.toFloat();
 		Matrix4F viewMProjection = CameraManager::Instance()->ViewProjection.toFloat();
+		int particlesRendered = 0;
 		for (auto& pSystem : particleSystems) //particles not affected by light, rendered in forward rendering
 		{
-			pSystem->Draw(viewMProjection, particleShader, up, right);
+			particlesRendered += pSystem->Draw(viewMProjection, particleShader, up, right);
 		}
-
+		printf("%d\n", particlesRendered);
 		FBOManager::Instance()->UnbindFrameBuffer(draw);
 	}
 
@@ -344,7 +351,9 @@ namespace Picking
 			currentCamera->holdingUp = (window->GetKey(GLFW_KEY_SPACE) == GLFW_PRESS);
 			currentCamera->holdingDown = (window->GetKey(GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS);
 		}
-		currentCamera->SetFarNearFov(fov,near,far);
+		currentCamera->fov = fov;
+		currentCamera->near = near;
+		currentCamera->far = far;
     }
 
     void
@@ -390,7 +399,7 @@ namespace Picking
 				geometryBuffer->ReadPixelData((unsigned int)leftMouseX, this->windowHeight - (unsigned int)leftMouseY, GL_RGB, GL_FLOAT, world_position.vect, worldPosTexture->attachment);
 				Vector3 dWorldPos = Vector3(world_position.x, world_position.y, world_position.z);
 				Vector3 impulse = (dWorldPos - currentCamera->GetPosition2()).vectNormalize();
-				if (RigidBody* body = this->lastPickedObject->GetComponent<RigidBody>()) body->ApplyImpulse(impulse, 20.f, dWorldPos);
+				if (RigidBody* body = this->lastPickedObject->GetComponent<RigidBody>()) body->ApplyImpulse(impulse, 1.0, dWorldPos);
 			}
         }
     }
@@ -576,21 +585,21 @@ namespace Picking
 
 	void PickingApp::FireLightProjectile()
 	{
-		Object* pointLight = Scene::Instance()->addPointLight(false, currentCamera->GetPosition2()+currentCamera->getDirection()*3.f, Vector3F(1.f, 1.f, 0.f));
-		pointLight->mat->SetDiffuseIntensity(20.f);
-		pointLight->mat->SetColor(Vector3F(10.f,0.f,0.f));
-		pointLight->SetScale(Vector3(10.f, 10.f, 10.f));
+		Object* pointLight = Scene::Instance()->addPointLight(false, currentCamera->GetPosition2()+currentCamera->direction*10.0, Vector3F(1.f, 1.f, 0.f));
+		pointLight->mat->SetDiffuseIntensity(50.f);
+		pointLight->mat->SetColor(Vector3F(1.f, 0.f, 0.f));
+		pointLight->SetScale(Vector3(15.0, 15.0, 15.0));
 
 		RigidBody* body = new RigidBody(pointLight);
 		pointLight->AddComponent(body);
 		body->SetCanSleep(false);
-		body->ApplyImpulse(currentCamera->getDirection()*4000.f, pointLight->GetLocalPosition());
+		body->ApplyImpulse(currentCamera->direction*3000.0, pointLight->GetLocalPosition());
 		
-		ParticleSystem* pSystem = new ParticleSystem(3000, 80);
+		ParticleSystem* pSystem = new ParticleSystem(3000, 70);
 		pointLight->AddComponent(pSystem);
 		pSystem->SetTexture(GraphicsStorage::textures[11]->handle);
 		pSystem->SetDirection(Vector3F(0.f, 0.f, 0.f));
-		pSystem->SetColor(Vector4F(2.f, 0.f, 0.f, 0.4f));
+		pSystem->SetColor(Vector4F(20.f, 0.f, 0.f, 0.4f));
 
 		particleSystems.push_back(pSystem);
 	}
@@ -619,7 +628,7 @@ namespace Picking
 			if (RigidBody* body = obj->GetComponent<RigidBody>())
 			{
 				Vector3 dir = obj->GetWorldPosition() - Vector3(0.f, -10.f, 0.f);
-				body->ApplyImpulse(dir.vectNormalize()*-200.f, obj->GetWorldPosition());
+				body->ApplyImpulse(dir.vectNormalize()*-200.f, Vector3(0.f, -10.f, 0.f));
 			}			
 		}
 	}
@@ -770,6 +779,8 @@ namespace Picking
 
 		finalColorTextureHandle = lightAndPostBuffer->textures[0]->handle;
 		brightLightTextureHandle = lightAndPostBuffer->textures[1]->handle;
+
+		Render::Instance()->GenerateEBOs();
 	}
 
 	void

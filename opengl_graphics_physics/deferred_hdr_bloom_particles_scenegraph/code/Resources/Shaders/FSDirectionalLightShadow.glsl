@@ -1,27 +1,37 @@
-#version 330
-
-//in vec4 ShadowCoord;
-uniform mat4 DepthBiasMVP;
-//in vec2 UV;
-
-//uniform mat4 V;
-uniform vec2 screenSize;
-uniform vec3 LightInvDirection_worldspace;
-uniform vec3 CameraPos;
+#version 420
 
 uniform sampler2D diffuseSampler;
 uniform sampler2D positionSampler;
 uniform sampler2D normalsSampler;
 uniform sampler2D metDiffIntShinSpecIntSampler;
-
 uniform sampler2D shadowMapSampler;
 
-uniform float lightPower;
-uniform vec3 lightColor;
-uniform float ambient;
-uniform float shadowDistance;
+layout(std140, binding = 1) uniform LBVars
+{
+	vec3 lightInvDir;
+	float shadowTransitionSize;
+	float outerCutOff;
+	float innerCutOff;
+	float lightRadius;
+	float lightPower;
+	vec3 lightColor;
+	float ambient;
+	mat4 depthBiasMVP;
+	mat4 MVP;
+	vec3 lightPosition;
+	float constant;
+	float linear;
+	float exponential;
+};
 
-uniform float transitionDistance;
+layout(std140, binding = 2) uniform CBVars
+{
+	vec2 screenSize;
+	float near;
+	float far;
+	vec3 cameraPos;
+};
+
 // Ouput data
 layout(location = 0) out vec4 color;
 layout(location = 1) out vec4 brightColor;
@@ -68,12 +78,12 @@ void main()
 	vec4 MatPropertiesMetDiffShinSpec = texture(metDiffIntShinSpecIntSampler, TexCoord);
 
 	// Vector that goes from the vertex to the camera, in world space.
-	vec3 EyeDirection_worldSpace = CameraPos - WorldPos;
+	vec3 EyeDirection_worldSpace = cameraPos - WorldPos;
 
 	// Normal of the computed fragment, in camera space
 	vec3 n = normalize(Normal_worldSpace);
 	// Direction of the light (from the vertex to the light)
-	vec3 l = normalize(LightInvDirection_worldspace);
+	vec3 l = normalize(lightInvDir);
 	// Cosine of the angle between the normal and the light direction, 
 	// clamped above 0
 	//  - light is at the vertical of the triangle -> 1
@@ -93,7 +103,7 @@ void main()
 
 	float distance = length(EyeDirection_worldSpace);
 
-	vec4 ShadowCoord = DepthBiasMVP * vec4(WorldPos, 1);
+	vec4 ShadowCoord = depthBiasMVP * vec4(WorldPos, 1);
 
 	float visibility = 1.0;
 	float shadowMapColor = 0.0;
@@ -101,7 +111,7 @@ void main()
 	if (ShadowCoord.z <= 1.0 && ShadowCoord.y <= 1.0 && ShadowCoord.x <= 1.0 && ShadowCoord.z >= 0.0 && ShadowCoord.y >= 0.0 && ShadowCoord.x >= 0.0)
 	{
 		visibility = ShadowContribution(ShadowCoord.xy, ShadowCoord.z); //calculate visibility
-		shadowFadeFactor = linstep(shadowDistance - transitionDistance, shadowDistance, distance);
+		shadowFadeFactor = linstep(lightRadius - shadowTransitionSize, lightRadius, distance);
 		visibility = mix(visibility, 1.0, shadowFadeFactor); //fade shadows out around us
 		shadowMapColor = 1.0;
 	}

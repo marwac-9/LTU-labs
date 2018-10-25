@@ -150,6 +150,8 @@ namespace Picking
 			
 			Scene::Instance()->Update();
 			PhysicsManager::Instance()->Update(Times::Instance()->dtInv);
+
+			Render::Instance()->UpdateEBOs();
 			
 			GenerateGUI(); // <-- (generate) to screen
 			
@@ -306,7 +308,9 @@ namespace Picking
 			currentCamera->holdingUp = (window->GetKey(GLFW_KEY_SPACE) == GLFW_PRESS);
 			currentCamera->holdingDown = (window->GetKey(GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS);
 		}
-		currentCamera->SetFarNearFov(fov, near, far);
+		currentCamera->fov = fov;
+		currentCamera->near = near;
+		currentCamera->far = far;
     }
 
 	void
@@ -594,7 +598,7 @@ namespace Picking
 		plane->SetScale(Vector3(25.f, 2.f, 25.f));
 		body->SetMass(FLT_MAX);
 		body->isKinematic = true;
-		plane->SetOrientation(Quaternion(0.7f, Vector3(0.f, 0.f, 1.f)));
+		//plane->SetOrientation(Quaternion(0.7f, Vector3(0.f, 0.f, 1.f)));
 		
 		Scene::Instance()->addRandomlyPhysicObjects("cube", 50);
 	}
@@ -695,8 +699,8 @@ namespace Picking
 		{
 			if (RigidBody* body = obj->GetComponent<RigidBody>())
 			{
-				Vector3 dir = obj->GetWorldPosition() - Vector3(0.f, 0.f, 0.f);
-				body->ApplyImpulse(dir*-1.f, obj->GetWorldPosition());
+				Vector3 dir = obj->GetWorldPosition() - Vector3(0.f, -10.f, 0.f);
+				body->ApplyImpulse(dir*-1.f, Vector3(0.f, -10.f, 0.f));
 			}
 		}
 	}
@@ -777,6 +781,8 @@ namespace Picking
 		Render::Instance()->AddMultiBlurBuffer(this->windowWidth, this->windowHeight);
 		Render::Instance()->AddPingPongBuffer(4096, 4096);
 		shadowTexture = shadowBuffer->textures[0];
+
+		Render::Instance()->GenerateEBOs();
 	}
 
 	void
