@@ -112,7 +112,6 @@ namespace Picking
     void
     PickingApp::Run()
     {
-
         InitGL();
 
 		SetUpBuffers(this->windowWidth, this->windowHeight);
@@ -135,7 +134,7 @@ namespace Picking
 
 		Scene::Instance()->Update();
 
-		//glfwSwapInterval(0); //unlock fps
+		glfwSwapInterval(0); //unlock fps
 
 		ImGui_ImplGlfwGL3_Init(this->window->GetGLFWWindow(), false);
 
@@ -252,11 +251,12 @@ namespace Picking
 		Vector3F right = currentCamera->right.toFloat();
 		Vector3F up = currentCamera->up.toFloat();
 		Matrix4F viewProjection = CameraManager::Instance()->ViewProjection.toFloat();
-		particlesRendered = 0;
+		particlesRenderedPerFrame = 0;
 		for (auto& pSystem : particleSystems) //particles not affected by light, rendered in forward rendering
 		{
-			particlesRendered += pSystem->Draw(viewProjection, particleShader, up, right);
+			particlesRenderedPerFrame += pSystem->Draw(viewProjection, particleShader, up, right);
 		}
+		particlesRenderedPerSecond = particlesRenderedPerFrame / Times::Instance()->deltaTime;
 
 		FBOManager::Instance()->UnbindFrameBuffer(draw);
 	}
@@ -485,12 +485,26 @@ namespace Picking
 	{
 		glDepthMask(GL_TRUE);
 		glEnable(GL_DEPTH_TEST);
-		
+
 		GLuint wireframeShader = ShaderManager::Instance()->shaderIDs["wireframe"];
 		GLuint prevShader = ShaderManager::Instance()->GetCurrentShaderID();
 		ShaderManager::Instance()->SetCurrentShader(wireframeShader);
 
 		for (auto& obj : Scene::Instance()->renderList)
+		{
+			if (FrustumManager::Instance()->isBoundingSphereInView(obj->node.centeredPosition, obj->radius))
+			{
+				if (RigidBody* body = obj->GetComponent<RigidBody>())
+				{
+					Render::Instance()->boundingBox.mat->SetColor(body->obb.color);
+					Render::Instance()->boundingBox.Draw(Matrix4::scale(obj->GetMeshDimensions())*obj->node.TopDownTransform, CameraManager::Instance()->ViewProjection, wireframeShader);
+					Render::Instance()->boundingBox.mat->SetColor(body->aabb.color);
+					Render::Instance()->boundingBox.Draw(body->aabb.model, CameraManager::Instance()->ViewProjection, wireframeShader);
+				}
+			}
+		}
+
+		for (auto& obj : Scene::Instance()->pointLights)
 		{
 			if (FrustumManager::Instance()->isBoundingSphereInView(obj->node.centeredPosition, obj->radius))
 			{
@@ -617,7 +631,7 @@ namespace Picking
 
 		Object* directionalLight = Scene::Instance()->addDirectionalLight();
 		directionalLight->mat->SetDiffuseIntensity(0.2f);
-
+		/*
 		float rS = 1.f;
 		for (int i = 0; i < 500; i++)
 		{
@@ -630,7 +644,7 @@ namespace Picking
 			object->SetScale(Vector3(rS, rS, rS));
 			body->SetCanSleep(false);
 		}
-		
+		*/
 		lightsPhysics = true;
 		PhysicsManager::Instance()->gravity = Vector3();
 	}
@@ -668,18 +682,21 @@ namespace Picking
 		pointLight->mat->SetDiffuseIntensity(50.f);
 		pointLight->mat->SetColor(Vector3F(1.f,0.f,0.f));
 		pointLight->SetScale(Vector3(15.f, 15.f, 15.f));
-		
+
 		RigidBody* body = new RigidBody(pointLight);
 		pointLight->AddComponent(body);
 		body->SetCanSleep(false);
-		body->ApplyImpulse(currentCamera->direction*4000.f, pointLight->GetLocalPosition());
-		
-		ParticleSystem* pSystem = new ParticleSystem(3000, 70);
+		body->ApplyImpulse(currentCamera->direction*4000.f, pointLight->GetWorldPosition());
+
+		PhysicsManager::Instance()->RegisterRigidBody(body);
+
+		ParticleSystem* pSystem = new ParticleSystem(200, 70);//when there is not enought particles they will all pause for some reason
 		pointLight->AddComponent(pSystem);
 		pSystem->SetTexture(GraphicsStorage::textures[11]->handle);
 		pSystem->SetDirection(Vector3F(0.f, 0.f, 0.f));
 		pSystem->SetColor(Vector4F(50.f, 0.f, 0.f, 0.4f));
 		pSystem->SetSize(0.2f);
+		pSystem->SetLifeTime(1.0);
 
 		particleSystems.push_back(pSystem);
 	}
@@ -696,19 +713,21 @@ namespace Picking
 
 	void PickingApp::Vortex()
 	{
-		/*
-		for (auto& obj : Scene::Instance()->pickingList)
+		for (auto& obj : Scene::Instance()->renderList)
 		{
-			Vector3 dir = obj.second->GetPosition() - Vector3(0,-10,0);
-			obj.second->ApplyImpulse(dir*-20.f, obj.second->GetPosition());
+			if (RigidBody* body = obj->GetComponent<RigidBody>())
+			{
+				Vector3 dir = obj->GetWorldPosition() - Vector3(0.f, -10.f, 0.f);
+				body->ApplyImpulse(dir*-1.0, obj->GetWorldPosition());
+			}
 		}
-		*/
+
 		for (auto& obj : Scene::Instance()->pointLights)
 		{
 			if (RigidBody* body = obj->GetComponent<RigidBody>())
 			{
 				Vector3 dir = obj->GetWorldPosition() - Vector3(0.f, -10.f, 0.f);
-				body->ApplyImpulse(dir.vectNormalize()*-200.f, Vector3(0.f, -10.f, 0.f));
+				body->ApplyImpulse(dir.vectNormalize()*-200.f, obj->GetWorldPosition());
 			}
 		}
 	}
@@ -915,7 +934,8 @@ namespace Picking
 
 		ImGui::Text("Objects rendered %d", objectsRendered);
 		ImGui::Text("Lights rendered %d", lightsRendered);
-		ImGui::Text("Particles Rendered %d", particlesRendered);
+		ImGui::Text("Particles Rendered/f %d", particlesRenderedPerFrame);
+		ImGui::Text("Particles Rendered/s %d", particlesRenderedPerSecond);
 		ImGui::Text("FPS %.3f", 1.0 / Times::Instance()->deltaTime);
 		ImGui::Text("TimeStep %.3f", 1.0 / Times::Instance()->timeStep);
 		ImGui::Text("PickedID %d", pickedID);

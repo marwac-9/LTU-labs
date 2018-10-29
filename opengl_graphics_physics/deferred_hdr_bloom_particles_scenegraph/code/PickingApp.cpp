@@ -202,6 +202,7 @@ namespace Picking
 				if (!pausedPhysics)
 				{
 					if (currentScene == scene7Loaded) Vortex();
+					//if (currentScene == scene3Loaded) Vortex();
 
 					PhysicsManager::Instance()->Update(Times::Instance()->dtInv);
 				}
@@ -1323,20 +1324,22 @@ namespace Picking
 	void
 	PickingApp::FireLightProjectile()
 	{
-		Object* pointLight = Scene::Instance()->addPointLight(false, currentCamera->GetPosition2()+currentCamera->direction*10.0, Vector3F(1.f, 1.f, 0.f));
+		Object* pointLight = Scene::Instance()->addPointLight(false, currentCamera->GetPosition2()+currentCamera->direction*3.0, Vector3F(1.f, 1.f, 0.f));
 		pointLight->mat->SetDiffuseIntensity(50.f);
 		pointLight->mat->SetColor(Vector3F(1.f,0.f,0.f));
 		pointLight->SetScale(Vector3(15.0, 15.0, 15.0));
 
 
-		Object* icos = Scene::Instance()->addPhysicObject("icosphere", currentCamera->GetPosition2());
-		Object* sphere = Scene::Instance()->addPhysicObject("sphere", currentCamera->GetPosition2() + currentCamera->direction*10.0);
+		Object* icos = Scene::Instance()->addObject("icosphere", currentCamera->GetPosition2());
+		Object* sphere = Scene::Instance()->addObject("sphere", currentCamera->GetPosition2() + currentCamera->direction*10.0);
 
 		RigidBody* body = new RigidBody(pointLight);
 		pointLight->AddComponent(body);
 		body->SetCanSleep(false);
-		body->ApplyImpulse(currentCamera->direction*3000.0, pointLight->GetLocalPosition());
+		body->ApplyImpulse(currentCamera->direction*3000.0, pointLight->GetWorldPosition());
 		
+		PhysicsManager::Instance()->RegisterRigidBody(body);
+
 		ParticleSystem* pSystem = new ParticleSystem(500, 170);
 		pointLight->AddComponent(pSystem);
 		pSystem->SetTexture(GraphicsStorage::textures[11]->handle);
@@ -1377,7 +1380,7 @@ namespace Picking
 	void
 	PickingApp::Vortex()
 	{
-		/*
+		
 		for (auto& obj : Scene::Instance()->pointLights)
 		{
 			if (RigidBody* body = obj->GetComponent<RigidBody>())
@@ -1386,13 +1389,13 @@ namespace Picking
 				body->ApplyImpulse(dir.vectNormalize()*-2000.f, obj->GetWorldPosition());
 			}			
 		}
-		*/
+		
 		for (auto& obj : Scene::Instance()->renderList)
 		{
 			if (RigidBody* body = obj->GetComponent<RigidBody>())
 			{
 				Vector3 dir = obj->GetWorldPosition() - Vector3(0.f, -10.f, 0.f);
-				body->ApplyImpulse(dir*-1.f, Vector3(0.f, -10.f, 0.f));
+				body->ApplyImpulse(dir*-1.f, obj->GetWorldPosition());
 			}
 		}
 	}
@@ -1841,6 +1844,23 @@ namespace Picking
 		*/
 		BoundingBoxSystem* bbSystem = bbSystems.front();
 		for (auto& obj : Scene::Instance()->renderList)
+		{
+			if (FrustumManager::Instance()->isBoundingSphereInView(obj->node.centeredPosition, obj->radius))
+			{
+				if (RigidBody* body = obj->GetComponent<RigidBody>())
+				{
+					FastBoundingBox* fastOBB = bbSystem->GetBoundingBoxOnce();
+					fastOBB->color = Vector4F(body->obb.color, 1.f);
+					fastOBB->node.TopDownTransform = body->obb.model;
+
+					FastBoundingBox* fastAABB = bbSystem->GetBoundingBoxOnce();
+					fastAABB->color = Vector4F(body->aabb.color, 1.f);//body->aabb.color
+					fastAABB->node.TopDownTransform = body->aabb.model;
+				}
+			}
+		}
+
+		for (auto& obj : Scene::Instance()->pointLights)
 		{
 			if (FrustumManager::Instance()->isBoundingSphereInView(obj->node.centeredPosition, obj->radius))
 			{

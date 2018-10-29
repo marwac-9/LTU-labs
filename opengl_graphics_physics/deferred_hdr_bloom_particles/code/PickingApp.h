@@ -97,7 +97,8 @@ namespace Picking
 		Object* plane = nullptr;
 		int objectsRendered = 0;
 		int lightsRendered = 0;
-		int particlesRendered = 0;
+		int particlesRenderedPerFrame = 0;
+		int particlesRenderedPerSecond = 0;
 		unsigned int pickedID = 0;
 
 		Object* pointL;

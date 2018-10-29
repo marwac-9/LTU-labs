@@ -700,7 +700,7 @@ namespace Picking
 			if (RigidBody* body = obj->GetComponent<RigidBody>())
 			{
 				Vector3 dir = obj->GetWorldPosition() - Vector3(0.f, -10.f, 0.f);
-				body->ApplyImpulse(dir*-1.f, Vector3(0.f, -10.f, 0.f));
+				body->ApplyImpulse(dir*-1.f, obj->GetWorldPosition());
 			}
 		}
 	}

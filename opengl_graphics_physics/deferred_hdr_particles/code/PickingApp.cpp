@@ -593,7 +593,7 @@ namespace Picking
 		RigidBody* body = new RigidBody(pointLight);
 		pointLight->AddComponent(body);
 		body->SetCanSleep(false);
-		body->ApplyImpulse(currentCamera->direction*3000.0, pointLight->GetLocalPosition());
+		body->ApplyImpulse(currentCamera->direction*3000.0, pointLight->GetWorldPosition());
 		
 		ParticleSystem* pSystem = new ParticleSystem(3000, 70);
 		pointLight->AddComponent(pSystem);
@@ -628,7 +628,7 @@ namespace Picking
 			if (RigidBody* body = obj->GetComponent<RigidBody>())
 			{
 				Vector3 dir = obj->GetWorldPosition() - Vector3(0.f, -10.f, 0.f);
-				body->ApplyImpulse(dir.vectNormalize()*-200.f, Vector3(0.f, -10.f, 0.f));
+				body->ApplyImpulse(dir.vectNormalize()*-200.f, obj->GetWorldPosition());
 			}			
 		}
 	}
