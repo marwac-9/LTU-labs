@@ -2,8 +2,6 @@
 Almost everything I have bashed on the keyboard the during game development studies at LTU.  
 I continue working on this repository, refining the code and adding ⚠new projects.
 
-Each project builds to its own bin folder copying over the required resources so the working directory has to be set accordingly for each project to run debug.
-
 ## OpenGL
 > ### Physics Engine
   - SAT 
