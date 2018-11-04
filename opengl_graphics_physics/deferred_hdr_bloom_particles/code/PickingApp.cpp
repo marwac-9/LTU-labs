@@ -690,7 +690,7 @@ namespace Picking
 
 		PhysicsManager::Instance()->RegisterRigidBody(body);
 
-		ParticleSystem* pSystem = new ParticleSystem(200, 70);//when there is not enought particles they will all pause for some reason
+		ParticleSystem* pSystem = new ParticleSystem(20, 70);
 		pointLight->AddComponent(pSystem);
 		pSystem->SetTexture(GraphicsStorage::textures[11]->handle);
 		pSystem->SetDirection(Vector3F(0.f, 0.f, 0.f));
