@@ -41,7 +41,6 @@ namespace SimpleWater
 		void Monitor(Display::Window* window);
 		void SetUpCamera();
 		void LoadScene1();
-		void LoadShaders();
 
 		void SetUpBuffers(int windowWidth, int windowHeight);
 

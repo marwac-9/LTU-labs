@@ -182,7 +182,7 @@ namespace Picking
     {
 		GraphicsStorage::ClearMeshes();
 		GraphicsStorage::ClearTextures();
-		ShaderManager::Instance()->DeleteShaders();
+		GraphicsStorage::ClearShaders();
     }
 
     void
@@ -315,14 +315,14 @@ namespace Picking
     {
 		if (debug)
 		{
-			ShaderManager::Instance()->SetCurrentShader(ShaderManager::Instance()->shaderIDs["color"]);
+			ShaderManager::Instance()->SetCurrentShader(GraphicsStorage::shaderIDs["color"]);
 			Draw();
-			ShaderManager::Instance()->SetCurrentShader(ShaderManager::Instance()->shaderIDs["wireframe"]);
+			ShaderManager::Instance()->SetCurrentShader(GraphicsStorage::shaderIDs["wireframe"]);
 			DrawDebug();
 		}
 		else
 		{
-			ShaderManager::Instance()->SetCurrentShader(ShaderManager::Instance()->shaderIDs["color"]);
+			ShaderManager::Instance()->SetCurrentShader(GraphicsStorage::shaderIDs["color"]);
 			Draw();
 		}
     }
@@ -330,7 +330,7 @@ namespace Picking
     void
     PickingApp::PassPickingTexture()
     {
-		ShaderManager::Instance()->SetCurrentShader(ShaderManager::Instance()->shaderIDs["picking"]);
+		ShaderManager::Instance()->SetCurrentShader(GraphicsStorage::shaderIDs["picking"]);
 		FBOManager::Instance()->BindFrameBuffer(draw, pickingBuffer->handle);
 		GLenum DrawBuffers[] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
 		glDrawBuffers(2, DrawBuffers);
@@ -387,8 +387,6 @@ namespace Picking
 
         // Cull triangles which normal is not towards the camera
         glEnable(GL_CULL_FACE);
-
-		LoadShaders();
 
         this->window->GetWindowSize(&this->windowWidth, &this->windowHeight);
 		windowMidX = windowWidth / 2.0f;
@@ -462,7 +460,7 @@ namespace Picking
 	void
 	PickingApp::DrawDebug()
 	{
-		GLuint wireframeShader = ShaderManager::Instance()->shaderIDs["wireframe"];
+		GLuint wireframeShader = GraphicsStorage::shaderIDs["wireframe"];
 
 		for (auto& obj : Scene::Instance()->renderList)
 		{
@@ -598,14 +596,6 @@ namespace Picking
 		CameraManager::Instance()->SetCurrentCamera("default");
 		DebugDraw::Instance()->Projection = &currentCamera->ProjectionMatrix;
 		DebugDraw::Instance()->View = &currentCamera->ViewMatrix;
-	}
-
-	void PickingApp::LoadShaders()
-	{
-		ShaderManager::Instance()->AddShader("color", GraphicsManager::LoadShaders("Resources/Shaders/VertexShader.glsl", "Resources/Shaders/FragmentShader.glsl"));
-		ShaderManager::Instance()->AddShader("picking", GraphicsManager::LoadShaders("Resources/Shaders/VSPicking.glsl", "Resources/Shaders/FSPicking.glsl"));
-		ShaderManager::Instance()->AddShader("wireframe", GraphicsManager::LoadShaders("Resources/Shaders/VSBB.glsl", "Resources/Shaders/FSBB.glsl"));
-		ShaderManager::Instance()->AddShader("dftext", GraphicsManager::LoadShaders("Resources/Shaders/VSDFText.glsl", "Resources/Shaders/FSDFText.glsl"));
 	}
 
 	void PickingApp::SetUpBuffers(int windowWidth, int windowHeight)

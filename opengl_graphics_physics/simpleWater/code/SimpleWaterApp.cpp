@@ -143,14 +143,14 @@ namespace SimpleWater
 			DrawWater(); // <-- to pf textures
 			if (post)
 			{
-				blurredBrightTexture = Render::Instance()->MultiBlur(brightLightTexture, blurLevel, blurSize, ShaderManager::Instance()->shaderIDs["fastBlur"]); //blur bright color
+				blurredBrightTexture = Render::Instance()->MultiBlur(brightLightTexture, blurLevel, blurSize, GraphicsStorage::shaderIDs["fastBlur"]); //blur bright color
 				glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 				DrawHDR(blurredBrightTexture); // <-- to screen from hdr and bloom textures
 			}
 			else
 			{
 				glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-				ShaderManager::Instance()->SetCurrentShader(ShaderManager::Instance()->shaderIDs["quadToScreen"]);
+				ShaderManager::Instance()->SetCurrentShader(GraphicsStorage::shaderIDs["quadToScreen"]);
 				glActiveTexture(GL_TEXTURE0);
 				glBindTexture(GL_TEXTURE_2D, hdrBufferTextureHandle);
 				DebugDraw::Instance()->DrawQuad();
@@ -174,7 +174,7 @@ namespace SimpleWater
 		GraphicsStorage::ClearMeshes();
 		GraphicsStorage::ClearTextures();
 		GraphicsStorage::ClearCubemaps();
-		ShaderManager::Instance()->DeleteShaders();
+		GraphicsStorage::ClearShaders();
 	}
 
 	void
@@ -238,8 +238,6 @@ namespace SimpleWater
 
 		// Cull triangles which normal is not towards the camera
 		glEnable(GL_CULL_FACE);
-
-		LoadShaders();
 
 		this->window->GetWindowSize(&this->windowWidth, &this->windowHeight);
 		windowMidX = windowWidth / 2.0f;
@@ -374,17 +372,6 @@ namespace SimpleWater
 	}
 
 	void
-	SimpleWaterApp::LoadShaders()
-	{
-		ShaderManager::Instance()->AddShader("color", GraphicsManager::LoadShaders("Resources/Shaders/VSColor.glsl", "Resources/Shaders/FSColor.glsl"));
-		ShaderManager::Instance()->AddShader("water", GraphicsManager::LoadShaders("Resources/Shaders/VSWater.glsl", "Resources/Shaders/FSWater.glsl"));
-		ShaderManager::Instance()->AddShader("quadToScreen", GraphicsManager::LoadShaders("Resources/Shaders/VSQuadToScreen.glsl", "Resources/Shaders/FSQuadToScreen.glsl"));
-		ShaderManager::Instance()->AddShader("skyboxWithClipPlane", GraphicsManager::LoadShaders("Resources/Shaders/VSSkyboxWithClipPlane.glsl", "Resources/Shaders/FSSkyboxWithClipPlane.glsl"));
-		ShaderManager::Instance()->AddShader("fastBlur", GraphicsManager::LoadShaders("Resources/Shaders/FastBlurVS.glsl", "Resources/Shaders/FastBlurFS.glsl"));
-		ShaderManager::Instance()->AddShader("hdrBloom", GraphicsManager::LoadShaders("Resources/Shaders/VSHDRBloom.glsl", "Resources/Shaders/FSHDRBloom.glsl"));
-	}
-
-	void
 	SimpleWaterApp::GenerateGUI()
 	{
 		ImGui::Begin("Properties", NULL, ImGuiWindowFlags_AlwaysAutoResize);
@@ -449,7 +436,7 @@ namespace SimpleWater
 	SimpleWaterApp::Draw()
 	{
 		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, postFrameBuffer->handle);
-		GLuint currentShaderID = ShaderManager::Instance()->shaderIDs["color"];
+		GLuint currentShaderID = GraphicsStorage::shaderIDs["color"];
 		ShaderManager::Instance()->SetCurrentShader(currentShaderID);
 
 		float plane[4] = { 0.0, 1.0, 0.0, 10000.f };
@@ -498,7 +485,7 @@ namespace SimpleWater
 
 		Render::Instance()->drawSkyboxWithClipPlane(frameBuffer, DrawBuffers, 1, GraphicsStorage::cubemaps[0], plane, View);
 
-		GLuint currentShaderID = ShaderManager::Instance()->shaderIDs["color"];
+		GLuint currentShaderID = GraphicsStorage::shaderIDs["color"];
 		ShaderManager::Instance()->SetCurrentShader(currentShaderID);
 
 		GLuint planeHandle = glGetUniformLocation(currentShaderID, "plane");
@@ -534,7 +521,7 @@ namespace SimpleWater
 		glDrawBuffers(1, DrawBuffers);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		GLuint currentShaderID = ShaderManager::Instance()->shaderIDs["color"];
+		GLuint currentShaderID = GraphicsStorage::shaderIDs["color"];
 		ShaderManager::Instance()->SetCurrentShader(currentShaderID);
 
 		float plane[4] = { 0.0, -1.0, 0.0, 0.146f }; //plane normal and height
@@ -566,7 +553,7 @@ namespace SimpleWater
 	void
 	SimpleWaterApp::DrawWater()
 	{
-		GLuint currentShaderID = ShaderManager::Instance()->shaderIDs["water"];
+		GLuint currentShaderID = GraphicsStorage::shaderIDs["water"];
 		ShaderManager::Instance()->SetCurrentShader(currentShaderID);
 
 		glActiveTexture(GL_TEXTURE0);
@@ -719,7 +706,7 @@ namespace SimpleWater
 	SimpleWaterApp::DrawHDR(Texture* blurredBrightLightTexture)
 	{
 		//we draw color to the screen
-		GLuint hdrBloom = ShaderManager::Instance()->shaderIDs["hdrBloom"];
+		GLuint hdrBloom = GraphicsStorage::shaderIDs["hdrBloom"];
 		ShaderManager::Instance()->SetCurrentShader(hdrBloom);
 
 		GLuint hdrEnabled = glGetUniformLocation(hdrBloom, "hdr");
@@ -752,7 +739,7 @@ namespace SimpleWater
 	void
 	SimpleWaterApp::DrawTextures(int width, int height)
 	{
-		ShaderManager::Instance()->SetCurrentShader(ShaderManager::Instance()->shaderIDs["quadToScreen"]);
+		ShaderManager::Instance()->SetCurrentShader(GraphicsStorage::shaderIDs["quadToScreen"]);
 
 		float fHeight = (float)height;
 		float fWidth = (float)width;

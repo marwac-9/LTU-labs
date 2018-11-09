@@ -48,7 +48,6 @@ namespace Subdivision
 		void LoadScene8();
 		void LoadScene9();
 		void Subdivide(OBJ* objToSubdivide);
-		void LoadShaders();
 		bool altButtonToggle = true;
 
 		bool running = false;

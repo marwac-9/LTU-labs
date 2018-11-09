@@ -75,7 +75,6 @@ namespace Picking
 		void MovePlaneUpNDown();
 		void DrawParticles();
 		void SpawnSomeLights();
-		void LoadShaders();
 		bool altButtonToggle = true;
         //camera type 1 == fps, 2 == tps 3 == monitoring camera
         int cameraMode = 1;

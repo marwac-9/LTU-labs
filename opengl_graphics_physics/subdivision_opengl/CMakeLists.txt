@@ -16,8 +16,10 @@ FILE(GLOB HEAD "code/Managers/*.h")
 LIST(APPEND SRCSMANAGERS ${SRC} ${HEAD})
 SOURCE_GROUP("SubdivisionOpenGL\\Managers" FILES ${SRCSMANAGERS})
 
-FILE(GLOB SRC "code/Resources/Shaders/*.glsl")
-LIST(APPEND SRCSSHADERS ${SRC} )
+FILE(GLOB SRCVS "code/Resources/shaders/*.vs")
+FILE(GLOB SRCFS "code/Resources/shaders/*.fs")
+FILE(GLOB SRCGS "code/Resources/shaders/*.gs")
+LIST(APPEND SRCSSHADERS ${SRCVS} ${SRCFS} ${SRCGS} )
 SOURCE_GROUP("SubdivisionOpenGL\\Shaders" FILES ${SRCSSHADERS})
 
 LIST(APPEND ALLSRCS ${SRCSBASE} ${SRCSMANAGERS} ${SRCSSHADERS})

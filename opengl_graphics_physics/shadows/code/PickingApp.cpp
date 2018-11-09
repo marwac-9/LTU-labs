@@ -160,7 +160,7 @@ namespace Picking
 
 			DrawDepthPass();
 
-			if(blurShadowMap) blurredShadowTexture = Render::Instance()->PingPongBlur(shadowTexture, shadowMapBlurLevel, blurShadowMapSize, ShaderManager::Instance()->shaderIDs["fastBlurShadow"]);
+			if(blurShadowMap) blurredShadowTexture = Render::Instance()->PingPongBlur(shadowTexture, shadowMapBlurLevel, blurShadowMapSize, GraphicsStorage::shaderIDs["fastBlurShadow"]);
 			//render to screen
 			//glViewport(0, 0, windowWidth, windowHeight);
 			//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); i clear screen above instead, fbo is cleared inside passes
@@ -183,7 +183,7 @@ namespace Picking
     {
 		GraphicsStorage::ClearMeshes();
 		GraphicsStorage::ClearTextures();
-		ShaderManager::Instance()->DeleteShaders();
+		GraphicsStorage::ClearShaders();
     }
 
     void
@@ -358,8 +358,8 @@ namespace Picking
 	PickingApp::DrawColorDebugPass()
     {
 		//we set shadowMap for color shader only once for all objects
-		GLuint colorShader = ShaderManager::Instance()->shaderIDs["color"];
-		GLuint wireframeShader = ShaderManager::Instance()->shaderIDs["wireframe"];
+		GLuint colorShader = GraphicsStorage::shaderIDs["color"];
+		GLuint wireframeShader = GraphicsStorage::shaderIDs["wireframe"];
 		ShaderManager::Instance()->SetCurrentShader(colorShader);
 
 		GLuint LightDir = glGetUniformLocation(colorShader, "LightInvDirection_worldspace");
@@ -408,7 +408,7 @@ namespace Picking
 		GLenum DrawBuffers[] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
 		glDrawBuffers(2, DrawBuffers);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		ShaderManager::Instance()->SetCurrentShader(ShaderManager::Instance()->shaderIDs["picking"]);
+		ShaderManager::Instance()->SetCurrentShader(GraphicsStorage::shaderIDs["picking"]);
 		DrawPicking();
 		FBOManager::Instance()->UnbindFrameBuffer(draw);
     }
@@ -462,8 +462,6 @@ namespace Picking
         // Cull triangles which normal is not towards the camera
         glEnable(GL_CULL_FACE);
 
-		LoadShaders();
-
         this->window->GetWindowSize(&this->windowWidth, &this->windowHeight);
 		windowMidX = windowWidth / 2.0f;
 		windowMidY = windowHeight / 2.0f;
@@ -486,7 +484,7 @@ namespace Picking
 	void
 	PickingApp::DrawDepth(const Matrix4& ViewProjection)
 	{
-		GLuint currentShaderID = ShaderManager::Instance()->shaderIDs["depth"];
+		GLuint currentShaderID = GraphicsStorage::shaderIDs["depth"];
 		ShaderManager::Instance()->SetCurrentShader(currentShaderID);
 
 		Render::Instance()->drawDepth(Scene::Instance()->renderList, ViewProjection, currentShaderID);
@@ -495,7 +493,7 @@ namespace Picking
 	void
 	PickingApp::DrawDebug()
 	{
-		GLuint wireframeShader = ShaderManager::Instance()->shaderIDs["wireframe"];
+		GLuint wireframeShader = GraphicsStorage::shaderIDs["wireframe"];
 
 		for (auto& obj : Scene::Instance()->renderList)
 		{
@@ -728,20 +726,6 @@ namespace Picking
 	}
 
 	void
-	PickingApp::LoadShaders()
-	{
-		ShaderManager::Instance()->AddShader("color", GraphicsManager::LoadShaders("Resources/Shaders/VertexShader.glsl", "Resources/Shaders/FragmentShader.glsl"));
-		ShaderManager::Instance()->AddShader("picking", GraphicsManager::LoadShaders("Resources/Shaders/VSPicking.glsl", "Resources/Shaders/FSPicking.glsl"));
-		ShaderManager::Instance()->AddShader("wireframe", GraphicsManager::LoadShaders("Resources/Shaders/VSBB.glsl", "Resources/Shaders/FSBB.glsl"));
-		ShaderManager::Instance()->AddShader("dftext", GraphicsManager::LoadShaders("Resources/Shaders/VSDFText.glsl", "Resources/Shaders/FSDFText.glsl"));
-		ShaderManager::Instance()->AddShader("depth", GraphicsManager::LoadShaders("Resources/Shaders/VSDepth.glsl", "Resources/Shaders/FSDepth.glsl"));
-		ShaderManager::Instance()->AddShader("depthPanel", GraphicsManager::LoadShaders("Resources/Shaders/VSShadowMapPlane.glsl", "Resources/Shaders/FSShadowMapPlane.glsl"));
-		ShaderManager::Instance()->AddShader("blur", GraphicsManager::LoadShaders("Resources/Shaders/VSBlur.glsl", "Resources/Shaders/FSBlur.glsl"));
-		ShaderManager::Instance()->AddShader("fastBlurShadow", GraphicsManager::LoadShaders("Resources/Shaders/FastBlurShadowVS.glsl", "Resources/Shaders/FastBlurShadowFS.glsl"));
-
-	}
-
-	void
 	PickingApp::GenerateGUI()
 	{
 		ImGui::Begin("Properties", NULL, ImGuiWindowFlags_AlwaysAutoResize);
@@ -788,7 +772,7 @@ namespace Picking
 	void
 	PickingApp::DrawMaps(int width, int height)
 	{
-		ShaderManager::Instance()->SetCurrentShader(ShaderManager::Instance()->shaderIDs["depthPanel"]);
+		ShaderManager::Instance()->SetCurrentShader(GraphicsStorage::shaderIDs["depthPanel"]);
 
 		float fHeight = (float)height;
 		float fWidth = (float)width;

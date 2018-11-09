@@ -212,7 +212,7 @@ namespace Picking
     {
 		GraphicsStorage::ClearMeshes();
 		GraphicsStorage::ClearTextures();
-		ShaderManager::Instance()->DeleteShaders();
+		GraphicsStorage::ClearShaders();
     }
 
     void
@@ -432,8 +432,6 @@ namespace Picking
         glDepthFunc(GL_LESS);
         glEnable(GL_CULL_FACE);
 
-		LoadShaders();
-
         this->window->GetWindowSize(&this->windowWidth, &this->windowHeight);
 		windowMidX = windowWidth / 2.0f;
 		windowMidY = windowHeight / 2.0f;
@@ -442,7 +440,7 @@ namespace Picking
 	void
 	PickingApp::DrawPicking()
 	{
-		GLuint currentShaderID = ShaderManager::Instance()->shaderIDs["picking"];
+		GLuint currentShaderID = GraphicsStorage::shaderIDs["picking"];
 		ShaderManager::Instance()->SetCurrentShader(currentShaderID);
 
 		Render::Instance()->drawPicking(Scene::Instance()->pickingList, CameraManager::Instance()->ViewProjection, currentShaderID);
@@ -454,7 +452,7 @@ namespace Picking
 		glDepthMask(GL_TRUE);
 		glEnable(GL_DEPTH_TEST);
 		
-		GLuint wireframeShader = ShaderManager::Instance()->shaderIDs["wireframe"];
+		GLuint wireframeShader = GraphicsStorage::shaderIDs["wireframe"];
 		ShaderManager::Instance()->SetCurrentShader(wireframeShader);
 
 		for (auto& obj : Scene::Instance()->renderList)
@@ -625,7 +623,7 @@ namespace Picking
 
 	void PickingApp::DrawGeometryMaps(int width, int height)
 	{
-		ShaderManager::Instance()->SetCurrentShader(ShaderManager::Instance()->shaderIDs["depthPanel"]);
+		ShaderManager::Instance()->SetCurrentShader(GraphicsStorage::shaderIDs["depthPanel"]);
 
 		float fHeight = (float)height;
 		float fWidth = (float)width;
@@ -668,21 +666,6 @@ namespace Picking
 		CameraManager::Instance()->SetCurrentCamera("default");
 		DebugDraw::Instance()->Projection = &currentCamera->ProjectionMatrix;
 		DebugDraw::Instance()->View = &currentCamera->ViewMatrix;
-	}
-
-	void PickingApp::LoadShaders()
-	{
-		ShaderManager::Instance()->AddShader("color", GraphicsManager::LoadShaders("Resources/Shaders/VertexShader.glsl", "Resources/Shaders/FragmentShader.glsl"));
-		ShaderManager::Instance()->AddShader("picking", GraphicsManager::LoadShaders("Resources/Shaders/VSPicking.glsl", "Resources/Shaders/FSPicking.glsl"));
-		ShaderManager::Instance()->AddShader("wireframe", GraphicsManager::LoadShaders("Resources/Shaders/VSBB.glsl", "Resources/Shaders/FSBB.glsl"));
-		ShaderManager::Instance()->AddShader("dftext", GraphicsManager::LoadShaders("Resources/Shaders/VSDFText.glsl", "Resources/Shaders/FSDFText.glsl"));
-		ShaderManager::Instance()->AddShader("depth", GraphicsManager::LoadShaders("Resources/Shaders/VSDepth.glsl", "Resources/Shaders/FSDepth.glsl"));
-		ShaderManager::Instance()->AddShader("depthPanel", GraphicsManager::LoadShaders("Resources/Shaders/VSShadowMapPlane.glsl", "Resources/Shaders/FSShadowMapPlane.glsl"));
-		ShaderManager::Instance()->AddShader("blur", GraphicsManager::LoadShaders("Resources/Shaders/VSBlur.glsl", "Resources/Shaders/FSBlur.glsl"));
-		ShaderManager::Instance()->AddShader("geometry", GraphicsManager::LoadShaders("Resources/Shaders/VSGeometry.glsl", "Resources/Shaders/FSGeometry.glsl"));
-		ShaderManager::Instance()->AddShader("pointLight", GraphicsManager::LoadShaders("Resources/Shaders/VSPointLight.glsl", "Resources/Shaders/FSPointLight.glsl"));
-		ShaderManager::Instance()->AddShader("directionalLight", GraphicsManager::LoadShaders("Resources/Shaders/VSDirectionalLight.glsl", "Resources/Shaders/FSDirectionalLight.glsl"));
-		ShaderManager::Instance()->AddShader("stencil", GraphicsManager::LoadShaders("Resources/Shaders/VSStencil.glsl", "Resources/Shaders/FSStencil.glsl"));
 	}
 
 	void PickingApp::SetUpBuffers(int windowWidthIn, int windowHeightIn)

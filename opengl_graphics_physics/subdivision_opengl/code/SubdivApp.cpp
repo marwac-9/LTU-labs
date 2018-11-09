@@ -114,7 +114,7 @@ namespace Subdivision
 		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 		wireframe = true;
 		//glfwSwapInterval(0); //unlock fps
-		ShaderManager::Instance()->SetCurrentShader(ShaderManager::Instance()->shaderIDs["color"]);
+		ShaderManager::Instance()->SetCurrentShader(GraphicsStorage::shaderIDs["color"]);
 		while (running)
 		{
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -145,7 +145,7 @@ namespace Subdivision
 	{
 		GraphicsStorage::ClearMeshes();
 		GraphicsStorage::ClearTextures();
-		ShaderManager::Instance()->DeleteShaders();
+		GraphicsStorage::ClearShaders();
 	}
 
 	void
@@ -258,8 +258,6 @@ namespace Subdivision
 
 		// Cull triangles which normal is not towards the camera
 		glEnable(GL_CULL_FACE);
-
-		LoadShaders();
 
 		this->window->GetWindowSize(&this->windowWidth, &this->windowHeight);
 		windowMidX = windowWidth / 2.0f;
@@ -459,12 +457,6 @@ namespace Subdivision
 		currentCamera->ProjectionMatrix = Matrix4::OpenGLPersp(45.0, (double)this->windowWidth / (double)this->windowHeight, 0.1, 200.0);
 		DebugDraw::Instance()->Projection = &currentCamera->ProjectionMatrix;
 		DebugDraw::Instance()->View = &currentCamera->ViewMatrix;
-	}
-
-	void
-	SubdivisionApp::LoadShaders()
-	{
-		ShaderManager::Instance()->AddShader("color", GraphicsManager::LoadShaders("Resources/Shaders/VertexShader.glsl", "Resources/Shaders/FragmentShader.glsl"));
 	}
 
 } // namespace Example

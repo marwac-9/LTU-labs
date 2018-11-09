@@ -56,7 +56,6 @@ namespace Picking
 		void LoadScene4();
 		void LoadScene5();
 		void LoadScene6();
-		void LoadShaders();
 
 		void Vortex();
 		bool altButtonToggle = true;

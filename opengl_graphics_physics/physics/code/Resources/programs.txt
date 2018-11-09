@@ -1,0 +1,4 @@
+color Resources/shaders/Forward
+picking Resources/shaders/Picking
+wireframe Resources/shaders/BB
+dftext Resources/shaders/DFText

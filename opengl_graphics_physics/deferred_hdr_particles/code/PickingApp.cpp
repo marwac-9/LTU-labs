@@ -214,7 +214,7 @@ namespace Picking
 		GLenum DrawBuffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
 		glDrawBuffers(2, DrawBuffers);
 
-		GLuint particleShader = ShaderManager::Instance()->shaderIDs["particle"];
+		GLuint particleShader = GraphicsStorage::shaderIDs["particle"];
 		ShaderManager::Instance()->SetCurrentShader(particleShader);
 		Vector3F right = currentCamera->right.toFloat();
 		Vector3F up = currentCamera->up.toFloat();
@@ -224,7 +224,7 @@ namespace Picking
 		{
 			particlesRendered += pSystem->Draw(viewMProjection, particleShader, up, right);
 		}
-		printf("%d\n", particlesRendered);
+		//printf("%d\n", particlesRendered);
 		FBOManager::Instance()->UnbindFrameBuffer(draw);
 	}
 
@@ -233,7 +233,7 @@ namespace Picking
     {
 		GraphicsStorage::ClearMeshes();
 		GraphicsStorage::ClearTextures();
-		ShaderManager::Instance()->DeleteShaders();
+		GraphicsStorage::ClearShaders();
     }
 
     void
@@ -364,7 +364,7 @@ namespace Picking
 		GLenum DrawBuffers[] = {GL_COLOR_ATTACHMENT0};
 		glDrawBuffers(1, DrawBuffers);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		ShaderManager::Instance()->SetCurrentShader(ShaderManager::Instance()->shaderIDs["picking"]);
+		ShaderManager::Instance()->SetCurrentShader(GraphicsStorage::shaderIDs["picking"]);
 		DrawPicking();
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, 0);
@@ -419,8 +419,6 @@ namespace Picking
         // Cull triangles which normal is not towards the camera
         glEnable(GL_CULL_FACE);
 
-		LoadShaders();
-
         this->window->GetWindowSize(&this->windowWidth, &this->windowHeight);
 		windowMidX = windowWidth / 2.0f;
 		windowMidY = windowHeight / 2.0f;
@@ -439,7 +437,7 @@ namespace Picking
 		glDepthMask(GL_TRUE);
 		glEnable(GL_DEPTH_TEST);
 		
-		GLuint wireframeShader = ShaderManager::Instance()->shaderIDs["wireframe"];
+		GLuint wireframeShader = GraphicsStorage::shaderIDs["wireframe"];
 		ShaderManager::Instance()->SetCurrentShader(wireframeShader);
 
 		for (auto& obj : Scene::Instance()->renderList)
@@ -700,28 +698,11 @@ namespace Picking
 		DebugDraw::Instance()->View = &currentCamera->ViewMatrix;
 	}
 
-	void PickingApp::LoadShaders()
-	{
-		ShaderManager::Instance()->AddShader("color", GraphicsManager::LoadShaders("Resources/Shaders/VertexShader.glsl", "Resources/Shaders/FragmentShader.glsl"));
-		ShaderManager::Instance()->AddShader("picking", GraphicsManager::LoadShaders("Resources/Shaders/VSPicking.glsl", "Resources/Shaders/FSPicking.glsl"));
-		ShaderManager::Instance()->AddShader("wireframe", GraphicsManager::LoadShaders("Resources/Shaders/VSBB.glsl", "Resources/Shaders/FSBB.glsl"));
-		ShaderManager::Instance()->AddShader("dftext", GraphicsManager::LoadShaders("Resources/Shaders/VSDFText.glsl", "Resources/Shaders/FSDFText.glsl"));
-		ShaderManager::Instance()->AddShader("depth", GraphicsManager::LoadShaders("Resources/Shaders/VSDepth.glsl", "Resources/Shaders/FSDepth.glsl"));
-		ShaderManager::Instance()->AddShader("depthPanel", GraphicsManager::LoadShaders("Resources/Shaders/VSShadowMapPlane.glsl", "Resources/Shaders/FSShadowMapPlane.glsl"));
-		ShaderManager::Instance()->AddShader("blur", GraphicsManager::LoadShaders("Resources/Shaders/VSBlur.glsl", "Resources/Shaders/FSBlur.glsl"));
-		ShaderManager::Instance()->AddShader("geometry", GraphicsManager::LoadShaders("Resources/Shaders/VSGeometry.glsl", "Resources/Shaders/FSGeometry.glsl"));
-		ShaderManager::Instance()->AddShader("pointLight", GraphicsManager::LoadShaders("Resources/Shaders/VSPointLight.glsl", "Resources/Shaders/FSPointLight.glsl"));
-		ShaderManager::Instance()->AddShader("directionalLight", GraphicsManager::LoadShaders("Resources/Shaders/VSDirectionalLight.glsl", "Resources/Shaders/FSDirectionalLight.glsl"));
-		ShaderManager::Instance()->AddShader("stencil", GraphicsManager::LoadShaders("Resources/Shaders/VSStencil.glsl", "Resources/Shaders/FSStencil.glsl"));
-		ShaderManager::Instance()->AddShader("particle", GraphicsManager::LoadShaders("Resources/Shaders/VSParticle.glsl", "Resources/Shaders/FSParticle.glsl"));
-		ShaderManager::Instance()->AddShader("hdr", GraphicsManager::LoadShaders("Resources/Shaders/VSHDR.glsl", "Resources/Shaders/FSHDR.glsl"));
-	}
-
 	void PickingApp::DrawHDR()
 	{
 		//FBOManager::Instance()->BindGeometryBuffer(readDraw); // we draw now to the geometry buffer since it has the final color where the light is composited
 		//glClear(GL_COLOR_BUFFER_BIT);
-		GLuint hdr = ShaderManager::Instance()->shaderIDs["hdr"];
+		GLuint hdr = GraphicsStorage::shaderIDs["hdr"];
 		ShaderManager::Instance()->SetCurrentShader(hdr);
 
 		GLuint hdrEnabled = glGetUniformLocation(hdr, "hdr");
@@ -786,7 +767,7 @@ namespace Picking
 	void
 	PickingApp::DrawGeometryMaps(int width, int height)
 	{
-		ShaderManager::Instance()->SetCurrentShader(ShaderManager::Instance()->shaderIDs["depthPanel"]);
+		ShaderManager::Instance()->SetCurrentShader(GraphicsStorage::shaderIDs["depthPanel"]);
 
 		float fHeight = (float)height;
 		float fWidth = (float)width;
