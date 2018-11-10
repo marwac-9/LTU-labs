@@ -5,10 +5,12 @@ A project to show off the scene graph.
 ## Features
 - directional lights
 - point lights
+- spot lights
+- vsm shadows
 - physics(see physics project for more details)
-- lights treated as objects meaning that physics can be easily applied(to activate press Backspace and switch to scene 4)
+- lights as object components
 - per-pixel picking
-- particles
+- soft particles
 - HDR
 - Bloom
 - scene-graph
