@@ -16,11 +16,11 @@ FILE(GLOB HEAD "code/Managers/*.h")
 LIST(APPEND SRCSMANAGERS ${SRC} ${HEAD})
 SOURCE_GROUP("Shadows\\Managers" FILES ${SRCSMANAGERS})
 
-FILE(GLOB SRCVS "code/Resources/shaders/*.vs")
-FILE(GLOB SRCFS "code/Resources/shaders/*.fs")
-FILE(GLOB SRCGS "code/Resources/shaders/*.gs")
+FILE(GLOB SRCVS "code/resources/shaders/*.vs")
+FILE(GLOB SRCFS "code/resources/shaders/*.fs")
+FILE(GLOB SRCGS "code/resources/shaders/*.gs")
 LIST(APPEND SRCSSHADERS ${SRCVS} ${SRCFS} ${SRCGS} )
-SOURCE_GROUP("Shadows\\Shaders" FILES ${SRCSSHADERS})
+SOURCE_GROUP("Shadows\\shaders" FILES ${SRCSSHADERS})
 
 LIST(APPEND ALLSRCS ${SRCSBASE} ${SRCSMANAGERS} ${SRCSSHADERS})
 
