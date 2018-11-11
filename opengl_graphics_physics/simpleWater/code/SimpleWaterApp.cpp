@@ -381,13 +381,15 @@ namespace SimpleWater
 
 		ImGui::NewLine();
 		ImGui::Checkbox("Post Effects:", &post);
-		ImGui::Checkbox("HDR", &hdrEnabled);
-		ImGui::Checkbox("Bloom", &bloomEnabled);
+		ImGui::Checkbox("HDR", &Render::Instance()->pb.hdrEnabled);
+		ImGui::Checkbox("Bloom", &Render::Instance()->pb.bloomEnabled);
+		ImGui::SliderFloat("Bloom Intensity", &Render::Instance()->pb.bloomIntensity, 0.0f, 5.f);
+		ImGui::SliderFloat("Exposure", &Render::Instance()->pb.exposure, 0.0f, 5.0f);
+		ImGui::SliderFloat("Gamma", &Render::Instance()->pb.gamma, 0.0f, 5.0f);
+		ImGui::SliderFloat("Contrast", &Render::Instance()->pb.contrast, -5.0f, 5.0f);
+		ImGui::SliderFloat("Brightness", &Render::Instance()->pb.brightness, -5.0f, 5.0f);
 		ImGui::SliderFloat("Blur Size", &blurSize, 0.0f, 10.0f);
 		ImGui::SliderInt("Blur Level", &blurLevel, 0, 3);
-		ImGui::SliderFloat("Bloom Intensity", &bloomIntensity, 0.0f, 5.f);
-		ImGui::SliderFloat("Exposure", &exposure, 0.0f, 5.0f);
-		ImGui::SliderFloat("Gamma", &gamma, 0.0f, 5.0f);
 
 		ImGui::NewLine();
 		ImGui::Text("LIGHTING:");
@@ -654,20 +656,6 @@ namespace SimpleWater
 		glDrawElements(GL_TRIANGLES, water->mesh->indicesSize, GL_UNSIGNED_INT, (void*)0); // mode, count, type, element array buffer offset
 
 		glDisable(GL_BLEND);
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, 0);
-
-		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, 0);
-
-		glActiveTexture(GL_TEXTURE2);
-		glBindTexture(GL_TEXTURE_2D, 0);
-
-		glActiveTexture(GL_TEXTURE3);
-		glBindTexture(GL_TEXTURE_2D, 0);
-
-		glActiveTexture(GL_TEXTURE4);
-		glBindTexture(GL_TEXTURE_2D, 0);
 	}
 
 
@@ -688,7 +676,7 @@ namespace SimpleWater
 
 		postFrameBuffer = FBOManager::Instance()->GenerateFBO();
 
-		Texture* hdrTexture = postFrameBuffer->RegisterTexture(new Texture(GL_TEXTURE_2D, 0, GL_RGB32F, windowWidth, windowHeight, GL_RGB, GL_FLOAT, NULL, GL_COLOR_ATTACHMENT0)); //hdr
+		hdrTexture = postFrameBuffer->RegisterTexture(new Texture(GL_TEXTURE_2D, 0, GL_RGB32F, windowWidth, windowHeight, GL_RGB, GL_FLOAT, NULL, GL_COLOR_ATTACHMENT0)); //hdr
 		brightLightTexture = postFrameBuffer->RegisterTexture(new Texture(GL_TEXTURE_2D, 0, GL_RGB32F, windowWidth, windowHeight, GL_RGB, GL_FLOAT, NULL, GL_COLOR_ATTACHMENT1)); //brightLight
 		Texture* postDepthBufferTexture = postFrameBuffer->RegisterTexture(new Texture(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32, windowWidth, windowHeight, GL_DEPTH_COMPONENT, GL_FLOAT, NULL, GL_DEPTH_ATTACHMENT)); //post depth
 
@@ -696,44 +684,15 @@ namespace SimpleWater
 		postFrameBuffer->GenerateAndAddTextures();
 		postFrameBuffer->CheckAndCleanup();
 
-		hdrBufferTextureHandle = hdrTexture->handle;
-		brightLightTextureHandle = brightLightTexture->handle;
-
 		Render::Instance()->AddMultiBlurBuffer(this->windowWidth, this->windowHeight);
+
+		Render::Instance()->GenerateEBOs();
 	}
 
 	void
 	SimpleWaterApp::DrawHDR(Texture* blurredBrightLightTexture)
 	{
-		//we draw color to the screen
-		GLuint hdrBloom = GraphicsStorage::shaderIDs["hdrBloom"];
-		ShaderManager::Instance()->SetCurrentShader(hdrBloom);
-
-		GLuint hdrEnabled = glGetUniformLocation(hdrBloom, "hdr");
-		GLuint bloomEnabled = glGetUniformLocation(hdrBloom, "bloom");
-		GLuint exposure = glGetUniformLocation(hdrBloom, "exposure");
-		GLuint gamma = glGetUniformLocation(hdrBloom, "gamma");
-		GLuint bloomIntensity = glGetUniformLocation(hdrBloom, "bloomIntensity");		
-
-		glUniform1i(hdrEnabled, this->hdrEnabled);
-		glUniform1f(exposure, this->exposure);
-		glUniform1f(gamma, this->gamma);
-		glUniform1i(bloomEnabled, this->bloomEnabled);
-		glUniform1f(bloomIntensity, this->bloomIntensity);
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, hdrBufferTextureHandle);
-		GLuint hdrBuffer = glGetUniformLocation(hdrBloom, "hdrBuffer");
-		glUniform1i(hdrBuffer, 0);
-
-		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, blurredBrightLightTexture->handle); //blurred bright light(bloom)
-		GLuint bloomBuffer = glGetUniformLocation(hdrBloom, "bloomBuffer");
-		glUniform1i(bloomBuffer, 1);
-
-		DebugDraw::Instance()->DrawQuad();
-
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, 0);
+		Render::Instance()->drawHDR(hdrTexture, blurredBrightLightTexture);
 	}
 
 	void
@@ -750,7 +709,7 @@ namespace SimpleWater
 		DebugDraw::Instance()->DrawMap(0, 0, glWidth, glHeight, reflectionBufferHandle, width, height);
 		DebugDraw::Instance()->DrawMap(width - glWidth, 0, glWidth, glHeight, refractionBufferHandle, width, height);
 		DebugDraw::Instance()->DrawMap(width - glWidth, height - glHeight, glWidth, glHeight, blurredBrightTexture->handle, width, height);
-		DebugDraw::Instance()->DrawMap(0, height - glHeight, glWidth, glHeight, hdrBufferTextureHandle, width, height);
+		DebugDraw::Instance()->DrawMap(0, height - glHeight, glWidth, glHeight, hdrTexture->handle, width, height);
 	}
 
 	Mesh* SimpleWaterApp::GenerateWaterMesh(int width, int height)

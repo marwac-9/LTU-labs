@@ -88,6 +88,7 @@ namespace SimpleWater
 		GLuint brightLightTextureHandle;
 		Texture* brightLightTexture;
 
+		Texture* hdrTexture;
 		Texture* blurredBrightTexture;
 
 		Object* selectedObject = nullptr;
@@ -113,14 +114,9 @@ namespace SimpleWater
 		float water_color_refraction_blend = 23.f;
 		float fresnelAdjustment = 1.f;
 		float soften_normals = 3.0;
-		bool hdrEnabled = GL_TRUE;
-		bool bloomEnabled = GL_TRUE;
-		float exposure = 1.0f;
-		float gamma = 1.2f;
 		int waterSize = 2;
 		float blurSize = 1.0f;
 		int blurLevel = 0;
-		float bloomIntensity = 1.f;
 		bool post = true;
 
 #pragma pack (push)
