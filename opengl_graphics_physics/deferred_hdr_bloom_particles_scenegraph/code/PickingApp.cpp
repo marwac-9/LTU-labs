@@ -1264,7 +1264,7 @@ namespace Picking
 		sphere->mat->shininess = 10.f;
 
 		Object* directionalLight = Scene::Instance()->addDirectionalLight();
-		directionalLight->mat->SetDiffuseIntensity(0.5f);
+		directionalLight->mat->SetDiffuseIntensity(1.0f);
 
 		Object* plane = Scene::Instance()->addObject("cube", Vector3(0.f, -2.5f, 0.f));
 		plane->mat->SetShininess(30.f);
@@ -1495,42 +1495,7 @@ namespace Picking
 	void
 	PickingApp::DrawHDR(Texture* texture)
 	{
-		//we draw color to the screen
-		GLuint hdrBloom = GraphicsStorage::shaderIDs["hdrBloom"];
-		ShaderManager::Instance()->SetCurrentShader(hdrBloom);
-
-		GLuint hdrEnabled = glGetUniformLocation(hdrBloom, "hdr");
-		GLuint bloomEnabled = glGetUniformLocation(hdrBloom, "bloom");
-		GLuint exposure = glGetUniformLocation(hdrBloom, "exposure");
-		GLuint gamma = glGetUniformLocation(hdrBloom, "gamma");
-		GLuint bloomIntensity = glGetUniformLocation(hdrBloom, "bloomIntensity");
-		GLuint contrast = glGetUniformLocation(hdrBloom, "contrast");
-		GLuint brightness = glGetUniformLocation(hdrBloom, "brightness");
-		//GLuint vHSV = glGetUniformLocation(hdrBloom, "vHSV");
-		
-		glUniform1i(hdrEnabled, this->hdrEnabled);
-		glUniform1f(exposure, this->exposure);
-		glUniform1f(gamma, this->gamma);
-		glUniform1f(bloomIntensity, this->bloomIntensity);
-		glUniform1i(bloomEnabled, this->bloomEnabled);
-		glUniform1f(contrast, this->contrast);
-		glUniform1f(brightness, this->brightness);
-		//glUniform3fv(vHSV, 1, &this->hueSaturation.x);
-
-		glActiveTexture(GL_TEXTURE0);
-		finalColorTexture->Bind();
-		GLuint hdrBuffer = glGetUniformLocation(hdrBloom, "hdrBuffer");
-		glUniform1i(hdrBuffer, 0);
-
-		glActiveTexture(GL_TEXTURE1);
-		texture->Bind(); //blurred bright light(bloom)
-		GLuint bloomBuffer = glGetUniformLocation(hdrBloom, "bloomBuffer");
-		glUniform1i(bloomBuffer, 1);
-
-		DebugDraw::Instance()->DrawQuad();
-
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, 0);
+		Render::Instance()->drawHDR(finalColorTexture, texture);
 	}
 
 	void
@@ -1615,13 +1580,13 @@ namespace Picking
 
 		ImGui::NewLine();
 		ImGui::Checkbox("Post Effects:", &post);
-		ImGui::Checkbox("HDR", &hdrEnabled);
-		ImGui::Checkbox("Bloom", &bloomEnabled);
-		ImGui::SliderFloat("Bloom Intensity", &bloomIntensity, 0.0f, 5.f);
-		ImGui::SliderFloat("Exposure", &exposure, 0.0f, 5.0f);
-		ImGui::SliderFloat("Gamma", &gamma, 0.0f, 5.0f);
-		ImGui::SliderFloat("Contrast", &contrast, -5.0f, 5.0f);
-		ImGui::SliderFloat("Brightness", &brightness, -5.0f, 5.0f);
+		ImGui::Checkbox("HDR", &Render::Instance()->pb.hdrEnabled);
+		ImGui::Checkbox("Bloom", &Render::Instance()->pb.bloomEnabled);
+		ImGui::SliderFloat("Bloom Intensity", &Render::Instance()->pb.bloomIntensity, 0.0f, 5.f);
+		ImGui::SliderFloat("Exposure", &Render::Instance()->pb.exposure, 0.0f, 5.0f);
+		ImGui::SliderFloat("Gamma", &Render::Instance()->pb.gamma, 0.0f, 5.0f);
+		ImGui::SliderFloat("Contrast", &Render::Instance()->pb.contrast, -5.0f, 5.0f);
+		ImGui::SliderFloat("Brightness", &Render::Instance()->pb.brightness, -5.0f, 5.0f);
 		ImGui::SliderFloat("Bloom Blur Size", &blurBloomSize, 0.0f, 10.0f);
 		ImGui::SliderInt("Bloom Level", &bloomLevel, 0, 3);
 		ImGui::SliderFloat("Fov", &fov, 0.0f, 180.f);

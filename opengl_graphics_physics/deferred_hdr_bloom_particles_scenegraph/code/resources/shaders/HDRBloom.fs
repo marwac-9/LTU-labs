@@ -1,17 +1,21 @@
-#version 330 core
+#version 420 core
 
 in vec2 UV;
 
 uniform sampler2D hdrBuffer;
 uniform sampler2D bloomBuffer;
-uniform bool hdr;
-uniform bool bloom;
-uniform float exposure;
-uniform float gamma;
-uniform float bloomIntensity;
-uniform float contrast;
-uniform float brightness;
 //uniform vec3 vHSV;
+
+layout(std140, binding = 3) uniform PBVars
+{
+	float gamma;
+	float exposure;
+	float brightness;
+	float contrast;
+	float bloomIntensity;
+	bool hdrEnabled;
+	bool bloomEnabled;
+};
 
 out vec4 color;
 
@@ -38,12 +42,12 @@ void main()
 	vec3 hdrColor = texture(hdrBuffer, UV).rgb;
 	vec3 bloomColor = texture(bloomBuffer, UV).rgb;
 
-	if(bloom) 
+	if(bloomEnabled) 
 	{
 		hdrColor += bloomColor * bloomIntensity; // additive blending
 	}
 	
-	if (hdr)
+	if (hdrEnabled)
 	{
 		//vec3 fragRGB = hdrColor;
 		//vec3 fragHSV = rgb2hsv(fragRGB).xyz;

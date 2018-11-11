@@ -36,7 +36,6 @@ namespace Picking
 		void DrawPicking();
 		void DrawDebug();
 		void DrawDepth(const mwm::Matrix4& ViewProjectionMatrix);
-		void PassPickingTexture();
         void PickingTest();
 
 		void GenerateGUI();

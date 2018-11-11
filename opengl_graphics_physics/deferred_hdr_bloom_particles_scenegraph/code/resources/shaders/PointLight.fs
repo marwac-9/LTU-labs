@@ -78,7 +78,26 @@ void main()
 	float radius = lightRadius - 0.5;
 
 	float attenuation = 1.0 / (constant + linear * distance + exponential * distance * distance);
-	attenuation = max((1.0 - distance / radius) * attenuation, 0.0); //i should come up with a way to manipulate point light attenuation in c++ so it never reaches sphere radius, this is a quick fix
+	attenuation = max((1.0 - distance / radius) * attenuation, 0.0);
+
+	//attenuation research
+	//Linear Attenuation, based on distance.
+	//Distance is divided by the max radius of the light which must be <= scale of the light mesh
+	//float attenuation = max((1.0f - distance / (lightRadius - 0.5f)), 0.0);
+	//vec3 att = LightDirection_worldSpace / (lightRadius - 0.5);
+	//float attenuation = max(0.0, (1.0 - dot(att, att)) / (distance*distance*distance));
+	//float attenuation = max((1.0 - distance / radius) / (((distance*distance*distance*lightPower) / (radius*radius/10.0))), 0.0);
+	///float attenuation = max((1.0 - distance / radius) / (distance*distance), 0.0);
+	//float attenuation = max(1.0 / (distance*distance), 0.0);
+	//float attenuation = pow(max(1.0 - (distance * distance) / (radius * radius), 0.0), 2.0);
+	//float attenuation = 1 / ((((distance / (1 - ((distance / lightRadius)*(distance / lightRadius)))) / lightRadius) + 1)*(((distance / (1 - ((distance / lightRadius)*(distance / lightRadius)))) / lightRadius) + 1));
+	//float attenuation = max(0.0, (1.0 - dot(att, att)) / (distance*distance*distance));
+	//float attenuation = max(1.0 - ((distance*distance) / ((lightRadius - 0.5)*(lightRadius - 0.5))), 0.0);
+	//float attenuation = smoothstep(radius, 0, distance);
+	//float compression = 3.0;
+	//float attenuation = pow(smoothstep(radius, 0, distance), compression);
+	//float attenuation = (1.0 / (0.3 + 0.007 * distance + 0.00008 * distance * distance));
+
 
 	float Metallic = MatPropertiesMetDiffShinSpec.x;
 	float Diffuse = MatPropertiesMetDiffShinSpec.y * cosTheta;

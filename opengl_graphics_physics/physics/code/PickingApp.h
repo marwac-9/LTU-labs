@@ -32,7 +32,6 @@ namespace Picking
 	private:
 		void Clear();
 		void DrawPass2();
-		void PassPickingTexture();
         void PickingTest();
 
 		void Draw();

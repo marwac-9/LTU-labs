@@ -155,7 +155,7 @@ namespace Picking
 			
 			GenerateGUI(); // <-- (generate) to screen
 			
-			PassPickingTexture(); //picking
+			DrawPicking(); //picking
 			if (altButtonToggle) PickingTest();
 
 			DrawDepthPass();
@@ -402,18 +402,6 @@ namespace Picking
     }
 
     void
-    PickingApp::PassPickingTexture()
-    {
-		FBOManager::Instance()->BindFrameBuffer(draw, frameBuffer->handle);
-		GLenum DrawBuffers[] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
-		glDrawBuffers(2, DrawBuffers);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		ShaderManager::Instance()->SetCurrentShader(GraphicsStorage::shaderIDs["picking"]);
-		DrawPicking();
-		FBOManager::Instance()->UnbindFrameBuffer(draw);
-    }
-
-    void
     PickingApp::PickingTest()
     {
       
@@ -477,8 +465,8 @@ namespace Picking
 	void
 	PickingApp::DrawPicking()
 	{
-		GLuint currentShaderID = ShaderManager::Instance()->GetCurrentShaderID();
-		Render::Instance()->drawPicking(Scene::Instance()->pickingList, CameraManager::Instance()->ViewProjection, currentShaderID);
+		GLenum DrawBuffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
+		Render::Instance()->drawPicking(Scene::Instance()->pickingList, frameBuffer, DrawBuffers, 2);
 	}
 
 	void

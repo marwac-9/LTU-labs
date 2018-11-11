@@ -151,7 +151,7 @@ namespace Picking
 			CameraManager::Instance()->Update(Times::Instance()->deltaTime);
 			FrustumManager::Instance()->ExtractPlanes(CameraManager::Instance()->ViewProjection);
 			
-			PassPickingTexture();
+			DrawPicking();
 			if (altButtonToggle) PickingTest();
 
 			Scene::Instance()->Update();
@@ -328,18 +328,6 @@ namespace Picking
     }
 
     void
-    PickingApp::PassPickingTexture()
-    {
-		ShaderManager::Instance()->SetCurrentShader(GraphicsStorage::shaderIDs["picking"]);
-		FBOManager::Instance()->BindFrameBuffer(draw, pickingBuffer->handle);
-		GLenum DrawBuffers[] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
-		glDrawBuffers(2, DrawBuffers);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); //do we need to clear it?
-        DrawPicking();
-		FBOManager::Instance()->UnbindFrameBuffer(draw);
-    }
-
-    void
     PickingApp::PickingTest()
     {
       
@@ -453,8 +441,8 @@ namespace Picking
 	void
 	PickingApp::DrawPicking()
 	{
-		GLuint currentShaderID = ShaderManager::Instance()->GetCurrentShaderID();
-		Render::Instance()->drawPicking(Scene::Instance()->pickingList, CameraManager::Instance()->ViewProjection, currentShaderID);
+		GLenum DrawBuffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
+		Render::Instance()->drawPicking(Scene::Instance()->pickingList, pickingBuffer, DrawBuffers, 2);
 	}
 
 	void

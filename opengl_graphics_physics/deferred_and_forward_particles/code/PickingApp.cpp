@@ -177,7 +177,7 @@ namespace Picking
 
 			Render::Instance()->UpdateEBOs();
 
-			PassPickingTexture();
+			DrawPicking();
 
 			DrawGeometryPass();
 
@@ -345,21 +345,6 @@ namespace Picking
     }
 
     void
-    PickingApp::PassPickingTexture()
-    {
-		
-		FBOManager::Instance()->BindFrameBuffer(draw, pickingBuffer->handle);
-		GLenum DrawBuffers[] = {GL_COLOR_ATTACHMENT0};
-		glDrawBuffers(1, DrawBuffers);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		ShaderManager::Instance()->SetCurrentShader(GraphicsStorage::shaderIDs["picking"]);
-		DrawPicking();
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, 0);
-		FBOManager::Instance()->UnbindFrameBuffer(draw);
-    }
-
-    void
     PickingApp::PickingTest()
     {   
         if(isLeftMouseButtonPressed)
@@ -414,8 +399,8 @@ namespace Picking
 	void
 	PickingApp::DrawPicking()
 	{
-		GLuint currentShaderID = ShaderManager::Instance()->GetCurrentShaderID();
-		Render::Instance()->drawPicking(Scene::Instance()->pickingList, CameraManager::Instance()->ViewProjection, currentShaderID);
+		GLenum DrawBuffers[] = { GL_COLOR_ATTACHMENT0 };
+		Render::Instance()->drawPicking(Scene::Instance()->pickingList, pickingBuffer, DrawBuffers, 1);
 	}
 
 	void

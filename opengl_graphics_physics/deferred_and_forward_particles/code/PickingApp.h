@@ -41,7 +41,6 @@ namespace Picking
 		void DrawPicking();
 		void DrawDebug();
 
-		void PassPickingTexture();
         void PickingTest();
 
 		void DrawGeometryPass();

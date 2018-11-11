@@ -7,6 +7,7 @@
 #include "gl_window.h"
 #include "MyMathLib.h"
 #include <vector>
+#include "Attenuation.h"
 
 class ParticleSystem;
 class LineSystem;
@@ -184,15 +185,8 @@ namespace Picking
 
 		Object* skybox = nullptr;
 		bool post = true;
-		bool hdrEnabled = GL_TRUE;
-		bool bloomEnabled = GL_TRUE;
-		float exposure = 1.0f;
-		float gamma = 1.2f;
-		float bloomIntensity = 1.f;
 		float blurBloomSize = 1.5f;
 		int bloomLevel = 3;
-		float contrast = 1;
-		float brightness = 0;
 
 		GLuint diffuseTextureHandle;
 		GLuint normalTextureHandle;
@@ -207,6 +201,7 @@ namespace Picking
 		Texture* pickingTexture;
 		Texture* worldPosTexture;
 		Texture* depthTexture;
+		Attenuation lightAttenuation;
 		
 	};
 } // namespace Example
