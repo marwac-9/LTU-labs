@@ -641,7 +641,7 @@ namespace Picking
 		for (int i = 0; i < 70; i++)
 		{
 
-			Vector3 pos = Scene::Instance()->generateRandomIntervallVectorSpherical(10, (100 + 0 + 22) * 100);
+			Vector3 pos = Scene::Instance()->generateRandomIntervallVectorSpherical(10, 122);
 
 
 			double len = pos.vectLengt();
