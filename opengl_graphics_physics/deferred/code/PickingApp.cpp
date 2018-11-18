@@ -117,8 +117,6 @@ namespace Picking
 
 		GraphicsManager::LoadAllAssets();
 
-		DebugDraw::Instance()->LoadPrimitives();
-
         // For speed computation (FPS)
 		Times::Instance()->currentTime = glfwGetTime();
 
@@ -191,7 +189,7 @@ namespace Picking
 
 			if (debug) DrawDebug();
 
-			DebugDraw::Instance()->DrawCrossHair(windowWidth, windowHeight);
+			DebugDraw::Instance()->DrawCrossHair();
 			
 			DrawGeometryMaps(windowWidth, windowHeight);
 
@@ -615,9 +613,9 @@ namespace Picking
 		int glWidth = (int)(fWidth *0.1f);
 		int glHeight = (int)(fHeight*0.1f);
 
-		DebugDraw::Instance()->DrawMap(0, y, glWidth, glHeight, worldPosTexture->handle, width, height);
-		DebugDraw::Instance()->DrawMap(0, 0, glWidth, glHeight, diffuseTextureHandle, width, height);
-		DebugDraw::Instance()->DrawMap(glWidth, 0, glWidth, glHeight, normalTextureHandle, width, height);
+		Render::Instance()->drawRegion(0, y, glWidth, glHeight, worldPosTexture);
+		Render::Instance()->drawRegion(0, 0, glWidth, glHeight, diffuseTexture);
+		Render::Instance()->drawRegion(glWidth, 0, glWidth, glHeight, normalTexture);
 	}
 
 	void PickingApp::SpawnSomeLights()
@@ -665,9 +663,9 @@ namespace Picking
 		geometryBuffer->GenerateAndAddTextures();
 		geometryBuffer->CheckAndCleanup();
 
-		diffuseTextureHandle = diffuseTexture->handle;
-		normalTextureHandle = normalTexture->handle;
-		metDiffIntShinSpecIntTextureHandle = materialPropertiesTexture->handle;
+		diffuseTexture = diffuseTexture;
+		normalTexture = normalTexture;
+		metDiffIntShinSpecIntTexture = materialPropertiesTexture;
 		
 		pickingBuffer = FBOManager::Instance()->GenerateFBO();
 		pickingTexture = pickingBuffer->RegisterTexture(new Texture(GL_TEXTURE_2D, 0, GL_R32UI, windowWidthIn, windowHeightIn, GL_RED_INTEGER, GL_UNSIGNED_INT, NULL, GL_COLOR_ATTACHMENT0)); //picking

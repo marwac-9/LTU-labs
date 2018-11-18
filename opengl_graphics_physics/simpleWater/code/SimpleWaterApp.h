@@ -77,9 +77,9 @@ namespace SimpleWater
 
 		Object* water = nullptr;
 
-		GLuint reflectionBufferHandle;
-		GLuint refractionBufferHandle;
-		GLuint depthTextureBufferHandle;
+		Texture* reflectionBufferTexture;
+		Texture* refractionBufferTexture;
+		Texture* depthTextureBufferTexture;
 		GLuint depthBufferHandle;
 		FrameBuffer* frameBuffer;
 

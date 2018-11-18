@@ -1,7 +1,14 @@
 //
 // Created by marwac-9 on 9/16/15.
 //
-
+#ifdef __linux__ 
+#include <sys/resource.h>
+#elif _WIN32 || _WIN64
+#include "windows.h"
+#undef near
+#undef far
+#include "psapi.h"
+#endif	
 #include "SubdivApp.h"
 #include <cstring>
 #include <stdlib.h>
@@ -18,7 +25,6 @@
 #include "Scene.h"
 #include "ShaderManager.h"
 #include <string>
-#include "DebugDraw.h"
 #include "PhysicsManager.h"
 #include "Camera.h"
 #include "Frustum.h"
@@ -213,11 +219,6 @@ namespace Subdivision
 				GraphicsManager::SaveToOBJ(GraphicsStorage::objects.back());
 				std::cout << "Last Mesh Saved" << std::endl;
 			}
-			else if (key == GLFW_KEY_F5)
-			{
-				if (DebugDraw::Instance()->debug) DebugDraw::Instance()->debug = false;
-				else DebugDraw::Instance()->debug = true;
-			}
 
 			else if (key == GLFW_KEY_E)
 			{
@@ -387,20 +388,42 @@ namespace Subdivision
 
 		printf("\nDONE\n");
 
+		std::ofstream myfile;
+		myfile.open("log.txt");
+
 		std::chrono::time_point<std::chrono::high_resolution_clock> start, end;
-		start = std::chrono::high_resolution_clock::now();
 		std::chrono::duration<double> elapsed_seconds; 
 		for (int i = 0; i < 5; i++)
 		{
-			printf("\nLET'S SUBDIVIDE STAGE%d\n", i+1);
+			printf("\nLET'S SUBDIVIDE STAGE%d\n", i + 1);
+			start = std::chrono::high_resolution_clock::now();
 			newHMesh->Subdivide();
-
 			end = std::chrono::high_resolution_clock::now();
 			elapsed_seconds = end - start;
 
 			std::cout << "\nPass " << i + 1 << " subdivided in: " << elapsed_seconds.count() << "s\n";
+
+			myfile << "\nPass " << i + 1 << " subdivided in: " << elapsed_seconds.count() << "s\n";
 			
 		}
+
+#ifdef __linux__ 
+		struct rusage r_usage;
+
+		getrusage(RUSAGE_SELF, &r_usage);
+
+		printf("Memory usage: %ld kB\n", r_usage.ru_maxrss);
+	}
+#elif _WIN32 || _WIN64
+		PROCESS_MEMORY_COUNTERS pmc;
+		GetProcessMemoryInfo(GetCurrentProcess(), &pmc, sizeof(pmc));
+		//SIZE_T virtualMemUsedByMe = pmc.PrivateUsage;
+		SIZE_T physMemUsedByMe = pmc.WorkingSetSize;
+		printf("Memory usage: %lu kB\n", physMemUsedByMe/1024);
+		printf("Memory usage: %lu MB\n", physMemUsedByMe/1024000);
+
+#endif	
+		myfile.close();
 		printf("\nDONE\n");
 
 		printf("\nExporting subdivided mesh\n");
@@ -455,8 +478,6 @@ namespace Subdivision
 		CameraManager::Instance()->AddCamera("default", currentCamera);
 		CameraManager::Instance()->SetCurrentCamera("default");
 		currentCamera->ProjectionMatrix = Matrix4::OpenGLPersp(45.0, (double)this->windowWidth / (double)this->windowHeight, 0.1, 200.0);
-		DebugDraw::Instance()->Projection = &currentCamera->ProjectionMatrix;
-		DebugDraw::Instance()->View = &currentCamera->ViewMatrix;
 	}
 
 } // namespace Example

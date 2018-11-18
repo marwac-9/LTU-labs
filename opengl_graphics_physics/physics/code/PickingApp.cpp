@@ -117,8 +117,6 @@ namespace Picking
         SetUpBuffers(this->windowWidth, this->windowHeight);
 
 		GraphicsManager::LoadAllAssets();
-
-		DebugDraw::Instance()->LoadPrimitives();
 		
 		LoadScene1();
 
@@ -165,7 +163,7 @@ namespace Picking
 			GenerateGUI();
 
 			DrawPass2(); // color || debug
-			DebugDraw::Instance()->DrawCrossHair(windowWidth, windowHeight);
+			DebugDraw::Instance()->DrawCrossHair();
 			
 			ImGui::Render(); // <-- (draw) to screen
 
@@ -456,7 +454,7 @@ namespace Picking
 				if (RigidBody* body = obj->GetComponent<RigidBody>())
 				{
 					Render::Instance()->boundingBox.mat->SetColor(body->obb.color);
-					Render::Instance()->boundingBox.Draw(Matrix4::scale(obj->GetMeshDimensions())*obj->node.TopDownTransform, CameraManager::Instance()->ViewProjection, wireframeShader);
+					Render::Instance()->boundingBox.Draw(body->obb.model, CameraManager::Instance()->ViewProjection, wireframeShader);
 					Render::Instance()->boundingBox.mat->SetColor(body->aabb.color);
 					Render::Instance()->boundingBox.Draw(body->aabb.model, CameraManager::Instance()->ViewProjection, wireframeShader);
 				}

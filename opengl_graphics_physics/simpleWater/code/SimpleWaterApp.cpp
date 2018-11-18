@@ -559,12 +559,12 @@ namespace SimpleWater
 		ShaderManager::Instance()->SetCurrentShader(currentShaderID);
 
 		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, reflectionBufferHandle);
+		glBindTexture(GL_TEXTURE_2D, reflectionBufferTexture->handle);
 		GLuint reflectionSampler = glGetUniformLocation(currentShaderID, "reflectionSampler");
 		glUniform1i(reflectionSampler, 0);
 
 		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, refractionBufferHandle);
+		glBindTexture(GL_TEXTURE_2D, refractionBufferTexture->handle);
 		GLuint refractionSampler = glGetUniformLocation(currentShaderID, "refractionSampler");
 		glUniform1i(refractionSampler, 1);
 
@@ -579,7 +579,7 @@ namespace SimpleWater
 		glUniform1i(dudvSampler, 3);
 
 		glActiveTexture(GL_TEXTURE4);
-		glBindTexture(GL_TEXTURE_2D, depthTextureBufferHandle);
+		glBindTexture(GL_TEXTURE_2D, depthTextureBufferTexture->handle);
 		GLuint depthSampler = glGetUniformLocation(currentShaderID, "depthMapSampler");
 		glUniform1i(depthSampler, 4);
 
@@ -670,9 +670,9 @@ namespace SimpleWater
 		frameBuffer->GenerateAndAddTextures();
 		frameBuffer->CheckAndCleanup();
 
-		reflectionBufferHandle = reflectionTexture->handle;
-		refractionBufferHandle = refractionTexture->handle;
-		depthTextureBufferHandle = frameBufferDepthTexture->handle;
+		reflectionBufferTexture = reflectionTexture;
+		refractionBufferTexture = refractionTexture;
+		depthTextureBufferTexture = frameBufferDepthTexture;
 
 		postFrameBuffer = FBOManager::Instance()->GenerateFBO();
 
@@ -706,10 +706,10 @@ namespace SimpleWater
 		int glWidth = (int)(fWidth *0.1f);
 		int glHeight = (int)(fHeight*0.1f);
 
-		DebugDraw::Instance()->DrawMap(0, 0, glWidth, glHeight, reflectionBufferHandle, width, height);
-		DebugDraw::Instance()->DrawMap(width - glWidth, 0, glWidth, glHeight, refractionBufferHandle, width, height);
-		DebugDraw::Instance()->DrawMap(width - glWidth, height - glHeight, glWidth, glHeight, blurredBrightTexture->handle, width, height);
-		DebugDraw::Instance()->DrawMap(0, height - glHeight, glWidth, glHeight, hdrTexture->handle, width, height);
+		Render::Instance()->drawRegion(0, 0, glWidth, glHeight, reflectionBufferTexture);
+		Render::Instance()->drawRegion(width - glWidth, 0, glWidth, glHeight, refractionBufferTexture);
+		Render::Instance()->drawRegion(width - glWidth, height - glHeight, glWidth, glHeight, blurredBrightTexture);
+		Render::Instance()->drawRegion(0, height - glHeight, glWidth, glHeight, hdrTexture);
 	}
 
 	Mesh* SimpleWaterApp::GenerateWaterMesh(int width, int height)

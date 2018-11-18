@@ -165,7 +165,7 @@ namespace Picking
 			//glViewport(0, 0, windowWidth, windowHeight);
 			//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); i clear screen above instead, fbo is cleared inside passes
 			DrawColorDebugPass(); // color || debug
-			DebugDraw::Instance()->DrawCrossHair(windowWidth, windowHeight);
+			DebugDraw::Instance()->DrawCrossHair();
 			DrawMaps(windowWidth, windowHeight);
 
 			ImGui::Render(); // <-- (draw) to screen
@@ -490,7 +490,7 @@ namespace Picking
 				if (RigidBody* body = obj->GetComponent<RigidBody>())
 				{
 					Render::Instance()->boundingBox.mat->SetColor(body->obb.color);
-					Render::Instance()->boundingBox.Draw(Matrix4::scale(obj->GetMeshDimensions())*obj->node.TopDownTransform, CameraManager::Instance()->ViewProjection, wireframeShader);
+					Render::Instance()->boundingBox.Draw(body->obb.model, CameraManager::Instance()->ViewProjection, wireframeShader);
 					Render::Instance()->boundingBox.mat->SetColor(body->aabb.color);
 					Render::Instance()->boundingBox.Draw(body->aabb.model, CameraManager::Instance()->ViewProjection, wireframeShader);
 				}
@@ -768,7 +768,7 @@ namespace Picking
 		int glWidth = (int)(fWidth *0.1f);
 		int glHeight = (int)(fHeight*0.1f);
 
-		if (blurShadowMap) DebugDraw::Instance()->DrawMap(0, 0, glWidth, glHeight, blurredShadowTexture->handle, width, height);
-		else DebugDraw::Instance()->DrawMap(0, 0, glWidth, glHeight, shadowTexture->handle, width, height);
+		if (blurShadowMap) Render::Instance()->drawRegion(0, 0, glWidth, glHeight, blurredShadowTexture);
+		else Render::Instance()->drawRegion(0, 0, glWidth, glHeight, shadowTexture);
 	}
 } // namespace Example

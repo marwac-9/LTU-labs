@@ -104,8 +104,8 @@ namespace Picking
 		Texture* pickingTexture;
 		Texture* worldPosTexture;
 
-		GLuint diffuseTextureHandle;
-		GLuint normalTextureHandle;
-		GLuint metDiffIntShinSpecIntTextureHandle;
+		Texture* diffuseTexture;
+		Texture* normalTexture;
+		Texture* metDiffIntShinSpecIntTexture;
 	};
 } // namespace Example

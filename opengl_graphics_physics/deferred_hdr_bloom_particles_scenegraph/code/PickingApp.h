@@ -58,8 +58,6 @@ namespace Picking
 		void Clear();
 
 		void DrawDebugInstanced();
-
-		void PassPickingTexture();
         void PickingTest();
 
 		void DrawGeometryPass();
@@ -137,9 +135,6 @@ namespace Picking
 		float xAngled2 = 108.f;
 		float yAngled2 = 282.6f;
 		std::vector<ParticleSystem*> particleSystems;
-		std::vector<LineSystem*> lineSystems;
-		std::vector<BoundingBoxSystem*> bbSystems;
-		std::vector<PointSystem*> pointSystems;
 		void DrawFastLineSystems();
 		void DrawFastPointSystems();
 		void GenerateFastLines();
@@ -188,9 +183,9 @@ namespace Picking
 		float blurBloomSize = 1.5f;
 		int bloomLevel = 3;
 
-		GLuint diffuseTextureHandle;
-		GLuint normalTextureHandle;
-		GLuint metDiffIntShinSpecIntTextureHandle;		
+		Texture* diffuseTexture;
+		Texture* normalTexture;
+		Texture* metDiffIntShinSpecIntTexture;
 		
 		FrameBuffer* lightAndPostBuffer;
 		Texture* finalColorTexture;
