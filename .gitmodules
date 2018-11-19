@@ -1,8 +1,11 @@
 [submodule "qt_ai_network/deps/myframework"]
 	path = qt_ai_network/deps/myframework
-	url = https://github.com/marwac-9/myframework.git
+	url = git@github.com:marwac-9/myframework.git
 	branch = master
 [submodule "opengl_graphics_physics/deps/myframework"]
+
 	path = opengl_graphics_physics/deps/myframework
-	url = https://github.com/marwac-9/myframework.git
+	
+	url = git@github.com:marwac-9/myframework.git
+
 	branch = master
