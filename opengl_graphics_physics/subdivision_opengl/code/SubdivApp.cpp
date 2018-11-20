@@ -140,20 +140,11 @@ namespace Subdivision
 
 			this->window->SwapBuffers();
 		}
-		this->ClearBuffers();
-		GraphicsStorage::ClearMaterials();
-		GraphicsStorage::ClearOBJs();
+		GraphicsStorage::Clear();
+		ImGui_ImplGlfwGL3_Shutdown();
 		this->window->Close();
 	}
-
-	void
-	SubdivisionApp::ClearBuffers()
-	{
-		GraphicsStorage::ClearMeshes();
-		GraphicsStorage::ClearTextures();
-		GraphicsStorage::ClearShaders();
-	}
-
+	
 	void
 	SubdivisionApp::KeyCallback(int key, int scancode, int action, int mods)
 	{
