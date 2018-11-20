@@ -161,20 +161,9 @@ namespace SimpleWater
 			ImGui::Render(); // <-- (draw) to screen
 			this->window->SwapBuffers();
 		}
-		this->ClearBuffers();
-		GraphicsStorage::ClearMaterials();
-		GraphicsStorage::ClearOBJs();
+		GraphicsStorage::Clear();
 		ImGui_ImplGlfwGL3_Shutdown();
 		this->window->Close();
-	}
-
-	void
-	SimpleWaterApp::ClearBuffers()
-	{
-		GraphicsStorage::ClearMeshes();
-		GraphicsStorage::ClearTextures();
-		GraphicsStorage::ClearCubemaps();
-		GraphicsStorage::ClearShaders();
 	}
 
 	void
