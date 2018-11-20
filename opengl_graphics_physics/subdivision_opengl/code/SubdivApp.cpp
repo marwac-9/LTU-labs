@@ -141,7 +141,6 @@ namespace Subdivision
 			this->window->SwapBuffers();
 		}
 		GraphicsStorage::Clear();
-		ImGui_ImplGlfwGL3_Shutdown();
 		this->window->Close();
 	}
 	
