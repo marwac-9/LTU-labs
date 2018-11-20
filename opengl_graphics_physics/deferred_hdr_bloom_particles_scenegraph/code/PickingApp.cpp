@@ -257,6 +257,7 @@ namespace Picking
 
 		}
 		GraphicsStorage::Clear();
+		ImGui_ImplGlfwGL3_Shutdown();
 		this->window->Close();
 	}
 
