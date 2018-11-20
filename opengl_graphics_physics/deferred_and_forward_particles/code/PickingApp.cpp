@@ -206,18 +206,8 @@ namespace Picking
             
             this->window->SwapBuffers();
         }
-        this->ClearBuffers();
-		GraphicsStorage::ClearMaterials();
-		GraphicsStorage::ClearOBJs();
+	GraphicsStorage::Clear();
         this->window->Close();
-    }
-
-    void
-    PickingApp::ClearBuffers()
-    {
-		GraphicsStorage::ClearMeshes();
-		GraphicsStorage::ClearTextures();
-		GraphicsStorage::ClearShaders();
     }
 
     void
