@@ -43,7 +43,6 @@ namespace Picking
 		void DrawDepthPass();
 		void DrawMaps(int width, int height);
         void InitGL();
-		void ClearBuffers();
 		void SetUpBuffers(int windowWidth, int windowHeight);
         void KeyCallback(int key, int scancode, int action, int mods);
 		void MouseCallback(double mouseX, double mouseY);
