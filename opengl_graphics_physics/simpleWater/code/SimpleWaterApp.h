@@ -36,7 +36,6 @@ namespace SimpleWater
 
 		
 		void InitGL();
-		void ClearBuffers();
 		void KeyCallback(int key, int scancode, int action, int mods);
 		void Monitor(Display::Window* window);
 		void SetUpCamera();
