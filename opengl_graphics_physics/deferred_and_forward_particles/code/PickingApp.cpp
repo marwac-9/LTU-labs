@@ -12,7 +12,6 @@
 #include "Node.h"
 #include "Material.h"
 #include "Texture.h"
-#include "Mesh.h"
 #include "OBJ.h"
 #include <fstream>
 #include "Scene.h"
@@ -29,6 +28,7 @@
 #include "CameraManager.h"
 #include "FrameBuffer.h"
 #include "Times.h"
+#include "BoundingBox.h"
 
 using namespace mwm;
 using namespace Display;
@@ -73,15 +73,16 @@ namespace Picking
         // window resize callback
         this->window->SetWindowSizeFunction([this](int width, int height)
         {
-			this->windowWidth = width;
-			this->windowHeight = height;
-			this->windowMidX = windowWidth / 2.0f;
-			this->windowMidY = windowHeight / 2.0f;
-            this->window->SetSize(this->windowWidth, this->windowHeight);
-
-			FBOManager::Instance()->UpdateTextureBuffers(this->windowWidth, this->windowHeight);
-
-			currentCamera->UpdateSize(width, height);
+			if (!minimized)
+			{
+				this->windowWidth = width;
+				this->windowHeight = height;
+				this->windowMidX = windowWidth / 2.0f;
+				this->windowMidY = windowHeight / 2.0f;
+				this->window->SetSize(this->windowWidth, this->windowHeight);
+				FBOManager::Instance()->UpdateTextureBuffers(this->windowWidth, this->windowHeight);
+				currentCamera->UpdateSize(width, height);
+			}
         });
 
         this->window->SetMousePressFunction([this](int button, int action, int mods)
@@ -95,9 +96,26 @@ namespace Picking
             {
                 isLeftMouseButtonPressed = false;
             }
+			else if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS)
+			{
 
+			}
+			else if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_RELEASE)
+			{
+			}
+			else if (button == GLFW_MOUSE_BUTTON_MIDDLE && action == GLFW_PRESS)
+			{
+				Scene::Instance()->InitializeSceneTree();
+				GraphicsManager::ReloadShaders();
+			}
+			else if (button == GLFW_MOUSE_BUTTON_MIDDLE && action == GLFW_RELEASE)
+			{
+			}
         });
-
+		window->SetWindowIconifyFunction([this](int iconified) {
+			if (iconified) minimized = true;
+			else minimized = false;
+		});
         if (this->window->Open())
         {
             running = true;
@@ -142,7 +160,7 @@ namespace Picking
 
 			glDisable(GL_BLEND);
             this->window->Update();
-
+			if (minimized) continue;
             // Measure FPS
 			Times::Instance()->Update(glfwGetTime());
 
@@ -160,7 +178,7 @@ namespace Picking
 					}
 					break;
 				case scene2Loaded:
-					MovePlaneUpNDown();
+					//MovePlaneUpNDown();
 					break;				
 			}
 
@@ -272,7 +290,8 @@ namespace Picking
 				
 			}
 			else if (key == GLFW_KEY_S && window->GetKey(GLFW_KEY_LEFT_CONTROL)) {
-				GraphicsManager::SaveToOBJ(GraphicsStorage::objects.back());
+				auto it = --GraphicsStorage::objs.end();
+				GraphicsManager::SaveToOBJ(it->second);
 				std::cout << "Last Mesh Saved" << std::endl;
 			}
 			else if (key == GLFW_KEY_O) {
@@ -302,8 +321,8 @@ namespace Picking
 
 			else if (key == GLFW_KEY_E)
 			{
-				Object* cube = Scene::Instance()->addPhysicObject("cube", Vector3(0.f, 8.f, 0.f));
-				cube->SetPosition(Vector3(0.f, (float)Scene::Instance()->idCounter * 2.f - 10.f + 0.001f, 0.f));
+				Object* cube = Scene::Instance()->addPhysicObject("cube", Vector3(0.0, 8.0, 0.0));
+				cube->node->SetPosition(Vector3(0.0, (double)Object::Count() * 2.0 - 10.0 + 0.001, 0.0));
 			}
 		}
     }
@@ -313,10 +332,10 @@ namespace Picking
     {
 		if (window->GetKey(GLFW_KEY_KP_ADD) == GLFW_PRESS) Times::Instance()->timeModifier += 0.0005;
 		if (window->GetKey(GLFW_KEY_KP_SUBTRACT) == GLFW_PRESS) Times::Instance()->timeModifier -= 0.0005;
-		if (window->GetKey(GLFW_KEY_UP) == GLFW_PRESS) if (lastPickedObject) lastPickedObject->Translate(Vector3(0.f, 0.05f, 0.f));
-		if (window->GetKey(GLFW_KEY_DOWN) == GLFW_PRESS) if (lastPickedObject) lastPickedObject->Translate(Vector3(0.f, -0.05f, 0.f));
-		if (window->GetKey(GLFW_KEY_LEFT) == GLFW_PRESS) if (lastPickedObject) lastPickedObject->Translate(Vector3(0.05f, 0.f, 0.f));
-		if (window->GetKey(GLFW_KEY_RIGHT) == GLFW_PRESS) if (lastPickedObject) lastPickedObject->Translate(Vector3(-0.05f, 0.f, 0.f));
+		if (window->GetKey(GLFW_KEY_UP) == GLFW_PRESS) if (lastPickedObject) lastPickedObject->node->Translate(Vector3(0.f, 0.05f, 0.f));
+		if (window->GetKey(GLFW_KEY_DOWN) == GLFW_PRESS) if (lastPickedObject) lastPickedObject->node->Translate(Vector3(0.f, -0.05f, 0.f));
+		if (window->GetKey(GLFW_KEY_LEFT) == GLFW_PRESS) if (lastPickedObject) lastPickedObject->node->Translate(Vector3(0.05f, 0.f, 0.f));
+		if (window->GetKey(GLFW_KEY_RIGHT) == GLFW_PRESS) if (lastPickedObject) lastPickedObject->node->Translate(Vector3(-0.05f, 0.f, 0.f));
 
 		if (altButtonToggle)
 		{
@@ -341,7 +360,7 @@ namespace Picking
 			//read pixel from picking texture
 			unsigned int Pixel;
 			//inverted y coordinate because glfw 0,0 starts at topleft while opengl texture 0,0 starts at bottomleft
-			pickingBuffer->ReadPixelData((unsigned int)leftMouseX, this->windowHeight - (unsigned int)leftMouseY, GL_RED_INTEGER, GL_UNSIGNED_INT, &Pixel, pickingTexture->attachment);
+			pickingBuffer->ReadPixelData((unsigned int)leftMouseX, this->windowHeight - (unsigned int)leftMouseY, 1, 1, GL_UNSIGNED_INT, &Pixel, pickingTexture);
 			pickedID = Pixel;
 
 			//std::cout << pickedID << std::endl;
@@ -356,7 +375,7 @@ namespace Picking
 				lastPickedObject->mat->color = Vector3F(0.5f, 0.25f, 0.f);
 				lastPickedObject->mat->SetDiffuseIntensity(3.f);
 				Vector3F world_position;
-				geometryBuffer->ReadPixelData((unsigned int)leftMouseX, this->windowHeight - (unsigned int)leftMouseY, GL_RGB, GL_FLOAT, world_position.vect, worldPosTexture->attachment);
+				geometryBuffer->ReadPixelData((unsigned int)leftMouseX, this->windowHeight - (unsigned int)leftMouseY, 1, 1, GL_FLOAT, world_position.vect, worldPosTexture);
 				Vector3 dWorldPos = Vector3(world_position.x, world_position.y, world_position.z);
 				Vector3 impulse = (dWorldPos - currentCamera->GetPosition2()).vectNormalize();
 				if (RigidBody* body = this->lastPickedObject->GetComponent<RigidBody>()) body->ApplyImpulse(impulse, 1.f, dWorldPos);
@@ -394,27 +413,7 @@ namespace Picking
 	void
 	PickingApp::DrawDebug()
 	{
-		glDepthMask(GL_TRUE);
-		glEnable(GL_DEPTH_TEST);
-		
-		GLuint wireframeShader = GraphicsStorage::shaderIDs["wireframe"];
-		GLuint prevShader = ShaderManager::Instance()->GetCurrentShaderID();
-		ShaderManager::Instance()->SetCurrentShader(wireframeShader);
-
-		for (auto& obj : Scene::Instance()->renderList)
-		{
-			if (FrustumManager::Instance()->isBoundingSphereInView(obj->node.centeredPosition, obj->radius))
-			{
-				if (RigidBody* body = obj->GetComponent<RigidBody>())
-				{
-					Render::Instance()->boundingBox.mat->SetColor(body->obb.color);
-					Render::Instance()->boundingBox.Draw(body->obb.model, CameraManager::Instance()->ViewProjection, wireframeShader);
-					Render::Instance()->boundingBox.mat->SetColor(body->aabb.color);
-					Render::Instance()->boundingBox.Draw(body->aabb.model, CameraManager::Instance()->ViewProjection, wireframeShader);
-				}
-			}
-		}
-		glDepthMask(GL_FALSE);
+		DebugDraw::Instance()->DrawBoundingBoxes();
 	}
 
 	void 
@@ -423,11 +422,11 @@ namespace Picking
 		Clear();
 		lightsPhysics = false;
 		currentCamera->SetPosition(Vector3(0.f, 20.f, 60.f));
+		DebugDraw::Instance()->Init(Scene::Instance()->addChild());
 
 		Object* sphere = Scene::Instance()->addPhysicObject("sphere", Vector3(0.f, 3.f, 0.f));//automatically registered for collision detection and response
 		RigidBody* body = sphere->GetComponent<RigidBody>();
-		body->isKinematic = true;
-		body->SetMass(FLT_MAX);
+		body->SetIsKinematic(true);
 		sphere->mat->specularIntensity = 4.f;
 		sphere->mat->shininess = 10.f;
 
@@ -437,11 +436,10 @@ namespace Picking
 		Object* plane = Scene::Instance()->addObject("cube", Vector3(0.f, -2.5f, 0.f));
 		plane->mat->SetShininess(30.f);
 		plane->mat->SetSpecularIntensity(30.f);
-		body = new RigidBody(plane);
+		body = new RigidBody();
 		plane->AddComponent(body);
-		plane->SetScale(Vector3(25.f, 2.f, 25.f));
-		body->SetMass(FLT_MAX);
-		body->isKinematic = true;
+		plane->node->SetScale(Vector3(25.f, 2.f, 25.f));
+		body->SetIsKinematic(true);
 		PhysicsManager::Instance()->RegisterRigidBody(body); //manually registered after manually creating rigid body component and assembling the object
 		
 	}
@@ -451,6 +449,7 @@ namespace Picking
 		Clear();
 		lightsPhysics = false;
 		currentCamera->SetPosition(Vector3(0.f, 10.f, 60.f));
+		DebugDraw::Instance()->Init(Scene::Instance()->addChild());
 
 		Object* directionalLight = Scene::Instance()->addDirectionalLight();
 		directionalLight->mat->SetDiffuseIntensity(1.0f);
@@ -458,7 +457,7 @@ namespace Picking
 		for (int i = 0; i < 300; i++)
 		{
 			Object* pointLight = Scene::Instance()->addPointLight(false, Scene::Instance()->generateRandomIntervallVectorCubic(-20, 20));
-			RigidBody* body = new RigidBody(pointLight);
+			RigidBody* body = new RigidBody();
 			pointLight->AddComponent(body);
 		}
 
@@ -468,11 +467,11 @@ namespace Picking
 		}
 
 		Object* plane = Scene::Instance()->addObject("cube");
-		plane->SetScale(Vector3(25.f, 0.2f, 25.f));
+		plane->node->SetScale(Vector3(25.f, 0.2f, 25.f));
 		this->plane = plane;
 
 		Object* pointLight = Scene::Instance()->addPointLight(false, Vector3(0.f, 10.f, 0.f));
-		pointLight->SetScale(Vector3(20.f, 20.f, 20.f));
+		pointLight->node->SetScale(Vector3(20.f, 20.f, 20.f));
 		pointLight->mat->SetColor(Vector3F(1.f, 0.f, 0.f));
 		pointLight->mat->SetDiffuseIntensity(10.f);
 
@@ -491,6 +490,7 @@ namespace Picking
 	{
 		Clear();
 		currentCamera->SetPosition(Vector3());
+		DebugDraw::Instance()->Init(Scene::Instance()->addChild());
 
 		Object* directionalLight = Scene::Instance()->addDirectionalLight();
 		directionalLight->mat->SetDiffuseIntensity(1.0f);
@@ -499,11 +499,11 @@ namespace Picking
 		for (int i = 0; i < 500; i++)
 		{
 			Object* object = Scene::Instance()->addObject("icosphere", Scene::Instance()->generateRandomIntervallVectorCubic(-80, 80));
-			RigidBody* body = new RigidBody(object);
+			RigidBody* body = new RigidBody();
 			object->AddComponent(body);
 			PhysicsManager::Instance()->RegisterRigidBody(body);
 			rS = (float)(rand() % 5) + 1.f;
-			object->SetScale(Vector3(rS, rS, rS));
+			object->node->SetScale(Vector3(rS, rS, rS));
 			body->SetCanSleep(false);
 		}
 		
@@ -514,12 +514,12 @@ namespace Picking
 	void PickingApp::FireLightProjectile()
 	{
 		Object* pointLight = Scene::Instance()->addPointLight(false, currentCamera->GetPosition2()+currentCamera->direction*3.f, Vector3F(1.f, 1.f, 0.f));
-		pointLight->SetScale(Vector3(10.f, 10.f, 10.f));
+		pointLight->node->SetScale(Vector3(10.f, 10.f, 10.f));
 
-		RigidBody* body = new RigidBody(pointLight);
+		RigidBody* body = new RigidBody();
 		pointLight->AddComponent(body);
 		body->SetCanSleep(false);
-		body->ApplyImpulse(currentCamera->direction*4000.f, pointLight->GetWorldPosition());
+		body->ApplyImpulse(currentCamera->direction*4000.f, pointLight->node->GetWorldPosition());
 
 		ParticleSystem* pSystem = new ParticleSystem(3000, 80);
 		pointLight->AddComponent(pSystem);
@@ -536,6 +536,7 @@ namespace Picking
 		Scene::Instance()->Clear();
 		PhysicsManager::Instance()->Clear();
 		GraphicsStorage::ClearMaterials();
+		DebugDraw::Instance()->Clear();
 		lastPickedObject = nullptr;
 	}
 
@@ -552,8 +553,8 @@ namespace Picking
 		{
 			if (RigidBody* body = obj->GetComponent<RigidBody>())
 			{
-				Vector3 dir = obj->GetWorldPosition() - Vector3(0.f, -10.f, 0.f);
-				body->ApplyImpulse(dir.vectNormalize()*-200.f, obj->GetWorldPosition());
+				Vector3 dir = obj->node->GetWorldPosition() - Vector3(0.f, -10.f, 0.f);
+				body->ApplyImpulse(dir.vectNormalize()*-200.f, obj->node->GetWorldPosition());
 			}			
 		}
 	}
@@ -573,9 +574,9 @@ namespace Picking
 	void PickingApp::BlitToScreenPass()
 	{
 		//bind geometry buffer for final pass
-		FBOManager::Instance()->UnbindFrameBuffer(draw); //for drawing we are unbinding to the screen buffer
-		FBOManager::Instance()->BindFrameBuffer(read, geometryBuffer->handle); //and we read from the geometry buffer
-		glReadBuffer(GL_COLOR_ATTACHMENT4); //enable the final color texture buffer for reading
+		FBOManager::Instance()->BindFrameBuffer(GL_DRAW_FRAMEBUFFER, 0); //for drawing we are unbinding to the screen buffer
+		FBOManager::Instance()->BindFrameBuffer(GL_READ_FRAMEBUFFER, geometryBuffer->handle); //and we read from the geometry buffer
+		glReadBuffer(GL_COLOR_ATTACHMENT4); //enable the final color texture buffer for reading, we tell that we want only to read the attachment 4
 		glBlitFramebuffer(0, 0, windowWidth, windowHeight, 0, 0, windowWidth, windowHeight, GL_COLOR_BUFFER_BIT, GL_LINEAR); 
 		glBlitFramebuffer(0, 0, windowWidth, windowHeight, 0, 0, windowWidth, windowHeight, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
 		//FBOManager::Instance()->UnbindFrameBuffer(readDraw);
@@ -585,10 +586,10 @@ namespace Picking
 	{
 		if (plane != nullptr)
 		{
-			if (plane->GetWorldPosition().y < -17) planeDir = 1;
-			else if (plane->GetWorldPosition().y > 10) planeDir = -1;
+			if (plane->node->GetWorldPosition().y < -17) planeDir = 1;
+			else if (plane->node->GetWorldPosition().y > 10) planeDir = -1;
 
-			plane->Translate(Vector3(0.f, 0.1f*planeDir, 0.f));
+			plane->node->Translate(Vector3(0.f, 0.1f*planeDir, 0.f));
 		}
 		
 	}
@@ -598,8 +599,8 @@ namespace Picking
 		if (Scene::Instance()->pointLights.size() < 500)
 		{
 			Object* pointLight = Scene::Instance()->addPointLight(false, Scene::Instance()->generateRandomIntervallVectorFlat(-20, 20, Scene::y), Scene::Instance()->generateRandomIntervallVectorCubic(0, 6000).toFloat() / 6000.f);
-			Object* sphere = Scene::Instance()->addObject("sphere", pointLight->GetLocalPosition());
-			sphere->SetScale(Vector3(0.1f, 0.1f, 0.1f));
+			Object* sphere = Scene::Instance()->addObject("sphere", pointLight->node->GetLocalPosition());
+			sphere->node->SetScale(Vector3(0.1f, 0.1f, 0.1f));
 			sphere->mat->diffuseIntensity = 2.f;
 			sphere->mat->shininess = 10.f;
 		}

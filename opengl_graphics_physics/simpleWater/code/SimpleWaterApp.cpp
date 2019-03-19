@@ -8,13 +8,11 @@
 #include "Node.h"
 #include "Material.h"
 #include "Texture.h"
-#include "Mesh.h"
 #include "OBJ.h"
 #include <fstream>
 #include "Scene.h"
 #include "ShaderManager.h"
 #include <string>
-#include "DebugDraw.h"
 #include "PhysicsManager.h"
 #include "Camera.h"
 #include "Frustum.h"
@@ -24,6 +22,8 @@
 #include "FBOManager.h"
 #include "FrameBuffer.h"
 #include "Times.h"
+#include "Box.h"
+#include "Plane.h"
 
 using namespace mwm;
 using namespace Display;
@@ -69,16 +69,43 @@ namespace SimpleWater
 		// window resize callback
 		this->window->SetWindowSizeFunction([this](int width, int height)
 		{
-			this->windowWidth = width;
-			this->windowHeight = height;
-			this->windowMidX = windowWidth / 2.0f;
-			this->windowMidY = windowHeight / 2.0f;
-			this->window->SetSize(this->windowWidth, this->windowHeight);
-
-			FBOManager::Instance()->UpdateTextureBuffers(this->windowWidth, this->windowHeight);
-			currentCamera->UpdateSize(width, height);
+			if (!minimized)
+			{
+				this->windowWidth = width;
+				this->windowHeight = height;
+				this->windowMidX = windowWidth / 2.0f;
+				this->windowMidY = windowHeight / 2.0f;
+				this->window->SetSize(this->windowWidth, this->windowHeight);
+				FBOManager::Instance()->UpdateTextureBuffers(this->windowWidth, this->windowHeight);
+				currentCamera->UpdateSize(width, height);
+			}
 		});
+		this->window->SetMousePressFunction([this](int button, int action, int mods)
+		{
+			if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
+			{
+				isLeftMouseButtonPressed = true;
+			}
+			if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE)
+			{
+				isLeftMouseButtonPressed = false;
+			}
+			else if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS)
+			{
 
+			}
+			else if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_RELEASE)
+			{
+			}
+			else if (button == GLFW_MOUSE_BUTTON_MIDDLE && action == GLFW_PRESS)
+			{
+				Scene::Instance()->InitializeSceneTree();
+				GraphicsManager::ReloadShaders();
+			}
+			else if (button == GLFW_MOUSE_BUTTON_MIDDLE && action == GLFW_RELEASE)
+			{
+			}
+		});
 		this->window->SetWindowIconifyFunction([this](int iconified){
 			if (iconified) minimized = true;
 			else minimized = false;
@@ -112,16 +139,40 @@ namespace SimpleWater
 		Scene::Instance()->Update();
 
 		glfwSwapInterval(0); //unlock fps
-		ImGui_ImplGlfwGL3_Init(this->window->GetGLFWWindow(), false);
+
+		IMGUI_CHECKVERSION();
+		ImGui::CreateContext();
+		ImGuiIO& io = ImGui::GetIO(); (void)io;
+		//io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
+		//io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;   // Enable Gamepad Controls
+
+		// Setup Dear ImGui style
+		ImGui::StyleColorsDark();
+		//ImGui::StyleColorsClassic();
+
+		// Setup Platform/Renderer bindings
+		ImGui_ImplGlfw_InitForOpenGL(this->window->GetGLFWWindow(), false);
+		const char* glsl_version = "#version 130";
+		ImGui_ImplOpenGL3_Init(glsl_version);
 		window->SetTitle("Simple Water");
+
+		// timer query setup
+		// use multiple queries to avoid stalling on getting the results
+		glGenQueries(querycount, queries);
 
 		while (running)
 		{
+			glDepthMask(GL_TRUE);
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+			glEnable(GL_DEPTH_TEST);
+
+			glDisable(GL_BLEND);
 
 			this->window->Update();
 			if (minimized) continue;
-			ImGui_ImplGlfwGL3_NewFrame();
+			ImGui_ImplOpenGL3_NewFrame();
+			ImGui_ImplGlfw_NewFrame();
+			ImGui::NewFrame();
 
 			Times::Instance()->Update(glfwGetTime());
 
@@ -135,34 +186,48 @@ namespace SimpleWater
 			//for HDR //draw current "to screen" to another texture draw water there too, then draw quad to screen from this texture
 			//for Bloom //draw current "to screen" to yet another texture in same shaders
 			GenerateGUI(); // <-- (generate) to screen
-			glBindFramebuffer(GL_DRAW_FRAMEBUFFER, frameBuffer->handle);
+			FBOManager::Instance()->BindFrameBuffer(GL_DRAW_FRAMEBUFFER, frameBuffer->handle);
 			DrawReflection(); // <-- to fb texture
-			DrawRefraction(); // <-- to fb texture
-			DrawSkybox(); // <-- to pf texture
-			Draw(); // <-- to pf texture
-			DrawWater(); // <-- to pf textures
+			DrawGeoUnderWater(); // <-- to fb texture
+			FBOManager::Instance()->BindFrameBuffer(GL_DRAW_FRAMEBUFFER, postFrameBuffer->handle);
+			DrawSkybox(); // <-- to postfb texture
+			Draw(); // <-- to postfb texture
+			DrawWater(); // <-- to postfb textures
+
+			// display timer query results from querycount frames before
+			if (GL_TRUE == glIsQuery(queries[(current_query + 1) % querycount])) {
+				GLuint64 result;
+				glGetQueryObjectui64v(queries[(current_query + 1) % querycount], GL_QUERY_RESULT, &result);
+				waterShaderTime = result * 1.e-9;
+			}
+			// advance query counter
+			current_query = (current_query + 1) % querycount;
+
 			if (post)
 			{
 				blurredBrightTexture = Render::Instance()->MultiBlur(brightLightTexture, blurLevel, blurSize, GraphicsStorage::shaderIDs["fastBlur"]); //blur bright color
-				glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+				FBOManager::Instance()->BindFrameBuffer(GL_DRAW_FRAMEBUFFER, 0);
 				DrawHDR(blurredBrightTexture); // <-- to screen from hdr and bloom textures
 			}
 			else
 			{
-				glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+				FBOManager::Instance()->BindFrameBuffer(GL_DRAW_FRAMEBUFFER, 0);
 				ShaderManager::Instance()->SetCurrentShader(GraphicsStorage::shaderIDs["quadToScreen"]);
-				glActiveTexture(GL_TEXTURE0);
-				glBindTexture(GL_TEXTURE_2D, hdrBufferTextureHandle);
-				DebugDraw::Instance()->DrawQuad();
+				hdrTexture->ActivateAndBind(0);
+				Plane::Instance()->vao.Bind();
+				glDrawElements(GL_TRIANGLES, Plane::Instance()->vao.indicesCount, GL_UNSIGNED_SHORT, (void*)0); // mode, count, type, element array buffer offset
 			}
 			
 			
 			DrawTextures(windowWidth, windowHeight);
 			ImGui::Render(); // <-- (draw) to screen
+			ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 			this->window->SwapBuffers();
 		}
 		GraphicsStorage::Clear();
-		ImGui_ImplGlfwGL3_Shutdown();
+		ImGui_ImplOpenGL3_Shutdown();
+		ImGui_ImplGlfw_Shutdown();
+		ImGui::DestroyContext();
 		this->window->Close();
 	}
 
@@ -265,13 +330,13 @@ namespace SimpleWater
 
 		Material* waterMaterial = new Material();
 		water->AssignMaterial(waterMaterial);
-		Mesh* waterMesh = GenerateWaterMesh(waterSize, waterSize);
+		Vao* waterMesh = GenerateWaterMesh(waterSize, waterSize);
 		dynamicMeshes.push_back(waterMesh);
 
 		water->AssignMesh(waterMesh);
-		water->SetScale(Vector3(100.f, 1.f, 100.f));
-		water->SetPosition(Vector3(-50.f, 0.f, 50.f));
-		water->SetOrientation(Quaternion(90.f, Vector3(0.f, 1.f, 0.f)));
+		water->node->SetScale(Vector3(100.f, 1.f, 100.f));
+		water->node->SetPosition(Vector3(-50.f, 0.f, 50.f));
+		water->node->SetOrientation(Quaternion(90.f, Vector3(0.f, 1.f, 0.f)));
 
 		waterMaterial->SetShininess(10.f);
 		waterMaterial->SetSpecularIntensity(0.55f);
@@ -284,11 +349,11 @@ namespace SimpleWater
 		sphere2->mat->SetSpecularIntensity(3.f);
 
 		sphere2 = Scene::Instance()->addObject("sphere", Vector3(0.f, 5.f, 0.f));
-		sphere2->SetScale(Vector3(4.f, 4.f, 4.f));
+		sphere2->node->SetScale(Vector3(4.f, 4.f, 4.f));
 		sphere2->mat->SetShininess(20.f);
 		sphere2->mat->SetSpecularIntensity(3.f);
 
-		DebugDraw::Instance()->box.mat->AssignTexture(GraphicsStorage::cubemaps[0]);
+		Box::Instance()->mat->AssignTexture(GraphicsStorage::cubemaps[0]);
 
 		for (int i = 0; i < 20; i++)
 		{
@@ -356,8 +421,6 @@ namespace SimpleWater
 		window->SetCursorPos(windowMidX, windowMidY+100.0);
 		CameraManager::Instance()->AddCamera("default", currentCamera);
 		CameraManager::Instance()->SetCurrentCamera("default");
-		DebugDraw::Instance()->Projection = &currentCamera->ProjectionMatrix;
-		DebugDraw::Instance()->View = &currentCamera->ViewMatrix;
 	}
 
 	void
@@ -402,7 +465,7 @@ namespace SimpleWater
 		ImGui::SliderFloat("Distortion Strength", &wave_distortion, 0.0f, 10.0f);
 		wave_strength = wave_distortion / 100.f;
 		ImGui::SliderFloat("Shore Transparency", &max_depth_transparent, 0.0f, 10.0f);
-		ImGui::SliderFloat("Water Color/Refraction", &water_color_refraction_blend, 0.0f, 100.0f);
+		ImGui::SliderFloat("Water Transparency Depth", &water_transparency_depth, 0.0f, 100.0f);
 		ImGui::SliderFloat("Fresnel (Refl/Refr)", &fresnelAdjustment, 0.0f, 5.0f);
 		ImGui::SliderFloat("Soften Normals", &soften_normals, 2.0f, 9.0f);
 
@@ -411,6 +474,7 @@ namespace SimpleWater
 		ImGui::Text("STATS:");
 		ImGui::Text("Objects rendered %d", objectsRendered);
 		ImGui::Text("FPS %.3f", 1.0 / Times::Instance()->deltaTime);
+		ImGui::Text("Water Shader Time %.6f", waterShaderTime);
 		ImGui::Text("TimeStep %.3f", 1.0 / Times::Instance()->timeStep);
 		ImGui::End();
 	}
@@ -418,15 +482,13 @@ namespace SimpleWater
 	void
 	SimpleWaterApp::DrawSkybox()
 	{
-		GLenum DrawBuffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
 		Vector4F plane = Vector4F(0.f, 1.f, 0.f, 100000.146f);
-		Render::Instance()->drawSkyboxWithClipPlane(postFrameBuffer, DrawBuffers, 2, GraphicsStorage::cubemaps[0], plane, currentCamera->ViewMatrix);
+		Render::Instance()->drawSkyboxWithClipPlane(postFrameBuffer, GraphicsStorage::cubemaps[0], plane, currentCamera->ViewMatrix);
 	}
 
 	void
 	SimpleWaterApp::Draw()
 	{
-		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, postFrameBuffer->handle);
 		GLuint currentShaderID = GraphicsStorage::shaderIDs["color"];
 		ShaderManager::Instance()->SetCurrentShader(currentShaderID);
 
@@ -454,8 +516,8 @@ namespace SimpleWater
 	void
 	SimpleWaterApp::DrawReflection()
 	{
-		GLenum DrawBuffers[] = { GL_COLOR_ATTACHMENT0 };
-		glDrawBuffers(1, DrawBuffers);
+		
+		glDrawBuffer(GL_COLOR_ATTACHMENT0);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glCullFace(GL_FRONT);
 
@@ -471,14 +533,15 @@ namespace SimpleWater
 		);
 		View = View * Matrix4::scale(Vector3(1.f, -1.f, 1.f));
 
-		glEnable(GL_CLIP_PLANE0);
+		
 		Vector4F plane = Vector4F(0.0, 1.0, 0.0, 0.f); //plane normal and height
 
-		Render::Instance()->drawSkyboxWithClipPlane(frameBuffer, DrawBuffers, 1, GraphicsStorage::cubemaps[0], plane, View);
+		Render::Instance()->drawSkyboxWithClipPlane(frameBuffer, GraphicsStorage::cubemaps[0], plane, View);
 
-		GLuint currentShaderID = GraphicsStorage::shaderIDs["color"];
+		GLuint currentShaderID = GraphicsStorage::shaderIDs["colorRefRaf"];
 		ShaderManager::Instance()->SetCurrentShader(currentShaderID);
 
+		glEnable(GL_CLIP_PLANE0);
 		GLuint planeHandle = glGetUniformLocation(currentShaderID, "plane");
 		glUniform4fv(planeHandle, 1, &plane[0]);
 
@@ -506,33 +569,21 @@ namespace SimpleWater
 	}
 
 	void
-	SimpleWaterApp::DrawRefraction()
+	SimpleWaterApp::DrawGeoUnderWater()
 	{
-		GLenum DrawBuffers[] = { GL_COLOR_ATTACHMENT1 };
-		glDrawBuffers(1, DrawBuffers);
+		GLuint currentShaderID = GraphicsStorage::shaderIDs["colorRefRaf"];
+		glDrawBuffer(GL_COLOR_ATTACHMENT1);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		GLuint currentShaderID = GraphicsStorage::shaderIDs["color"];
 		ShaderManager::Instance()->SetCurrentShader(currentShaderID);
 
 		float plane[4] = { 0.0, -1.0, 0.0, 0.146f }; //plane normal and height
-		glEnable(GL_CLIP_PLANE0);
-
 		GLuint planeHandle = glGetUniformLocation(currentShaderID, "plane");
 		glUniform4fv(planeHandle, 1, &plane[0]);
 
 		GLuint CameraPos = glGetUniformLocation(currentShaderID, "CameraPos");
 		Vector3F camPos = currentCamera->GetPosition2().toFloat();
 		glUniform3fv(CameraPos, 1, &camPos.x);
-
-		GLuint LightDir = glGetUniformLocation(currentShaderID, "LightInvDirection_worldspace");
-		glUniform3fv(LightDir, 1, &lightInvDir.x);
-
-		GLuint liPower = glGetUniformLocation(currentShaderID, "lightPower");
-		glUniform1f(liPower, light_power);
-
-		GLuint liColor = glGetUniformLocation(currentShaderID, "lightColor");
-		glUniform3fv(liColor, 1, &light_color.x);
 
 		FrustumManager::Instance()->ExtractPlanes(CameraManager::Instance()->ViewProjection);
 
@@ -547,30 +598,11 @@ namespace SimpleWater
 		GLuint currentShaderID = GraphicsStorage::shaderIDs["water"];
 		ShaderManager::Instance()->SetCurrentShader(currentShaderID);
 
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, reflectionBufferTexture->handle);
-		GLuint reflectionSampler = glGetUniformLocation(currentShaderID, "reflectionSampler");
-		glUniform1i(reflectionSampler, 0);
-
-		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, refractionBufferTexture->handle);
-		GLuint refractionSampler = glGetUniformLocation(currentShaderID, "refractionSampler");
-		glUniform1i(refractionSampler, 1);
-
-		glActiveTexture(GL_TEXTURE2);
-		glBindTexture(GL_TEXTURE_2D, GraphicsStorage::textures[1]->handle); //normal
-		GLuint normalSampler = glGetUniformLocation(currentShaderID, "normalMapSampler");
-		glUniform1i(normalSampler, 2);
-
-		glActiveTexture(GL_TEXTURE3);
-		glBindTexture(GL_TEXTURE_2D, GraphicsStorage::textures[2]->handle); //dudv
-		GLuint dudvSampler = glGetUniformLocation(currentShaderID, "dudvMapSampler");
-		glUniform1i(dudvSampler, 3);
-
-		glActiveTexture(GL_TEXTURE4);
-		glBindTexture(GL_TEXTURE_2D, depthTextureBufferTexture->handle);
-		GLuint depthSampler = glGetUniformLocation(currentShaderID, "depthMapSampler");
-		glUniform1i(depthSampler, 4);
+		reflectionBufferTexture->ActivateAndBind(0);
+		underWaterBufferTexture->ActivateAndBind(1);
+		GraphicsStorage::textures[1]->ActivateAndBind(2); //normal
+		GraphicsStorage::textures[2]->ActivateAndBind(3); //dudv
+		depthTextureBufferTexture->ActivateAndBind(4);
 
 		GLuint CameraPos = glGetUniformLocation(currentShaderID, "CameraPos");
 		Vector3F camPos = currentCamera->GetPosition2().toFloat();
@@ -604,10 +636,10 @@ namespace SimpleWater
 		GLuint maxDepthTransparent = glGetUniformLocation(currentShaderID, "maxDepthTransparent");
 		glUniform1f(maxDepthTransparent, max_depth_transparent);
 
-		GLuint waterRefractionBlend = glGetUniformLocation(currentShaderID, "waterRefractionDepth");
-		glUniform1f(waterRefractionBlend, water_color_refraction_blend);
+		GLuint waterRefractionBlend = glGetUniformLocation(currentShaderID, "waterTransparencyDepth");
+		glUniform1f(waterRefractionBlend, water_transparency_depth);
 
-		Matrix4 dModel = water->node.TopDownTransform;
+		Matrix4 dModel = water->node->TopDownTransform;
 		Matrix4F ModelMatrix = dModel.toFloat();
 		Matrix4F MVP = (dModel*CameraManager::Instance()->ViewProjection).toFloat();
 
@@ -635,16 +667,13 @@ namespace SimpleWater
 		GLuint softenNormals = glGetUniformLocation(currentShaderID, "softenNormals");
 		glUniform1f(softenNormals, soften_normals);
 
-		glEnable(GL_BLEND);
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
 		//bind vao before drawing
-		glBindVertexArray(water->mesh->vaoHandle);
+		glBindVertexArray(water->vao->vaoHandle);
 
 		// Draw the triangles !
-		glDrawElements(GL_TRIANGLES, water->mesh->indicesSize, GL_UNSIGNED_INT, (void*)0); // mode, count, type, element array buffer offset
-
-		glDisable(GL_BLEND);
+		glBeginQuery(GL_TIME_ELAPSED, queries[current_query]);
+		glDrawElements(GL_TRIANGLES, water->vao->indicesCount, GL_UNSIGNED_INT, (void*)0); // mode, count, type, element array buffer offset
+		glEndQuery(GL_TIME_ELAPSED);
 	}
 
 
@@ -652,16 +681,12 @@ namespace SimpleWater
 	SimpleWaterApp::SetUpBuffers(int windowWidth, int windowHeight)
 	{
 		frameBuffer = FBOManager::Instance()->GenerateFBO();
-		Texture* reflectionTexture  = frameBuffer->RegisterTexture(new Texture(GL_TEXTURE_2D, 0, GL_RGB32F, windowWidth, windowHeight, GL_RGB, GL_FLOAT, NULL, GL_COLOR_ATTACHMENT0)); //reflection
-		Texture* refractionTexture = frameBuffer->RegisterTexture(new Texture(GL_TEXTURE_2D, 0, GL_RGB32F, windowWidth, windowHeight, GL_RGB, GL_FLOAT, NULL, GL_COLOR_ATTACHMENT1)); //refraction
-		Texture* frameBufferDepthTexture = frameBuffer->RegisterTexture(new Texture(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32, windowWidth, windowHeight, GL_DEPTH_COMPONENT, GL_FLOAT, NULL, GL_DEPTH_ATTACHMENT)); //depth
+		reflectionBufferTexture = frameBuffer->RegisterTexture(new Texture(GL_TEXTURE_2D, 0, GL_RGB32F, windowWidth, windowHeight, GL_RGB, GL_FLOAT, NULL, GL_COLOR_ATTACHMENT0)); //reflection
+		underWaterBufferTexture = frameBuffer->RegisterTexture(new Texture(GL_TEXTURE_2D, 0, GL_RGB32F, windowWidth, windowHeight, GL_RGB, GL_FLOAT, NULL, GL_COLOR_ATTACHMENT1)); //under water
+		depthTextureBufferTexture = frameBuffer->RegisterTexture(new Texture(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32, windowWidth, windowHeight, GL_DEPTH_COMPONENT, GL_FLOAT, NULL, GL_DEPTH_ATTACHMENT)); //depth
 		frameBuffer->AddDefaultTextureParameters();
 		frameBuffer->GenerateAndAddTextures();
 		frameBuffer->CheckAndCleanup();
-
-		reflectionBufferTexture = reflectionTexture;
-		refractionBufferTexture = refractionTexture;
-		depthTextureBufferTexture = frameBufferDepthTexture;
 
 		postFrameBuffer = FBOManager::Instance()->GenerateFBO();
 
@@ -674,7 +699,6 @@ namespace SimpleWater
 		postFrameBuffer->CheckAndCleanup();
 
 		Render::Instance()->AddMultiBlurBuffer(this->windowWidth, this->windowHeight);
-
 		Render::Instance()->GenerateEBOs();
 	}
 
@@ -696,16 +720,16 @@ namespace SimpleWater
 		int glHeight = (int)(fHeight*0.1f);
 
 		Render::Instance()->drawRegion(0, 0, glWidth, glHeight, reflectionBufferTexture);
-		Render::Instance()->drawRegion(width - glWidth, 0, glWidth, glHeight, refractionBufferTexture);
+		Render::Instance()->drawRegion(width - glWidth, 0, glWidth, glHeight, underWaterBufferTexture);
 		Render::Instance()->drawRegion(width - glWidth, height - glHeight, glWidth, glHeight, blurredBrightTexture);
 		Render::Instance()->drawRegion(0, height - glHeight, glWidth, glHeight, hdrTexture);
 	}
 
-	Mesh* SimpleWaterApp::GenerateWaterMesh(int width, int height)
+	Vao* SimpleWaterApp::GenerateWaterMesh(int width, int height)
 	{
 		std::vector<unsigned int> indices;
 		std::vector<VertexData> vertexData;
-		Mesh* waterMesh = new Mesh();
+		Vao* waterMesh = new Vao();
 		OBJ* obj = new OBJ();
 
 		int vertexCount = width * height;
@@ -749,18 +773,24 @@ namespace SimpleWater
 		//Bind VAO
 		glBindVertexArray(waterMesh->vaoHandle);
 
+		waterMesh->vertexBuffers.reserve(2);
+
+		GLuint vertexbuffer;
 		// 1rst attribute buffer : vertices
-		glGenBuffers(1, &waterMesh->vertexbuffer);
-		glBindBuffer(GL_ARRAY_BUFFER, waterMesh->vertexbuffer);
+		glGenBuffers(1, &vertexbuffer);
+		glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
 		glBufferData(GL_ARRAY_BUFFER, vertexData.size() * sizeof(VertexData), &vertexData[0], GL_STATIC_DRAW);
 		glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, (void*)0);
 		glEnableVertexAttribArray(0);
+		waterMesh->vertexBuffers.push_back(vertexbuffer);
 
+		GLuint elementbuffer;
 		// 2th element buffer Generate a buffer for the indices as well
-		glGenBuffers(1, &waterMesh->elementbuffer);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, waterMesh->elementbuffer);
+		glGenBuffers(1, &elementbuffer);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementbuffer);
 		glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), &indices[0], GL_STATIC_DRAW);
-		waterMesh->indicesSize = (unsigned int)indices.size();
+		waterMesh->indicesCount = (unsigned int)indices.size();
+		waterMesh->vertexBuffers.push_back(elementbuffer);
 
 		//Unbind the VAO now that the VBOs have been set up
 		glBindVertexArray(0);
@@ -768,7 +798,7 @@ namespace SimpleWater
 		obj->dimensions = Vector3((float)width, 0.f, (float)height);
 		obj->center_of_mesh = obj->dimensions / 2.f;
 
-		waterMesh->obj = obj;
+		//waterMesh->obj = obj;
 
 		return waterMesh;
 	}

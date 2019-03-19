@@ -1,13 +1,12 @@
 //
 // Created by marwac-9 on 9/16/15.
 //
-
+#define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "PickingApp.h"
 #include "GraphicsManager.h"
 #include "GraphicsStorage.h"
 #include "Node.h"
 #include "Material.h"
-#include "Mesh.h"
 #include "OBJ.h"
 #include "Scene.h"
 #include "ShaderManager.h"
@@ -37,6 +36,11 @@
 #include "PointLight.h"
 #include "Texture.h"
 #include "Times.h"
+#include "InstanceSystem.h"
+#include <ctime> 
+#include <sstream>
+#include "stb_image_write.h"
+#include "FastInstanceSystem.h"
 
 using namespace mwm;
 using namespace Display;
@@ -78,35 +82,60 @@ namespace Picking
 			MouseCallback(mouseX, mouseY);
 		});
 
-		// window resize callback
-		this->window->SetWindowSizeFunction([this](int width, int height)
+		window->SetWindowSizeFunction([this](int width, int height)
 		{
-			this->windowWidth = width;
-			this->windowHeight = height;
-			this->windowMidX = windowWidth / 2.0f;
-			this->windowMidY = windowHeight / 2.0f;
-			this->window->SetSize(this->windowWidth, this->windowHeight);
-			FBOManager::Instance()->UpdateTextureBuffers(this->windowWidth, this->windowHeight);
-			currentCamera->UpdateSize(width, height);
+			if (!minimized)
+			{
+				this->windowWidth = width;
+				this->windowHeight = height;
+				this->windowMidX = windowWidth / 2.0f;
+				this->windowMidY = windowHeight / 2.0f;
+				this->window->SetSize(this->windowWidth, this->windowHeight);
+				FBOManager::Instance()->UpdateTextureBuffers(this->windowWidth, this->windowHeight);
+				currentCamera->UpdateSize(width, height);
+			}
 		});
 
-		this->window->SetMousePressFunction([this](int button, int action, int mods)
+		window->SetMousePressFunction([this](int button, int action, int mods)
 		{
 			if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
 			{
 				isLeftMouseButtonPressed = true;
 				if (currentScene == scene3Loaded) FireLightProjectile();
 			}
-			if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE)
+			else if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE)
 			{
 				isLeftMouseButtonPressed = false;
+			}
+			else if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS)
+			{
+				
+			}
+			else if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_RELEASE)
+			{
+			}
+			else if (button == GLFW_MOUSE_BUTTON_MIDDLE && action == GLFW_PRESS)
+			{
+				Scene::Instance()->InitializeSceneTree();
+				GraphicsManager::ReloadShader("directionalLightShadow");
+			}
+			else if (button == GLFW_MOUSE_BUTTON_MIDDLE && action == GLFW_RELEASE)
+			{
 			}
 
 		});
 
-		this->window->SetWindowIconifyFunction([this](int iconified) {
+		window->SetWindowIconifyFunction([this](int iconified) {
 			if (iconified) minimized = true;
 			else minimized = false;
+		});
+
+		window->SetDragAndDropFunction([this](int count, const char** paths) {
+			printf("nr of files: %d\n", count);
+			for (int i = 0; i < count; i++)
+			{
+				printf("file nr: %d, path: %s\n", i, paths[i]);
+			}
 		});
 
 		if (this->window->Open())
@@ -123,7 +152,8 @@ namespace Picking
 	void
 	PickingApp::Run()
 	{
-
+		window->SetTitle("Deferred HDR Bloom Particles Scenegraph Uniform-Buffers");
+		stbi_flip_vertically_on_write(true);
 		InitGL();
 
 		SetUpBuffers(this->windowWidth, this->windowHeight);
@@ -131,30 +161,37 @@ namespace Picking
 		GraphicsManager::LoadAllAssets();
 		//DebugDraw::Instance()->LoadPrimitives();
 
-		//For speed computation (FPS)
-		Times::Instance()->currentTime = glfwGetTime();
-
 		//camera rotates based on mouse movement, setting initial mouse pos will always focus camera at the beginning in specific position
 		window->SetCursorPos(windowMidX, windowMidY + 100);
 		window->SetCursorMode(GLFW_CURSOR_DISABLED);
 
 		SetUpCamera();
 
-		LoadScene2();
-		currentScene = scene2Loaded;
+		LoadScene0();
 
 		double customIntervalTime = 0;
 		Scene::Instance()->Update();
+ 
+		//glfwSwapInterval(0); //unlock fps
 
-		glfwSwapInterval(0); //unlock fps
+		IMGUI_CHECKVERSION();
+		ImGui::CreateContext();
+		ImGuiIO& io = ImGui::GetIO(); (void)io;
+		//io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
+		//io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;   // Enable Gamepad Controls
 
-		ImGui_ImplGlfwGL3_Init(this->window->GetGLFWWindow(), false);
+		// Setup Dear ImGui style
+		ImGui::StyleColorsDark();
+		//ImGui::StyleColorsClassic();
+
+		// Setup Platform/Renderer bindings
+		ImGui_ImplGlfw_InitForOpenGL(this->window->GetGLFWWindow(), false);
+		const char* glsl_version = "#version 130";
+		ImGui_ImplOpenGL3_Init(glsl_version);
 
 		std::chrono::time_point<std::chrono::high_resolution_clock> start, end;
 		std::chrono::duration<double> elapsed_seconds;
 		
-		window->SetTitle("Deffered HDR Bloom Particles Scenegraph Uniform-Buffers");
-		//glEnable(GL_POINT_SMOOTH);
 		while (running)
 		{
 			glDepthMask(GL_TRUE);
@@ -164,7 +201,9 @@ namespace Picking
 			glDisable(GL_BLEND);
 			this->window->Update();
 			if (minimized) continue;
-			ImGui_ImplGlfwGL3_NewFrame();
+			ImGui_ImplOpenGL3_NewFrame();
+			ImGui_ImplGlfw_NewFrame();
+			ImGui::NewFrame();
 
 			Times::Instance()->Update(glfwGetTime());
 
@@ -191,7 +230,7 @@ namespace Picking
 				}
 				if (currentScene == scene9Loaded)
 				{
-					SpawnSomeLights();
+					//SpawnSomeLights();
 				}
 			}
 
@@ -207,57 +246,56 @@ namespace Picking
 					PhysicsManager::Instance()->Update(Times::Instance()->dtInv);
 				}
 			}
-			
 
 			end = std::chrono::high_resolution_clock::now();
 			elapsed_seconds = end - start;
 			updateTime = elapsed_seconds.count();
 
 			Render::Instance()->UpdateEBOs();
-			
+
 			GenerateGUI();
 			DrawGeometryPass();
-			if (skybox != nullptr) DrawGSkybox();
+			DrawGeometryPassInstanced();
+			DrawGSkybox();
 
 			if (altButtonToggle) PickingTest();
 
 			DrawLightPass();
-			
-			//GenerateFastLines();
+
 			//if (skybox != nullptr) DrawSkybox();
-			
-			if (drawLines) DrawFastLineSystems(); 
-			if (drawPoints) DrawFastPointSystems();
-			if (drawParticles) DrawParticles();
+
+			if (drawLines) DrawFastLineSystems();  //<--- to light pass
+			if (drawPoints) DrawFastPointSystems();  //<--- to light pass
+			if (drawParticles) DrawParticles();  //<--- to light pass
 
 			if (post)
 			{
 				blurredBrightTexture = Render::Instance()->MultiBlur(brightLightTexture, bloomLevel, blurBloomSize, GraphicsStorage::shaderIDs["fastBlur"]);
-				
 				DrawHDR(blurredBrightTexture); //we draw color to screen here
-
 				BlitDepthToScreenPass(); //we blit depth so we can use it in forward rendering on top of deffered
 			}
 			else
 			{
 				BlitToScreenPass(); //final color and depth
 			}
-		
-			if (drawBB) DrawDebugInstanced();
+
+			if (drawBB) DrawFastBoundingBoxes();
 
 			DebugDraw::Instance()->DrawCrossHair();
 
 			if (drawMaps) DrawGeometryMaps(windowWidth, windowHeight);
 
 			ImGui::Render(); // <-- (draw) to screen
-
+			ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 			customIntervalTime += Times::Instance()->deltaTime;
 
 			this->window->SwapBuffers();
-
+			
 		}
 		GraphicsStorage::Clear();
-		ImGui_ImplGlfwGL3_Shutdown();
+		ImGui_ImplOpenGL3_Shutdown();
+		ImGui_ImplGlfw_Shutdown();
+		ImGui::DestroyContext();
 		this->window->Close();
 	}
 
@@ -270,7 +308,8 @@ namespace Picking
 		GraphicsStorage::ClearMaterials();
 		DebugDraw::Instance()->Clear();
 		lastPickedObject = nullptr;
-		skybox = nullptr;
+		firstObject = nullptr;
+		secondObject = nullptr;
 		spotLight1 = nullptr;
 		spotLightComp = nullptr;
 		directionalLightComp = nullptr;
@@ -281,15 +320,11 @@ namespace Picking
 	void
 	PickingApp::DrawParticles()
 	{
-		FBOManager::Instance()->BindFrameBuffer(draw, lightAndPostBuffer->handle); //we bind the lightandposteffect buffer for drawing
-		GLenum DrawBuffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
-		glDrawBuffers(2, DrawBuffers);
+		FBOManager::Instance()->BindFrameBuffer(GL_DRAW_FRAMEBUFFER, lightAndPostBuffer->handle); //we bind the lightandposteffect buffer for drawing
 		
 		GLuint particleShader = GraphicsStorage::shaderIDs["softparticle"];
 		ShaderManager::Instance()->SetCurrentShader(particleShader);
 
-		GLuint depthSampler = glGetUniformLocation(particleShader, "depthTextureSampler");
-		glUniform1i(depthSampler, 1);
 		depthTexture->ActivateAndBind(1);
 
 		GLuint screenSize = glGetUniformLocation(particleShader, "screenSize");
@@ -313,12 +348,10 @@ namespace Picking
 		particlesRendered = 0;
 		for (auto& pSystem : particleSystems) //particles not affected by light, rendered in forward rendering
 		{
-			if (FrustumManager::Instance()->isBoundingSphereInView(pSystem->object->node.centeredPosition, 1.0)) {
+			if (FrustumManager::Instance()->isBoundingSphereInView(pSystem->object->bounds->centeredPosition, 1.0)) {
 				particlesRendered += pSystem->Draw(viewProjection, particleShader, up, right);
 			}
 		}
-
-		FBOManager::Instance()->UnbindFrameBuffer(draw);
 	}
 
 	void
@@ -351,43 +384,33 @@ namespace Picking
 				}
 			}
 			else if (key == GLFW_KEY_1) {
-				currentScene = scene1Loaded;
 				LoadScene1();
 			}
 			else if (key == GLFW_KEY_2) {
-				currentScene = scene2Loaded;
 				LoadScene2();
 			}
 			else if (key == GLFW_KEY_3) {
-				currentScene = scene3Loaded;
 				LoadScene3();
 			}
 			else if (key == GLFW_KEY_4) {
-				currentScene = scene4Loaded;
 				LoadScene4();
 			}
 			else if (key == GLFW_KEY_5) {
-				currentScene = scene5Loaded;
 				LoadScene5();
 			}
 			else if (key == GLFW_KEY_6) {
-				currentScene = scene6Loaded;
 				LoadScene6();
 			}
 			else if (key == GLFW_KEY_7) {
-				currentScene = scene7Loaded;
 				LoadScene7();
 			}
 			else if (key == GLFW_KEY_8) {
-				currentScene = scene8Loaded;
 				LoadScene8();
 			}
 			else if (key == GLFW_KEY_9) {
-				currentScene = scene9Loaded;
 				LoadScene9();
 			}
 			else if (key == GLFW_KEY_0) {
-				currentScene = scene0Loaded;
 				LoadScene0();
 			}
 			else if (key == GLFW_KEY_BACKSPACE)
@@ -411,7 +434,8 @@ namespace Picking
 
 			}
 			else if (key == GLFW_KEY_S && window->GetKey(GLFW_KEY_LEFT_CONTROL)) {
-				GraphicsManager::SaveToOBJ(GraphicsStorage::objects.back());
+				auto it = --GraphicsStorage::objs.end();
+				GraphicsManager::SaveToOBJ(it->second);
 				std::cout << "Last Mesh Saved" << std::endl;
 			}
 			else if (key == GLFW_KEY_O) {
@@ -446,8 +470,8 @@ namespace Picking
 
 			else if (key == GLFW_KEY_E)
 			{
-				Object* cube = Scene::Instance()->addPhysicObject("cube", Vector3(0.f, 8.f, 0.f));
-				cube->SetPosition(Vector3(0.f, (float)Scene::Instance()->idCounter * 2.f - 10.f + 0.001f, 0.f));
+				Object* cube = Scene::Instance()->addPhysicObject("cube", Vector3(0.0, 8.0, 0.0));
+				cube->node->SetPosition(Vector3(0.0, (double)Object::Count() * 2.0 - 10.0 + 0.001, 0.0));
 			}
 			else if (key == GLFW_KEY_L)
 			{
@@ -464,6 +488,10 @@ namespace Picking
 				if (drawParticles) drawParticles = false;
 				else drawParticles = true;
 			}
+			else if (key == GLFW_KEY_PRINT_SCREEN)
+			{
+				Screenshot2();
+			}
 			else if (key == GLFW_KEY_KP_ADD) increment+=20;//Times::timeModifier += 0.0005;
 			else if (key == GLFW_KEY_KP_SUBTRACT) increment-=20;//Times::timeModifier -= 0.0005;
 		}
@@ -474,10 +502,10 @@ namespace Picking
 	{
 		//if (window->GetKey(GLFW_KEY_KP_ADD) == GLFW_PRESS) increment++;//Times::timeModifier += 0.0005;
 		//if (window->GetKey(GLFW_KEY_KP_SUBTRACT) == GLFW_PRESS) increment--;//Times::timeModifier -= 0.0005;
-		if (window->GetKey(GLFW_KEY_UP) == GLFW_PRESS) if (lastPickedObject) lastPickedObject->Translate(Vector3(0.f, 0.05f, 0.f));
-		if (window->GetKey(GLFW_KEY_DOWN) == GLFW_PRESS) if (lastPickedObject) lastPickedObject->Translate(Vector3(0.f, -0.05f, 0.f));
-		if (window->GetKey(GLFW_KEY_LEFT) == GLFW_PRESS) if (lastPickedObject) lastPickedObject->Translate(Vector3(0.05f, 0.f, 0.f));
-		if (window->GetKey(GLFW_KEY_RIGHT) == GLFW_PRESS) if (lastPickedObject) lastPickedObject->Translate(Vector3(-0.05f, 0.f, 0.f));
+		if (window->GetKey(GLFW_KEY_UP) == GLFW_PRESS) if (lastPickedObject) lastPickedObject->node->Translate(Vector3(0.f, 0.05f, 0.f));
+		if (window->GetKey(GLFW_KEY_DOWN) == GLFW_PRESS) if (lastPickedObject) lastPickedObject->node->Translate(Vector3(0.f, -0.05f, 0.f));
+		if (window->GetKey(GLFW_KEY_LEFT) == GLFW_PRESS) if (lastPickedObject) lastPickedObject->node->Translate(Vector3(0.05f, 0.f, 0.f));
+		if (window->GetKey(GLFW_KEY_RIGHT) == GLFW_PRESS) if (lastPickedObject) lastPickedObject->node->Translate(Vector3(-0.05f, 0.f, 0.f));
 
 		if (altButtonToggle)
 		{
@@ -488,6 +516,7 @@ namespace Picking
 			currentCamera->holdingUp = (window->GetKey(GLFW_KEY_SPACE) == GLFW_PRESS);
 			currentCamera->holdingDown = (window->GetKey(GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS);
 		}
+
 		currentCamera->fov = fov;
 		currentCamera->near = near;
 		currentCamera->far = far;
@@ -498,26 +527,27 @@ namespace Picking
 
 		if (pointLightTest != nullptr)
 		{
-			pointLightTest->SetOrientation(spotTotalRotation);
-			pointLightTest->SetPosition(Vector3(pposX, pposY, pposZ));
-			pointLightTest->SetScale(Vector3(pointScale, pointScale, pointScale));
+			pointLightTest->node->SetOrientation(spotTotalRotation);
+			pointLightTest->node->SetPosition(Vector3(pposX, pposY, pposZ));
+			pointLightTest->node->SetScale(Vector3(pointScale, pointScale, pointScale));
 		}
+
 		if (spotLight1 != nullptr)
 		{
-			spotLight1->SetOrientation(spotTotalRotation);
-			spotLight1->SetPosition(Vector3(posX, posY, posZ));
+			spotLight1->node->SetOrientation(spotTotalRotation);
+			spotLight1->node->SetPosition(Vector3(posX, posY, posZ));
 			spotLightComp->SetCutOff(spotLightCutOff);
 			spotLightComp->SetOuterCutOff(spotLightOuterCutOff);
 			spotLightComp->SetRadius(spotSZ);
 		}
-		
+
 		if (directionalLightComp != nullptr) 
 		{
 			Quaternion qXangled = Quaternion(xAngled, Vector3(1.0, 0.0, 0.0));
 			Quaternion qYangled = Quaternion(yAngled, Vector3(0.0, 1.0, 0.0));
 			Quaternion dirTotalRotation = qYangled * qXangled;
-			directionalLightComp->object->SetOrientation(dirTotalRotation);
-			directionalLightComp->object->SetPosition(currentCamera->GetPosition2());
+			directionalLightComp->object->node->SetOrientation(dirTotalRotation);
+			directionalLightComp->object->node->SetPosition(currentCamera->GetPosition2());
 		}
 
 		if (directionalLightComp2 != nullptr)
@@ -525,10 +555,10 @@ namespace Picking
 			Quaternion qXangled2 = Quaternion(xAngled2, Vector3(1.0, 0.0, 0.0));
 			Quaternion qYangled2 = Quaternion(yAngled2, Vector3(0.0, 1.0, 0.0));
 			Quaternion dirTotalRotation2 = qYangled2 * qXangled2;
-			directionalLightComp2->object->SetOrientation(dirTotalRotation2);
-			directionalLightComp2->object->SetPosition(currentCamera->GetPosition2());
+			directionalLightComp2->object->node->SetOrientation(dirTotalRotation2);
+			directionalLightComp2->object->node->SetPosition(currentCamera->GetPosition2());
 		}
-
+		/*
 		if (currentScene == scene0Loaded)
 		{
 			Quaternion qX = Quaternion(xCubeAngle, Vector3(1, 0, 0));
@@ -544,23 +574,23 @@ namespace Picking
 			Matrix4 totalMatRot = zRot * yRot * xRot;
 			Quaternion totMatToQ = totalMatRot.toQuaternion();
 
-			qXCube1->SetPosition(totalRot.getLeft()*10.0);
-			qYCube1->SetPosition(totalRot.getUp()*10.0);
-			qZCube1->SetPosition(totalRot.getForward()*10.0);
+			qXCube1->node->SetPosition(totalRot.getLeft()*10.0);
+			qYCube1->node->SetPosition(totalRot.getUp()*10.0);
+			qZCube1->node->SetPosition(totalRot.getForward()*10.0);
 
-			qXCube1->SetOrientation(totalRot);
-			qYCube1->SetOrientation(totalRot);
-			qZCube1->SetOrientation(totalRot);
+			qXCube1->node->SetOrientation(totalRot);
+			qYCube1->node->SetOrientation(totalRot);
+			qZCube1->node->SetOrientation(totalRot);
 
-			qXCube2->SetPosition(totalMatRot.getLeft()*10.0);
-			qYCube2->SetPosition(totalMatRot.getUp()*10.0);
-			qZCube2->SetPosition(totalMatRot.getForward()*10.0);
+			qXCube2->node->SetPosition(totalMatRot.getLeft()*10.0);
+			qYCube2->node->SetPosition(totalMatRot.getUp()*10.0);
+			qZCube2->node->SetPosition(totalMatRot.getForward()*10.0);
 
-			qXCube2->SetOrientation(totMatToQ);
-			qYCube2->SetOrientation(totMatToQ);
-			qZCube2->SetOrientation(totMatToQ);
+			qXCube2->node->SetOrientation(totMatToQ);
+			qYCube2->node->SetOrientation(totMatToQ);
+			qZCube2->node->SetOrientation(totMatToQ);
 		}
-	
+		*/
 	}
 
 	void
@@ -573,7 +603,7 @@ namespace Picking
 			//read pixel from picking texture
 			unsigned int Pixel;
 			//inverted y coordinate because glfw 0,0 starts at topleft while opengl texture 0,0 starts at bottomleft
-			geometryBuffer->ReadPixelData((unsigned int)leftMouseX, this->windowHeight - (unsigned int)leftMouseY, GL_RED_INTEGER, GL_UNSIGNED_INT, &Pixel, pickingTexture->attachment);
+			geometryBuffer->ReadPixelData((unsigned int)leftMouseX, this->windowHeight - (unsigned int)leftMouseY, 1, 1, GL_UNSIGNED_INT, &Pixel, pickingTexture);
 			pickedID = Pixel;
 			
 			//std::cout << pickedID << std::endl;
@@ -588,10 +618,11 @@ namespace Picking
 				lastPickedObject->mat->color = Vector3F(0.0f, 0.5f, 0.5f);
 				//lastPickedObject->mat->SetDiffuseIntensity(80.f);
 				Vector3F world_position;
-				geometryBuffer->ReadPixelData((unsigned int)leftMouseX, this->windowHeight - (unsigned int)leftMouseY, GL_RGB, GL_FLOAT, world_position.vect, worldPosTexture->attachment);
+				geometryBuffer->ReadPixelData((unsigned int)leftMouseX, this->windowHeight - (unsigned int)leftMouseY, 1, 1, GL_FLOAT, world_position.vect, worldPosTexture);
 				Vector3 dWorldPos = Vector3(world_position.x, world_position.y, world_position.z);
 				Vector3 impulse = (dWorldPos - currentCamera->GetPosition2()).vectNormalize();
 				if (RigidBody* body = this->lastPickedObject->GetComponent<RigidBody>()) body->ApplyImpulse(impulse, 1.0, dWorldPos);
+				if(!Scene::Instance()->fastInstanceSystemComponents.empty()) Scene::Instance()->fastInstanceSystemComponents[0]->ReturnObject(lastPickedObject); //just a test
 			}
 		}
 	}
@@ -619,13 +650,14 @@ namespace Picking
 	PickingApp::LoadScene1()
 	{
 		Clear();
+		DebugDraw::Instance()->Init(Scene::Instance()->addChild());
 		lightsPhysics = false;
 		currentCamera->SetPosition(Vector3(0.f, 20.f, 60.f));
-		DebugDraw::Instance()->Init(Scene::Instance()->addChild());
+		//DebugDraw::Instance()->Init(Scene::Instance()->addChild());
 		Object* sphere = Scene::Instance()->addPhysicObject("sphere", Vector3(0.f, 3.f, 0.f));//automatically registered for collision detection and response
+		
 		RigidBody* body = sphere->GetComponent<RigidBody>();
-		body->isKinematic = true;
-		body->SetMass(FLT_MAX);
+		body->SetIsKinematic(true);
 		sphere->mat->SetSpecularIntensity(4.f);
 		sphere->mat->SetShininess(10.f);
 
@@ -637,33 +669,35 @@ namespace Picking
 		//tunnel->mat->SetSpecularIntensity(0.f);
 		//tunnel->mat->SetShininess(10.f);
 
-		body = new RigidBody(tunnel);
+		body = new RigidBody();
 		tunnel->AddComponent(body);
 		//tunnel->SetScale(Vector3(25.f, 2.f, 25.f));
-		body->SetMass(FLT_MAX);
-		body->isKinematic = true;
+		body->SetIsKinematic(true);
 		PhysicsManager::Instance()->RegisterRigidBody(body);
 
 		Object* directionalLight = Scene::Instance()->addDirectionalLight();
-		directionalLight->mat->SetDiffuseIntensity(0.05f);
+		directionalLight->mat->SetDiffuseIntensity(0.15f);
+		directionalLightComp = directionalLight->GetComponent<DirectionalLight>();
 
 		///when rendering lights only diffuse intensity and color is important as they are light power and light color
 		Object* pointLight = Scene::Instance()->addPointLight(false, Vector3(0.f, 0.f, 50.f), Vector3F(1.0f, 1.0f, 1.0f));
 		pointLight->mat->SetDiffuseIntensity(10.f);
-		pointLight->SetScale(Vector3(40.f, 40.f, 40.f));
+		pointLight->node->SetScale(Vector3(40.f, 40.f, 40.f));
+		//pointLightCompTest = pointLight->GetComponent<PointLight>();
+		//pointLightTest = pointLight;
 
 		pointLight = Scene::Instance()->addPointLight(false, Vector3(-1.4f, -1.9f, 9.0f), Vector3F(0.1f, 0.0f, 0.0f));
-		pointLight->SetScale(Vector3(10.f, 10.f, 10.f));
+		pointLight->node->SetScale(Vector3(10.f, 10.f, 10.f));
 		//pointLight->mat->SetDiffuseIntensity(5.f);
 		pointLight = Scene::Instance()->addPointLight(false, Vector3(0.0f, -1.8f, 4.0f), Vector3F(0.0f, 0.0f, 0.2f));
 		pointLight = Scene::Instance()->addPointLight(false, Vector3(0.8f, -1.7f, 6.0f), Vector3F(0.0f, 0.1f, 0.0f));
 		//pointLight->mat->SetDiffuseIntensity(1.f);
-
+		
 		//Object* plane = Scene::Instance()->addObject("cube", Vector3(0.f, -2.5f, 0.f));
 		//body = new RigidBody(plane);
 		//plane->AddComponent(body);
 		//plane->SetScale(Vector3(25.f, 2.f, 25.f));
-		//body->SetMass(FLT_MAX); 
+		//body->SetMass(DBL_MAX); 
 		//body->isKinematic = true;
 		//PhysicsManager::Instance()->RegisterRigidBody(body); //manually registered after manually creating rigid body component and assembling the object
 
@@ -672,13 +706,15 @@ namespace Picking
 		for (int i = 0; i < 100; i++)
 		{
 			//Vector3 pos = Scene::Instance()->generateRandomIntervallVectorCubic(-gridSize + increment, gridSize + increment);
-			Vector3 pos = Scene::Instance()->generateRandomIntervallVectorSpherical((gridSize + increment - 2) * 100, (gridSize + increment) * 100);
+			Vector3 pos = Scene::Instance()->generateRandomIntervallVectorSpherical((gridSize + increment - 2), (gridSize + increment));
 
 			double len = pos.vectLengt();
 			Object* sphere = Scene::Instance()->addObject("sphere", pos);
 			sphere->mat->SetShininess(20.f);
 			sphere->mat->SetSpecularIntensity(3.f);
 		}
+		currentScene = scene1Loaded;
+		Scene::Instance()->InitializeSceneTree();
 	}
 
 	void
@@ -692,7 +728,7 @@ namespace Picking
 		int x = (int)playerPos.x / gridSize;
 		int y = (int)playerPos.y / gridSize;
 		int z = (int)playerPos.z / gridSize;
-		
+
 		//if (prevGridPos[0] == x && prevGridPos[1] == y && prevGridPos[2] == z) return;
 		//printf("%d %d %d\n", x, y, z);
 		prevGridPos[0] = x;
@@ -708,43 +744,48 @@ namespace Picking
 		srand(xyz);
 		lightsPhysics = false;
 		//currentCamera->SetPosition(Vector3(0.f, 10.f, 60.f));
-		
+
+		//Object* instanceObject = Scene::Instance()->addInstanceSystem("icosphere", 100000);
+		//instanceObject->GetComponent<InstanceSystem>()->paused = false;
+
 		Object* insideOutCube = Scene::Instance()->addObject("cube_inverted");
-		insideOutCube->SetScale(Vector3(40,40,40));
+		insideOutCube->node->SetScale(Vector3(40,40,40));
 		insideOutCube->mat->SetShininess(1.0);
 		insideOutCube->mat->SetMetallic(0.0);
 		insideOutCube->mat->AssignTexture(GraphicsStorage::textures.at(9));
 		insideOutCube->mat->tileX = 10;
 		insideOutCube->mat->tileY = 10;
+		insideOutCube->AddComponent(new RigidBody());
 
 		Object* insideOutCube2 = Scene::Instance()->addObject("cube");
-		insideOutCube2->SetScale(Vector3(41, 41, 41));
+		insideOutCube2->node->SetScale(Vector3(41, 41, 41));
 		insideOutCube2->mat->AssignTexture(GraphicsStorage::textures.at(9));
 
 		PhysicsManager::Instance()->gravity = Vector3();
-		
+
 		pointLightTest = Scene::Instance()->addPointLight(true, Vector3(0,3,0));
 		pointLightTest->mat->SetDiffuseIntensity(20.f);
-		pointLightTest->SetScale(Vector3(100, 100, 100));
+		pointLightTest->node->SetScale(Vector3(100, 100, 100));
+		pointLightTest->node->SetMovable(true);
 		pointLightCompTest = pointLightTest->GetComponent<PointLight>();
 		
-		skybox = Scene::Instance()->addChild();
-		skybox->AssignMesh(GraphicsStorage::meshes["skybox"]);
 		//skybox->mat->SetDiffuseIntensity(10);
 		
 		Object* directionalLight = Scene::Instance()->addDirectionalLight(true);
+		directionalLight->node->SetMovable(true);
 		directionalLightComp = directionalLight->GetComponent<DirectionalLight>();
 
 		Object* directionalLight2 = Scene::Instance()->addDirectionalLight(true);
+		directionalLight2->node->SetMovable(true);
 		directionalLightComp2 = directionalLight2->GetComponent<DirectionalLight>();
-		
-		
+
 		spotLight1 = Scene::Instance()->addSpotLight(true, Vector3(-25.f, 10.f, -50.f));
 		spotLight1->mat->SetColor(Vector3F(1.f, 0.7f, 0.8f));
+		spotLight1->node->SetMovable(true);
 		spotLightComp = spotLight1->GetComponent<SpotLight>();
 		spotLightComp->shadowMapBlurActive = false;
 		
-		LineSystem* lSystem = DebugDraw::Instance()->lineSystems.front();
+		//LineSystem* lSystem = DebugDraw::Instance()->lineSystems.front();
 
 		float rS = 1.f;
 		
@@ -765,13 +806,13 @@ namespace Picking
 			//to do that we simply set the pointer of the node of line to the object we want to follow
 			//this will work for get lines but not for the generated ones,
 			//generated ones set the position
-			FastLine* line = lSystem->GetLine();
+			//FastLine* line = lSystem->GetLine();
 
-			line->AttachEndA(&Scene::Instance()->SceneObject->node);
-			line->AttachEndB(&sphere->node);
+			//line->AttachEndA(&Scene::Instance()->SceneObject->node);
+			//line->AttachEndB(&sphere->node);
 
-			line->colorA = Vector4F(69.f, 0.f, 0.f, 1.f);
-			line->colorB = Vector4F(3.f, 3.f, 3.f, 1.f);
+			//line->colorA = Vector4F(69.f, 0.f, 0.f, 1.f);
+			//line->colorB = Vector4F(3.f, 3.f, 3.f, 1.f);
 
 			for (int j = 0; j < 3; j++)
 			{
@@ -780,13 +821,13 @@ namespace Picking
 				Object* child = Scene::Instance()->addObjectTo(sphere, "icosphere", childPos);
 				child->mat->SetShininess(20.f);
 				child->mat->SetSpecularIntensity(3.f);
-				FastLine* line = lSystem->GetLine();
+				//FastLine* line = lSystem->GetLine();
 
-				line->AttachEndA(&sphere->node);
-				line->AttachEndB(&child->node);
+				//line->AttachEndA(&sphere->node);
+				//line->AttachEndB(&child->node);
 
-				line->colorA = Vector4F(1.f, 0.f, 0.f, 1.f);
-				line->colorB = Vector4F(0.f, 1.f, 0.f, 1.f);
+				//line->colorA = Vector4F(1.f, 0.f, 0.f, 1.f);
+				//line->colorB = Vector4F(0.f, 1.f, 0.f, 1.f);
 
 				//rS = ((rand() % 35) + 1.f) / 15.f;
 				//child->SetScale(Vector3(rS, rS, rS));
@@ -797,13 +838,13 @@ namespace Picking
 					Object* childOfChild = Scene::Instance()->addObjectTo(child, "sphere", childOfChildPos);
 					childOfChild->mat->SetShininess(20.f);
 					childOfChild->mat->SetSpecularIntensity(3.f);
-					FastLine* line = lSystem->GetLine();
+					//FastLine* line = lSystem->GetLine();
 
-					line->AttachEndA(&child->node);
-					line->AttachEndB(&childOfChild->node);
+					//line->AttachEndA(&child->node);
+					//line->AttachEndB(&childOfChild->node);
 
-					line->colorA = Vector4F(6.f, 0.f, 0.f, 1.f);
-					line->colorB = Vector4F(0.f, 0.f, 24.f, 1.f);
+					//line->colorA = Vector4F(6.f, 0.f, 0.f, 1.f);
+					//line->colorB = Vector4F(0.f, 0.f, 24.f, 1.f);
 
 					//rS = ((rand() % 45) + 1.f) / 15.f;
 					//childOfChild->SetScale(Vector3(rS, rS, rS));
@@ -818,7 +859,9 @@ namespace Picking
 		planezx->mat->AssignTexture(GraphicsStorage::textures.at(9));
 		planezx->mat->tileX = 50;
 		planezx->mat->tileY = 50;
-		planezx->SetScale(Vector3(10.0, 1.0, 10.0));
+		planezx->node->SetScale(Vector3(10.0, 1.0, 10.0));
+		currentScene = scene2Loaded;
+		Scene::Instance()->InitializeSceneTree();
 	}
 
 	void
@@ -833,7 +876,7 @@ namespace Picking
 		directionalLight->mat->SetDiffuseIntensity(1.0f);
 
 		Object* pointLight = Scene::Instance()->addPointLight();
-		pointLight->SetScale(Vector3(20.0, 20.0, 20.0));
+		pointLight->node->SetScale(Vector3(20.0, 20.0, 20.0));
 		pointLight->mat->SetColor(Vector3F(1.f, 0.f, 0.f));
 		pointLight->mat->SetDiffuseIntensity(100.f);
 
@@ -844,19 +887,19 @@ namespace Picking
 			double len = pos.vectLengt();
 			Object* object = Scene::Instance()->addObject("icosphere", pos);
 			//object->mat->SetDiffuseIntensity(10.3f);
-			RigidBody* body = new RigidBody(object);
+			RigidBody* body = new RigidBody();
 			object->AddComponent(body);
 			//PhysicsManager::Instance()->RegisterRigidBody(body);
 			rS = (float)(rand() % 5) + 1.f;
-			object->SetScale(Vector3(rS, rS, rS));
+			object->node->SetScale(Vector3(rS, rS, rS));
 			body->SetCanSleep(false);
 
 			FastLine* line = DebugDraw::Instance()->lineSystems.front()->GetLine();
-			//Scene::Instance()->SceneObject->node.addChild(&line->nodeA);
-			//object->node.addChild(&line->nodeB);
+			//Scene::Instance()->SceneObject->node->addChild(&line->nodeA);
+			//object->node->addChild(&line->nodeB);
 
-			line->AttachEndA(&Scene::Instance()->SceneObject->node);
-			line->AttachEndB(&object->node);
+			line->AttachEndA(Scene::Instance()->SceneObject->node);
+			line->AttachEndB(object->node);
 
 			line->colorA = Vector4F(6.f, 0.f, 0.f, 1.f);
 			line->colorB = Vector4F(3.f, 3.f, 0.f, 1.f);
@@ -865,11 +908,13 @@ namespace Picking
 		for (int i = 0; i < 5000; i++)
 		{
 			FastPoint* point = DebugDraw::Instance()->pointSystems.front()->GetPoint();
-			point->node.position = Scene::Instance()->generateRandomIntervallVectorSpherical(1000, 1100);
+			point->node.localPosition = Scene::Instance()->generateRandomIntervallVectorSpherical(1000, 1100);
 		}
 		lightsPhysics = true; //it has to update
 
 		PhysicsManager::Instance()->gravity = Vector3();
+		currentScene = scene3Loaded;
+		Scene::Instance()->InitializeSceneTree();
 	}
 
 	void
@@ -907,7 +952,7 @@ namespace Picking
 		for (int i = 0; i < 700; i++)
 		{
 			//Vector3 pos = Scene::Instance()->generateRandomIntervallVectorCubic(-gridSize + increment, gridSize + increment); //cube
-			Vector3 pos = Scene::Instance()->generateRandomIntervallVectorSpherical((gridSize + increment - 2) * 100, (gridSize + increment) * 100); //sphere
+			Vector3 pos = Scene::Instance()->generateRandomIntervallVectorSpherical((gridSize + increment - 2), (gridSize + increment)); //sphere
 			//pos.x += x*gridSize;//add playerPos;
 			//pos.y += y*gridSize;//add playerPos;
 			//pos.z += z*gridSize;//add playerPos;
@@ -921,8 +966,8 @@ namespace Picking
 			//generated ones set the position
 			FastLine* line = lSystem->GetLine();
 
-			line->AttachEndA(&Scene::Instance()->SceneObject->node);
-			line->AttachEndB(&sphere->node);
+			line->AttachEndA(Scene::Instance()->SceneObject->node);
+			line->AttachEndB(sphere->node);
 
 			line->colorA = Vector4F(69.f, 0.f, 0.f, 1.f);
 			line->colorB = Vector4F(3.f, 3.f, 0.f, 1.f);
@@ -971,7 +1016,7 @@ namespace Picking
 		for (int i = 0; i < 500; i++)
 		{
 			//Vector3 pos = Scene::Instance()->generateRandomIntervallVectorCubic(-gridSize + increment, gridSize + increment);
-			Vector3 pos = Scene::Instance()->generateRandomIntervallVectorSpherical((gridSize + increment + 20) * 100, (gridSize + increment + 22) * 100);
+			Vector3 pos = Scene::Instance()->generateRandomIntervallVectorSpherical((gridSize + increment + 20), (gridSize + increment + 22));
 			//pos.x += x*gridSize;//playerPos;
 			//pos.y += y*gridSize;//playerPos;
 			//pos.z += z*gridSize;//playerPos;
@@ -985,12 +1030,14 @@ namespace Picking
 			//generated ones set the position
 			FastLine* line = lSystem->GetLine();
 
-			line->AttachEndA(&Scene::Instance()->SceneObject->node);
-			line->AttachEndB(&sphere->node);
+			line->AttachEndA(Scene::Instance()->SceneObject->node);
+			line->AttachEndB(sphere->node);
 
 			line->colorA = Vector4F(69.f, 0.f, 0.f, 1.f);
 			line->colorB = Vector4F(3.f, 3.f, 3.f, 1.f);
 		}
+		currentScene = scene4Loaded;
+		Scene::Instance()->InitializeSceneTree();
 	}
 
 	void
@@ -1029,7 +1076,7 @@ namespace Picking
 		for (int i = 0; i < 700; i++)
 		{
 			//Vector3 pos = Scene::Instance()->generateRandomIntervallVectorCubic(-gridSize + increment, gridSize + increment);
-			Vector3 pos = Scene::Instance()->generateRandomIntervallVectorSpherical((gridSize + increment - 2) * 100, (gridSize + increment) * 100);
+			Vector3 pos = Scene::Instance()->generateRandomIntervallVectorSpherical((gridSize + increment - 2), (gridSize + increment));
 			//pos.x += x*gridSize;//playerPos;
 			//pos.y += y*gridSize;//playerPos;
 			//pos.z += z*gridSize;//playerPos;
@@ -1043,8 +1090,8 @@ namespace Picking
 			//generated ones set the position
 			FastLine* line = lSystem->GetLine();
 
-			line->AttachEndA(&Scene::Instance()->SceneObject->node);
-			line->AttachEndB(&sphere->node);
+			line->AttachEndA(Scene::Instance()->SceneObject->node);
+			line->AttachEndB(sphere->node);
 
 			line->colorA = Vector4F(69.f, 0.f, 0.f, 1.f);
 			line->colorB = Vector4F(3.f, 3.f, 0.f, 1.f);
@@ -1093,7 +1140,7 @@ namespace Picking
 		for (int i = 0; i < 500; i++)
 		{
 			//Vector3 pos = Scene::Instance()->generateRandomIntervallVectorCubic(-gridSize + increment, gridSize + increment);
-			Vector3 pos = Scene::Instance()->generateRandomIntervallVectorSpherical((gridSize + increment + 20) * 100, (gridSize + increment + 22) * 100);
+			Vector3 pos = Scene::Instance()->generateRandomIntervallVectorSpherical((gridSize + increment + 20), (gridSize + increment + 22));
 			//pos.x += x*gridSize;//playerPos;
 			//pos.y += y*gridSize;//playerPos;
 			//pos.z += z*gridSize;//playerPos;
@@ -1107,8 +1154,8 @@ namespace Picking
 			//generated ones set the position
 			FastLine* line = lSystem->GetLine();
 
-			line->AttachEndA(&Scene::Instance()->SceneObject->node);
-			line->AttachEndB(&sphere->node);
+			line->AttachEndA(Scene::Instance()->SceneObject->node);
+			line->AttachEndB(sphere->node);
 
 			line->colorA = Vector4F(69.f, 0.f, 0.f, 1.f);
 			line->colorB = Vector4F(3.f, 3.f, 3.f, 1.f);
@@ -1139,6 +1186,8 @@ namespace Picking
 
 		Scene::Instance()->SceneObject->AddComponent(pSystem);
 		*/
+		currentScene = scene5Loaded;
+		Scene::Instance()->InitializeSceneTree();
 	}
 
 	void
@@ -1162,18 +1211,22 @@ namespace Picking
 		plane->AssignMaterial(newMaterial);
 		//plane->SetScale(Vector3(10.0,1.0,10.0));
 		RigidBody* body = plane->GetComponent<RigidBody>();
-		body->SetMass(FLT_MAX);
-		body->isKinematic = true;
-
+		body->SetIsKinematic(true); //i might not have to set this to kinematic either, but then phycis will do some extra calculations in the sweep and collision response
+		
 		for (size_t i = 0; i < 300; i++)
 		{
 			Object* cube = Scene::Instance()->addPhysicObject("cube", Scene::Instance()->generateRandomIntervallVectorFlat(-400, 400, Scene::axis::y, 10) / 10.0);
+			cube->node->SetMovable(true);
+			//cube->node->movable = true; //they update component because it is not kinematic so collisions work, we could set to kinematic it would work as well
 		}
 
 		for (size_t i = 0; i < 3; i++)
 		{
 			Object* cube = Scene::Instance()->addPhysicObject("spaceship", Vector3(0, (i + 1) * 15, 0));
+			cube->node->SetMovable(true);
 		}
+		currentScene = scene6Loaded;
+		Scene::Instance()->InitializeSceneTree();
 	}
 
 	void
@@ -1191,6 +1244,8 @@ namespace Picking
 		PhysicsManager::Instance()->gravity = Vector3(0.f, -9.f, 0.f);
 
 		Scene::Instance()->addRandomlyPhysicObjects("cube", 600);
+		currentScene = scene7Loaded;
+		Scene::Instance()->InitializeSceneTree();
 	}
 
 	void
@@ -1208,6 +1263,8 @@ namespace Picking
 		PhysicsManager::Instance()->gravity = Vector3();
 
 		Scene::Instance()->addRandomlyPhysicObjects("icosphere", 600);
+		currentScene = scene8Loaded;
+		Scene::Instance()->InitializeSceneTree();
 	}
 
 	void
@@ -1219,25 +1276,36 @@ namespace Picking
 		lightsPhysics = false;
 		currentCamera->SetPosition(Vector3(0.f, 20.f, 60.f));
 
-		Object* sphere = Scene::Instance()->addPhysicObject("sphere", Vector3(0.f, 3.f, 0.f));//automatically registered for collision detection and response
-		RigidBody* body = sphere->GetComponent<RigidBody>();
-		body->isKinematic = true;
-		body->SetMass(FLT_MAX);
-		sphere->mat->specularIntensity = 4.f;
-		sphere->mat->shininess = 10.f;
-
 		Object* directionalLight = Scene::Instance()->addDirectionalLight();
 		directionalLight->mat->SetDiffuseIntensity(1.0f);
 
 		Object* plane = Scene::Instance()->addObject("cube", Vector3(0.f, -2.5f, 0.f));
 		plane->mat->SetShininess(30.f);
 		plane->mat->SetSpecularIntensity(30.f);
-		body = new RigidBody(plane);
-		plane->AddComponent(body);
-		plane->SetScale(Vector3(25.f, 2.f, 25.f));
-		body->SetMass(FLT_MAX);
-		body->isKinematic = true;
-		PhysicsManager::Instance()->RegisterRigidBody(body); //manually registered after manually creating rigid body component and assembling the object
+		plane->node->SetScale(Vector3(25.f, 2.f, 25.f));
+		currentScene = scene9Loaded;
+		//Object* instanceObject = Scene::Instance()->addInstanceSystem("icosphere", 100000);
+		//instanceObject->GetComponent<InstanceSystem>()->paused = true;
+
+		//Object* fastInstanceObject = Scene::Instance()->addFastInstanceSystem("tetra", 50000);
+		/*
+		Object* pointLight = Scene::Instance()->addPointLight(false, Scene::Instance()->generateRandomIntervallVectorFlat(-20, 20, Scene::y), Scene::Instance()->generateRandomIntervallVectorCubic(0, 6000).toFloat() / 6000.f);
+		
+		ParticleSystem* pSystem = new ParticleSystem(100000, 1000);
+		pSystem->SetTexture(GraphicsStorage::textures[10]->handle);
+		pSystem->SetLifeTime(5.0f);
+		pSystem->SetColor(Vector4F(1.f, 0.f, 0.f, 0.2f));
+		pointLight->AddComponent(pSystem);
+		particleSystems.push_back(pSystem);
+		*/
+
+		Object* pointLight = Scene::Instance()->addPointLight(false, Scene::Instance()->generateRandomIntervallVectorFlat(-20, 20, Scene::y), Scene::Instance()->generateRandomIntervallVectorCubic(0, 6000).toFloat() / 6000.f);
+		Object* sphere = Scene::Instance()->addObject("sphere", pointLight->node->GetLocalPosition());
+		sphere->node->SetScale(Vector3(0.1f, 0.1f, 0.1f));
+		sphere->mat->diffuseIntensity = 20.f;
+		sphere->mat->shininess = 10.f;
+
+		Scene::Instance()->InitializeSceneTree();
 	}
 
 	void
@@ -1245,20 +1313,21 @@ namespace Picking
 	{
 		Clear();
 		DebugDraw::Instance()->Init(Scene::Instance()->addChild());
-		skybox = Scene::Instance()->addChild();
-		skybox->AssignMesh(GraphicsStorage::meshes["skybox"]);
-	
+		
 		Object* directionalLight = Scene::Instance()->addDirectionalLight(true);
 		directionalLightComp = directionalLight->GetComponent<DirectionalLight>();
+		directionalLight->node->SetMovable(true);
 
 		Object* directionalLight2 = Scene::Instance()->addDirectionalLight(true);
 		directionalLightComp2 = directionalLight2->GetComponent<DirectionalLight>();
+		directionalLight2->node->SetMovable(true);
 
 		spotLight1 = Scene::Instance()->addSpotLight(true, Vector3(-25.f, 10.f, -50.f));
 		spotLight1->mat->SetDiffuseIntensity(10.f);
+		spotLight1->node->SetMovable(true);
 		spotLightComp = spotLight1->GetComponent<SpotLight>();
 		spotLightComp->shadowMapBlurActive = false;
-
+		/*
 		qXCube1 = Scene::Instance()->addObject("cube");
 		qXCube1->mat->SetColor(Vector3F(1,0,0));
 		qYCube1 = Scene::Instance()->addObject("cube");
@@ -1272,13 +1341,28 @@ namespace Picking
 		qYCube2->mat->SetColor(Vector3F(0, 1, 0));
 		qZCube2 = Scene::Instance()->addObject("cube");
 		qZCube2->mat->SetColor(Vector3F(0, 0, 1));
+		*/
+		testCube1 = Scene::Instance()->addObject("cube", Vector3(-3,0,0));
+		testCube1->node->SetOrientation(Quaternion(20, Vector3(1, 0, 0)));
+		testCube1->node->SetScale(Vector3(4, 2, 1));
+		testPyramid = Scene::Instance()->addObjectTo(testCube1, "pyramid", Vector3(5, 0, 0));
+		testPyramid->node->SetOrientation(Quaternion(20, Vector3(0, 1, 0)));
+		testSphere1 = Scene::Instance()->addObject("sphere", Vector3(3,-3,0));
+
 
 		Object* planezx = Scene::Instance()->addObject("fatplane", Vector3(0.f, -10.f, 0.f));
 		Scene::Instance()->unregisterForPicking(planezx);
 		planezx->mat->AssignTexture(GraphicsStorage::textures.at(5));
 		planezx->mat->tileX = 50;
 		planezx->mat->tileY = 50;
-		planezx->SetScale(Vector3(10.0, 1.0, 10.0));
+		planezx->node->SetScale(Vector3(10.0, 1.0, 10.0));
+		//Object* spaceInstances = Scene::Instance()->addInstanceSystem("spaceship", 30000);
+		//for (size_t i = 0; i < 10000; i++)
+		//{
+		//	Scene::Instance()->addChild();
+		//}
+		currentScene = scene0Loaded;
+		Scene::Instance()->InitializeSceneTree();
 	}
 
 	void
@@ -1287,17 +1371,17 @@ namespace Picking
 		Object* pointLight = Scene::Instance()->addPointLight(false, currentCamera->GetPosition2()+currentCamera->direction*3.0, Vector3F(1.f, 1.f, 0.f));
 		pointLight->mat->SetDiffuseIntensity(50.f);
 		pointLight->mat->SetColor(Vector3F(1.f,0.f,0.f));
-		pointLight->SetScale(Vector3(15.0, 15.0, 15.0));
-
+		pointLight->node->SetScale(Vector3(15.0, 15.0, 15.0));
+		Scene::Instance()->SwitchObjectMovableMode(pointLight, true);
 
 		Object* icos = Scene::Instance()->addObject("icosphere", currentCamera->GetPosition2());
 		Object* sphere = Scene::Instance()->addObject("sphere", currentCamera->GetPosition2() + currentCamera->direction*10.0);
 
-		RigidBody* body = new RigidBody(pointLight);
+		RigidBody* body = new RigidBody();
 		pointLight->AddComponent(body);
 		body->SetCanSleep(false);
-		body->ApplyImpulse(currentCamera->direction*3000.0, pointLight->GetWorldPosition());
-		
+		body->ApplyImpulse(currentCamera->direction*3000.0, pointLight->node->GetWorldPosition());
+
 		PhysicsManager::Instance()->RegisterRigidBody(body);
 
 		ParticleSystem* pSystem = new ParticleSystem(500, 170);
@@ -1312,14 +1396,14 @@ namespace Picking
 		PointSystem* pos = DebugDraw::Instance()->pointSystems.front();
 		FastPoint* fpo = pos->GetPoint();
 		fpo->color = Vector4F(0.f, 50.f, 50.f, 1.0f);
-		fpo->node.position = currentCamera->GetPosition2() + currentCamera->direction*16.0;
+		fpo->node.localPosition = currentCamera->GetPosition2() + currentCamera->direction*16.0;
 
 		FastLine* line = DebugDraw::Instance()->lineSystems.front()->GetLine();
-		//Scene::Instance()->SceneObject->node.addChild(&line->nodeA);
-		//object->node.addChild(&line->nodeB);
+		//Scene::Instance()->SceneObject->node->addChild(&line->nodeA);
+		//object->node->addChild(&line->nodeB);
 
 		//we can attach lines to another objects 
-		line->AttachEndA(&icos->node);
+		line->AttachEndA(icos->node);
 		//we can set positions of lines
 		line->SetPositionB(currentCamera->GetPosition2() + currentCamera->direction*10.0);
 
@@ -1329,7 +1413,7 @@ namespace Picking
 		FastLine* line2 = DebugDraw::Instance()->lineSystems.front()->GetLine();
 		//we can attach line to another line if line we are attaching to is using a node of an object
 		//line2->AttachEndA(line->nodeA);
-		line2->AttachEndA(&sphere->node);
+		line2->AttachEndA(sphere->node);
 		line2->SetPositionB(currentCamera->GetPosition2() + currentCamera->direction*20.0);
 		//we can apply some offsets to the attachments
 		line2->SetPositionA(currentCamera->direction*5.0);
@@ -1345,17 +1429,17 @@ namespace Picking
 		{
 			if (RigidBody* body = obj->GetComponent<RigidBody>())
 			{
-				Vector3 dir = obj->GetWorldPosition() - Vector3(0.f, -10.f, 0.f);
-				body->ApplyImpulse(dir.vectNormalize()*-2000.f, obj->GetWorldPosition());
-			}			
+				Vector3 dir = obj->node->GetWorldPosition() - Vector3(0.f, -10.f, 0.f);
+				body->ApplyImpulse(dir.vectNormalize()*-2000.f, obj->node->GetWorldPosition());
+			}
 		}
 		
 		for (auto& obj : Scene::Instance()->renderList)
 		{
 			if (RigidBody* body = obj->GetComponent<RigidBody>())
 			{
-				Vector3 dir = obj->GetWorldPosition() - Vector3(0.f, -10.f, 0.f);
-				body->ApplyImpulse(dir*-1.f, obj->GetWorldPosition());
+				Vector3 dir = obj->node->GetWorldPosition() - Vector3(0.f, -10.f, 0.f);
+				body->ApplyImpulse(dir*-1.f, obj->node->GetWorldPosition());
 			}
 		}
 	}
@@ -1363,11 +1447,18 @@ namespace Picking
 	void
 	PickingApp::DrawGeometryPass()
 	{
-		GLenum DrawBuffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3, GL_COLOR_ATTACHMENT4 };
-		objectsRendered = Render::Instance()->drawGeometry(Scene::Instance()->renderList, geometryBuffer, DrawBuffers, 5);
+		objectsRendered = Render::Instance()->drawGeometry(Scene::Instance()->renderList, geometryBuffer);
 	}
 
-	void PickingApp::PIDController()
+	void
+	PickingApp::DrawGeometryPassInstanced()
+	{
+		instancedGeometryDrawn = Render::Instance()->drawInstancedGeometry(Scene::Instance()->instanceSystemComponents, geometryBuffer);
+		instancedGeometryDrawn += Render::Instance()->drawFastInstancedGeometry(Scene::Instance()->fastInstanceSystemComponents, geometryBuffer);
+	}
+
+	void
+	PickingApp::PIDController()
 	{
 		int measured_value; //current value
 		int setpoint; //target
@@ -1391,32 +1482,24 @@ namespace Picking
 	void
 	PickingApp::DrawLightPass()
 	{
-		GLenum drawLightAttachments[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
-		lightsRendered = Render::Instance()->drawLight(lightAndPostBuffer, geometryBuffer, drawLightAttachments, 2);
+		lightsRendered = Render::Instance()->drawLight(lightAndPostBuffer, geometryBuffer);
 	}
 
 	void
 	PickingApp::BlitDepthToScreenPass()
 	{
-		//FBOManager::Instance()->UnbindFrameBuffer(draw); //for drawing we are unbinding to the screen buffer
-		FBOManager::Instance()->BindFrameBuffer(read, lightAndPostBuffer->handle);  //and we read from the light buffer
-
-		//glReadBuffer(GL_COLOR_ATTACHMENT4); //enable the final color texture buffer for reading
-		//glBlitFramebuffer(0, 0, windowWidth, windowHeight, 0, 0, windowWidth, windowHeight, GL_COLOR_BUFFER_BIT, GL_LINEAR); 
-		glBlitFramebuffer(0, 0, windowWidth, windowHeight, 0, 0, windowWidth, windowHeight, GL_DEPTH_BUFFER_BIT, GL_NEAREST); //we need to blit depth only
-		//FBOManager::Instance()->UnbindFrameBuffer(readDraw);
+		FBOManager::Instance()->BindFrameBuffer(GL_DRAW_FRAMEBUFFER, 0);
+		FBOManager::Instance()->BindFrameBuffer(GL_READ_FRAMEBUFFER, lightAndPostBuffer->handle);
+		glBlitFramebuffer(0, 0, windowWidth, windowHeight, 0, 0, windowWidth, windowHeight, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
 	}
 
 	void
 	PickingApp::BlitToScreenPass()
 	{
-		//FBOManager::Instance()->UnbindFrameBuffer(draw); //for drawing we are unbinding to the screen buffer
-		FBOManager::Instance()->BindFrameBuffer(read, lightAndPostBuffer->handle);  //and we read from the light buffer
-
-		glReadBuffer(GL_COLOR_ATTACHMENT0); //enable the final color texture buffer for reading
+		FBOManager::Instance()->BindFrameBuffer(GL_DRAW_FRAMEBUFFER, 0);
+		FBOManager::Instance()->BindFrameBuffer(GL_READ_FRAMEBUFFER, lightAndPostBuffer->handle);
 		glBlitFramebuffer(0, 0, windowWidth, windowHeight, 0, 0, windowWidth, windowHeight, GL_COLOR_BUFFER_BIT, GL_LINEAR); 
 		glBlitFramebuffer(0, 0, windowWidth, windowHeight, 0, 0, windowWidth, windowHeight, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
-		//FBOManager::Instance()->UnbindFrameBuffer(readDraw);
 	}
 
 	void
@@ -1425,8 +1508,8 @@ namespace Picking
 		if (Scene::Instance()->pointLights.size() < 500)
 		{
 			Object* pointLight = Scene::Instance()->addPointLight(false, Scene::Instance()->generateRandomIntervallVectorFlat(-20, 20, Scene::y), Scene::Instance()->generateRandomIntervallVectorCubic(0, 6000).toFloat() / 6000.f);
-			Object* sphere = Scene::Instance()->addObject("sphere", pointLight->GetLocalPosition());
-			sphere->SetScale(Vector3(0.1f, 0.1f, 0.1f));
+			Object* sphere = Scene::Instance()->addObject("sphere", pointLight->node->GetLocalPosition());
+			sphere->node->SetScale(Vector3(0.1f, 0.1f, 0.1f));
 			sphere->mat->diffuseIntensity = 2.f;
 			sphere->mat->shininess = 10.f;
 		}
@@ -1461,83 +1544,92 @@ namespace Picking
 	}
 
 	void
+	PickingApp::Screenshot()
+	{
+		//tell buffer to save texture
+		//has to be implemented in texture or fbo?
+		int x = windowWidth;
+		int y = windowHeight;
+		long imageSize = x * y * 3;
+		unsigned char *data = new unsigned char[imageSize];
+		geometryBuffer->ReadPixelData(0, 0, x, y, GL_UNSIGNED_BYTE, data, worldPosTexture);
+		int xa = x % 256;
+		int xb = (x - xa) / 256; int ya = y % 256;
+		int yb = (y - ya) / 256;//assemble the header
+		unsigned char header[18] = { 0,0,2,0,0,0,0,0,0,0,0,0,(char)xa,(char)xb,(char)ya,(char)yb,24,0 };
+		
+		std::time_t currentTime = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+		std::cout << "finished computation at " << std::ctime(&currentTime) << "\n";
+		std::tm* now = std::localtime(&currentTime);
+		std::ostringstream fileName;
+		fileName << "screen_" << 1900 + now->tm_year << "-" << 1 + now->tm_mon << "-" << now->tm_mday << "_" << now->tm_hour << "-" << now->tm_min << "-" << now->tm_sec << ".tga";
+		// write header and data to file
+		std::fstream File(fileName.str(), std::ios::out | std::ios::binary);
+		File.write(reinterpret_cast<char *>(header), sizeof(char) * 18);
+		File.write(reinterpret_cast<char *>(data), sizeof(char)*imageSize);
+		File.close();
+
+		delete[] data;
+	}
+	
+	void
+	PickingApp::Screenshot2()
+	{
+		std::time_t currentTime = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+		std::cout << "finished computation at " << std::ctime(&currentTime) << "\n";
+		std::tm* now = std::localtime(&currentTime);
+		std::ostringstream fileName;
+		fileName << "screen_" << 1900 + now->tm_year << "-" << 1 + now->tm_mon << "-" << now->tm_mday << "_" << now->tm_hour << "-" << now->tm_min << "-" << now->tm_sec << ".tga";
+		// write header and data to file
+		int x = windowWidth;
+		int y = windowHeight;
+		long imageSize = x * y * 3;
+		unsigned char *data = new unsigned char[imageSize];
+		geometryBuffer->ReadPixelData(0, 0, x, y, GL_UNSIGNED_BYTE, data, worldPosTexture);
+		stbi_write_tga(fileName.str().c_str(), windowWidth, windowHeight, 3, data);
+		//stbi_write_png(fileName.str().c_str(), windowWidth, windowHeight, 3, data, int stride_in_bytes);
+		//stbi_write_bmp(fileName.str().c_str(), windowWidth, windowHeight, 3, data);
+		//stbi_write_jpg(fileName.str().c_str(), windowWidth, windowHeight, 3, data, int quality);
+		//stbi_write_hdr(fileName.str().c_str(), windowWidth, windowHeight, 3, data);
+		delete[] data;
+	}
+
+	void
 	PickingApp::GenerateGUI()
 	{
 		ImGui::Begin("Properties", NULL, ImGuiWindowFlags_AlwaysAutoResize);
 		float start = 0;
 		float stop = 360;
-		
-		if (pointLightTest != nullptr)
-		{
-			ImGui::Checkbox("PointCastShadow", &pointLightCompTest->shadowMapActive);
-			ImGui::Checkbox("PointBlurShadow", &pointLightCompTest->shadowMapBlurActive);
-			ImGui::SliderFloat("PointFov", &pointLightCompTest->fov, start, stop);
-			ImGui::SliderFloat("PointIntensity", &pointLightTest->mat->diffuseIntensity, start, stop);
-			ImGui::SliderFloat("PointSize", &pointScale, 1, 1000);
-			ImGui::SliderFloat("PointPosX", &pposX, -100, 100);
-			ImGui::SliderFloat("PointPosY", &pposY, -100, 100);
-			ImGui::SliderFloat("PointPosZ", &pposZ, -100, 100);
-			
+		if (ImGui::Button("Reload Shaders")) {
+			GraphicsManager::ReloadShaders();
+		}
+		if (ImGui::Button("Select First")) {
+			firstObject = lastPickedObject;
+		}
+		if (ImGui::Button("Select Second")) {
+			secondObject = lastPickedObject;
+		}
+		if (ImGui::Button("Reparent In Place")) {
+			firstObject->node->ParentInPlace(secondObject->node);
 		}
 
-		if (currentScene == scene0Loaded)
-		{
-			ImGui::NewLine();
-			ImGui::SliderFloat("CubeAnglesX", &xCubeAngle, start, stop);
-			ImGui::SliderFloat("CubeAnglesY", &yCubeAngle, start, stop);
-			ImGui::SliderFloat("CubeAnglesZ", &zCubeAngle, start, stop);
+		if (ImGui::Button("Set Dynamic")) {
+			Scene::Instance()->SwitchObjectMovableMode(lastPickedObject, true);
 		}
-
-		if (spotLightComp != nullptr)
-		{
-			ImGui::NewLine();
-			ImGui::Checkbox("SpotCastShadow", &spotLightComp->shadowMapActive);
-			ImGui::Checkbox("SpotBlurShadow", &spotLightComp->shadowMapBlurActive);
-			ImGui::Text("FPS %.3f", 1.0 / Times::Instance()->deltaTime);
-			ImGui::SliderFloat("Spot X angle", &xAngles, start, stop);
-			ImGui::SliderFloat("Spot Y angle", &yAngles, start, stop);
-			ImGui::SliderFloat("Spot1PosX", &posX, -100, 100);
-			ImGui::SliderFloat("Spot1PosY", &posY, -100, 100);
-			ImGui::SliderFloat("Spot1PosZ", &posZ, -100, 100);
-			
-			ImGui::SliderFloat("Spot1Const", &spotLightComp->attenuation.Constant, 0, 1);
-			ImGui::SliderFloat("Spot1Lin", &spotLightComp->attenuation.Linear, 0, 1);
-			ImGui::SliderFloat("Spot1Exp", &spotLightComp->attenuation.Exponential, 0, 1);
-
-			ImGui::SliderFloat("Spot CutOff", &spotLightCutOff, 0, 360);
-			ImGui::SliderFloat("Spot OuterCutOff", &spotLightOuterCutOff, 0, 180);
-			ImGui::SliderFloat("Spot Intensity", &spotLightComp->object->mat->diffuseIntensity, 0, 1000);
-
-			ImGui::SliderFloat("SpotSizeZ", &spotSZ, 1, 100);
+		if (ImGui::Button("Set Static")) {
+			Scene::Instance()->SwitchObjectMovableMode(lastPickedObject, false);
 		}
-		if (directionalLightComp != nullptr)
+		if (firstObject)
 		{
-			ImGui::NewLine();
-			ImGui::Text("DIR1:");
-			ImGui::Checkbox("Dir1 CastShadow", &directionalLightComp->shadowMapActive);
-			ImGui::Checkbox("Dir1 BlurShadow", &directionalLightComp->shadowMapBlurActive);
-			ImGui::SliderFloat("Dir1 X angle", &xAngled, start, stop);
-			ImGui::SliderFloat("Dir1 Y angle", &yAngled, start, stop);
-			ImGui::SliderFloat("Dir1 Shadow Blur Size", &directionalLightComp->blurIntensity, 0.0f, 10.0f);
-			ImGui::SliderInt("Dir1 Shadow Blur Level", &directionalLightComp->activeBlurLevel, 0, 3);
-			ImGui::SliderFloat("Dir1 Ortho Size", &directionalLightComp->radius, 0.0f, 2000.f);
-			ImGui::SliderFloat("Dir1 Shadow Fade Range", &directionalLightComp->shadowFadeRange, 0.0f, 50.f);
-			ImGui::SliderFloat("Dir1 Intensity", &directionalLightComp->object->mat->diffuseIntensity, 0, 10);
+			ImGui::Text("Object1: %s ID: %d", typeid(firstObject).name(), firstObject->ID);
 		}
-		
-		if (directionalLightComp2 != nullptr)
+		if (secondObject)
 		{
-			ImGui::NewLine();
-			ImGui::Text("DIR2:");
-			ImGui::Checkbox("Dir2 CastShadow", &directionalLightComp2->shadowMapActive);
-			ImGui::Checkbox("Dir2 BlurShadow", &directionalLightComp2->shadowMapBlurActive);
-			ImGui::SliderFloat("Dir2 X angle", &xAngled2, start, stop);
-			ImGui::SliderFloat("Dir2 Y angle", &yAngled2, start, stop);
-			ImGui::SliderFloat("Dir2 Shadow Blur Size", &directionalLightComp2->blurIntensity, 0.0f, 10.0f);
-			ImGui::SliderInt("Dir2 Shadow Blur Level", &directionalLightComp2->activeBlurLevel, 0, 3);
-			ImGui::SliderFloat("Dir 2Ortho Size", &directionalLightComp2->radius, 0.0f, 2000.f);
-			ImGui::SliderFloat("Dir2 Shadow Fade Range", &directionalLightComp2->shadowFadeRange, 0.0f, 50.f);
-			ImGui::SliderFloat("Dir2 Intensity", &directionalLightComp2->object->mat->diffuseIntensity, 0, 10);
+			ImGui::Text("Object2: %s ID: %d", typeid(secondObject).name(), secondObject->ID);
+		}
+		if (lastPickedObject)
+		{
+			ImGui::Text("LastObject: %s ID: %d", typeid(lastPickedObject).name(), lastPickedObject->ID);
 		}
 
 		ImGui::NewLine();
@@ -1566,12 +1658,20 @@ namespace Picking
 		if (drawMaps) ImGui::Text("MAPS ON");
 		
 		ImGui::Text("Objects rendered %d", objectsRendered);
+		ImGui::Text("IObjects rendered %d", instancedGeometryDrawn);
+		ImGui::Text("BBs rendered %d", DebugDraw::Instance()->boundingBoxesDrawn);
 		ImGui::Text("Lights rendered %d", lightsRendered);
 		ImGui::Text("Particles rendered %d", particlesRendered);
-		ImGui::Text("Update Time %.3f", updateTime);
-		ImGui::Text("Render Time %.3f", Times::Instance()->deltaTime - updateTime);
+		ImGui::Text("Update Time %.6f", updateTime);
+		ImGui::Text("Update Dynamic Array Time %.6f", Scene::Instance()->updateDynamicArrayTime);
+		ImGui::Text("Update Transforms Time %.6f", Scene::Instance()->updateTransformsTime);
+		ImGui::Text("Update Bounds Time %.6f", Bounds::updateBoundsTime);
+		ImGui::Text("Update MinMax Time %.6f", Bounds::updateMinMaxTime);
+		ImGui::Text("Update Components Time %.6f", Scene::Instance()->updateComponentsTime);
+		ImGui::Text("Update Dirty Transforms Time %.6f", Scene::Instance()->updateDirtyTransformsTime);
+		ImGui::Text("Render Time %.6f", Times::Instance()->deltaTime - updateTime);
 		ImGui::Text("FPS %.3f", 1.0 / Times::Instance()->deltaTime);
-		ImGui::Text("TimeStep %.3f", 1.0 / Times::Instance()->timeStep);
+		ImGui::Text("TimeStep %.6f", 1.0 / Times::Instance()->timeStep);
 		ImGui::Text("PickedID %d", pickedID);
 		ImGui::Text("PRUNE %.8f", PhysicsManager::Instance()->pruneAndSweepTime);
 		ImGui::Text("SAT %.8f", PhysicsManager::Instance()->satTime);
@@ -1581,57 +1681,105 @@ namespace Picking
 		ImGui::Text("Positional Correction %.8f", PhysicsManager::Instance()->positionalCorrectionTime);
 		ImGui::Text("Iterations Count %d", PhysicsManager::Instance()->iterCount);
 		
+		
+		
+
+		if (pointLightTest != nullptr)
+		{
+			ImGui::Checkbox("PointCastShadow", &pointLightCompTest->shadowMapActive);
+			ImGui::Checkbox("PointBlurShadow", &pointLightCompTest->shadowMapBlurActive);
+			ImGui::SliderFloat("PointFov", &pointLightCompTest->fov, start, stop);
+			ImGui::SliderFloat("PointIntensity", &pointLightTest->mat->diffuseIntensity, start, stop);
+			ImGui::SliderFloat("PointSize", &pointScale, 1, 1000);
+			ImGui::SliderFloat("PointPosX", &pposX, -100, 100);
+			ImGui::SliderFloat("PointPosY", &pposY, -100, 100);
+			ImGui::SliderFloat("PointPosZ", &pposZ, -100, 100);
+		}
+
+		if (currentScene == scene0Loaded)
+		{
+			ImGui::NewLine();
+			ImGui::SliderFloat("CubeAnglesX", &xCubeAngle, start, stop);
+			ImGui::SliderFloat("CubeAnglesY", &yCubeAngle, start, stop);
+			ImGui::SliderFloat("CubeAnglesZ", &zCubeAngle, start, stop);
+		}
+
+		if (spotLightComp != nullptr)
+		{
+			ImGui::NewLine();
+			ImGui::Checkbox("SpotCastShadow", &spotLightComp->shadowMapActive);
+			ImGui::Checkbox("SpotBlurShadow", &spotLightComp->shadowMapBlurActive);
+			ImGui::Text("FPS %.3f", 1.0 / Times::Instance()->deltaTime);
+			ImGui::SliderFloat("Spot X angle", &xAngles, start, stop);
+			ImGui::SliderFloat("Spot Y angle", &yAngles, start, stop);
+			ImGui::SliderFloat("Spot1PosX", &posX, -100, 100);
+			ImGui::SliderFloat("Spot1PosY", &posY, -100, 100);
+			ImGui::SliderFloat("Spot1PosZ", &posZ, -100, 100);
+
+			ImGui::SliderFloat("Spot1Const", &spotLightComp->attenuation.Constant, 0, 1);
+			ImGui::SliderFloat("Spot1Lin", &spotLightComp->attenuation.Linear, 0, 1);
+			ImGui::SliderFloat("Spot1Exp", &spotLightComp->attenuation.Exponential, 0, 1);
+
+			ImGui::SliderFloat("Spot CutOff", &spotLightCutOff, 0, 360);
+			ImGui::SliderFloat("Spot OuterCutOff", &spotLightOuterCutOff, 0, 180);
+			ImGui::SliderFloat("Spot Intensity", &spotLightComp->object->mat->diffuseIntensity, 0, 1000);
+
+			ImGui::SliderFloat("SpotSizeZ", &spotSZ, 1, 100);
+		}
+		if (directionalLightComp != nullptr)
+		{
+			ImGui::NewLine();
+			ImGui::Text("DIR1:");
+			ImGui::Checkbox("Dir1 CastShadow", &directionalLightComp->shadowMapActive);
+			ImGui::Checkbox("Dir1 BlurShadow", &directionalLightComp->shadowMapBlurActive);
+			ImGui::SliderFloat("Dir1 X angle", &xAngled, start, stop);
+			ImGui::SliderFloat("Dir1 Y angle", &yAngled, start, stop);
+			ImGui::SliderFloat("Dir1 Shadow Blur Size", &directionalLightComp->blurIntensity, 0.0f, 10.0f);
+			ImGui::SliderInt("Dir1 Shadow Blur Level", &directionalLightComp->activeBlurLevel, 0, 3);
+			ImGui::SliderFloat("Dir1 Ortho Size", &directionalLightComp->radius, 0.0f, 2000.f);
+			ImGui::SliderFloat("Dir1 Shadow Fade Range", &directionalLightComp->shadowFadeRange, 0.0f, 50.f);
+			ImGui::SliderFloat("Dir1 Intensity", &directionalLightComp->object->mat->diffuseIntensity, 0, 10);
+		}
+
+		if (directionalLightComp2 != nullptr)
+		{
+			ImGui::NewLine();
+			ImGui::Text("DIR2:");
+			ImGui::Checkbox("Dir2 CastShadow", &directionalLightComp2->shadowMapActive);
+			ImGui::Checkbox("Dir2 BlurShadow", &directionalLightComp2->shadowMapBlurActive);
+			ImGui::SliderFloat("Dir2 X angle", &xAngled2, start, stop);
+			ImGui::SliderFloat("Dir2 Y angle", &yAngled2, start, stop);
+			ImGui::SliderFloat("Dir2 Shadow Blur Size", &directionalLightComp2->blurIntensity, 0.0f, 10.0f);
+			ImGui::SliderInt("Dir2 Shadow Blur Level", &directionalLightComp2->activeBlurLevel, 0, 3);
+			ImGui::SliderFloat("Dir 2Ortho Size", &directionalLightComp2->radius, 0.0f, 2000.f);
+			ImGui::SliderFloat("Dir2 Shadow Fade Range", &directionalLightComp2->shadowFadeRange, 0.0f, 50.f);
+			ImGui::SliderFloat("Dir2 Intensity", &directionalLightComp2->object->mat->diffuseIntensity, 0, 10);
+		}
 		ImGui::End();
 	}
 
 	void
 	PickingApp::DrawGSkybox()
 	{
-		GLenum DrawBuffers[] = { GL_COLOR_ATTACHMENT1 };
-		Render::Instance()->drawGSkybox(geometryBuffer, DrawBuffers, 1, GraphicsStorage::cubemaps[0]);
+		Render::Instance()->drawGSkybox(geometryBuffer, GraphicsStorage::cubemaps[0]);
 	}
 
 	void
 	PickingApp::DrawSkybox()
 	{
-		GLenum DrawBuffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
-		Render::Instance()->drawSkybox(lightAndPostBuffer, DrawBuffers, 2, GraphicsStorage::cubemaps[0]);
+		Render::Instance()->drawSkybox(lightAndPostBuffer, GraphicsStorage::cubemaps[0]);
 	}
 
 	void
 	PickingApp::DrawFastLineSystems()
 	{
-		GLenum DrawBuffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
-		DebugDraw::Instance()->DrawFastLineSystems(lightAndPostBuffer, DrawBuffers, 2);
+		DebugDraw::Instance()->DrawFastLineSystems(lightAndPostBuffer->handle);
 	}
 
 	void
 	PickingApp::DrawFastPointSystems()
 	{
-		GLenum DrawBuffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
-		DebugDraw::Instance()->DrawFastPointSystems(lightAndPostBuffer, DrawBuffers, 2);
-	}
-
-	void
-	PickingApp::GenerateFastLines()
-	{
-		if (DebugDraw::Instance()->lineSystems.empty()) return;
-		for (auto& child : Scene::Instance()->SceneObject->node.children)
-		{
-			GenerateAndDrawFastLineChildren(&Scene::Instance()->SceneObject->node, child);
-		}
-	}
-
-	void
-	PickingApp::GenerateAndDrawFastLineChildren(Node* parent, Node* child)
-	{
-		FastLine* line = DebugDraw::Instance()->lineSystems.front()->GetLineOnce();
-		line->AttachEndA(parent);
-		line->AttachEndB(child);
-		for (auto& childOfChild : child->children)
-		{
-			GenerateAndDrawFastLineChildren(child, childOfChild);
-		}
+		DebugDraw::Instance()->DrawFastPointSystems(lightAndPostBuffer->handle);
 	}
 
 	void
@@ -1694,7 +1842,7 @@ namespace Picking
 	}
 
 	void
-	PickingApp::DrawDebugInstanced()
+	PickingApp::DrawFastBoundingBoxes()
 	{
 		DebugDraw::Instance()->DrawBoundingBoxes();
 	}

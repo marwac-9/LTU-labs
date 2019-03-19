@@ -81,7 +81,7 @@ namespace Picking
 		float near = 0.1f;
 		float far = 2000.f;
 		float fov = 45.0f;
-
+		bool minimized = false;
         Object* lastPickedObject = nullptr;
 		Object* plane = nullptr;
 		int objectsRendered = 0;

@@ -9,7 +9,7 @@
 class BoundingBox;
 class Object;
 class OBJ;
-class Mesh;
+class Vao;
 class HalfEdgeMesh;
 class Camera;
 
@@ -48,7 +48,8 @@ namespace Subdivision
 		void LoadScene9();
 		void Subdivide(OBJ* objToSubdivide);
 		bool altButtonToggle = true;
-
+		bool minimized = false;
+		bool isLeftMouseButtonPressed = false;
 		bool running = false;
 		bool wireframe = false;
 		Display::Window* window;
@@ -66,7 +67,7 @@ namespace Subdivision
 		int objectsRendered = 0;
 
 		std::vector<OBJ*> dynamicOBJs;
-		std::vector<Mesh*> dynamicMeshes;
+		std::vector<Vao*> dynamicVaos;
 		std::vector<HalfEdgeMesh*> dynamicHEMeshes;
 	};
 } // namespace 

@@ -3,7 +3,8 @@
 //
 #include "app.h"
 #include <imgui.h>
-#include "imgui_impl_glfw_gl3.h"
+#include "imgui_impl_glfw.h"
+#include "imgui_impl_opengl3.h"
 #include "gl_window.h"
 #include "MyMathLib.h"
 #include "Attenuation.h"
@@ -64,7 +65,7 @@ namespace Picking
 
         bool altButtonToggle = true;
         //camera type 1 == fps, 2 == tps 3 == monitoring camera
-
+		bool minimized = false;
         bool running = false;
 		bool debug = true;
         Display::Window* window;

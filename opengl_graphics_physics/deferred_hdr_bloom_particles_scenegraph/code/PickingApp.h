@@ -3,7 +3,8 @@
 //
 #include "app.h"
 #include <imgui.h>
-#include "imgui_impl_glfw_gl3.h"
+#include "imgui_impl_glfw.h"
+#include "imgui_impl_opengl3.h"
 #include "gl_window.h"
 #include "MyMathLib.h"
 #include <vector>
@@ -23,6 +24,7 @@ class Texture;
 class DirectionalLight;
 class SpotLight;
 class PointLight;
+class InstanceSystem;
 
 enum loadedScene
 {
@@ -57,10 +59,11 @@ namespace Picking
 	private:
 		void Clear();
 
-		void DrawDebugInstanced();
+		void DrawFastBoundingBoxes();
         void PickingTest();
 
 		void DrawGeometryPass();
+		void DrawGeometryPassInstanced();
 		void PIDController();
 		void DrawLightPass();
 		void BlitDepthToScreenPass();
@@ -69,6 +72,8 @@ namespace Picking
 		void DrawGeometryMaps(int width, int height);
 
 		void DrawHDR(Texture* texture);
+		void Screenshot();
+		void Screenshot2();
 
 		void GenerateGUI();
 		void DrawGSkybox();
@@ -136,11 +141,8 @@ namespace Picking
 		std::vector<ParticleSystem*> particleSystems;
 		void DrawFastLineSystems();
 		void DrawFastPointSystems();
-		void GenerateFastLines();
-		void GenerateAndDrawFastLineChildren(Node* parentPos, Node* child);
 		int increment = 0;
 		int prevGridPos[3];
-
 		DirectionalLight* directionalLightComp;
 		DirectionalLight* directionalLightComp2;
 		SpotLight* spotLightComp;
@@ -177,10 +179,11 @@ namespace Picking
 		float softScale = 0.5f;
 		float contrastPower = 0.5f;
 
-		Object* skybox = nullptr;
 		bool post = true;
 		float blurBloomSize = 1.5f;
 		int bloomLevel = 3;
+
+		int instancedGeometryDrawn = 0;
 
 		Texture* diffuseTexture;
 		Texture* normalTexture;
@@ -196,6 +199,10 @@ namespace Picking
 		Texture* worldPosTexture;
 		Texture* depthTexture;
 		Attenuation lightAttenuation;
-		
+		Object* testCube1;
+		Object* testPyramid;
+		Object* testSphere1;
+		Object* firstObject = nullptr;
+		Object* secondObject = nullptr;
 	};
 } // namespace Example

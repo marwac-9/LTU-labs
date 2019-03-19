@@ -18,7 +18,6 @@
 #include "GraphicsStorage.h"
 #include "Node.h"
 #include "Material.h"
-#include "Mesh.h"
 #include "OBJ.h"
 #include "HalfEdgeMesh.h"
 #include <fstream>
@@ -32,6 +31,7 @@
 #include "CameraManager.h"
 #include <chrono>
 #include "Times.h"
+#include "Vao.h"
 
 using namespace mwm;
 using namespace Display;
@@ -77,15 +77,48 @@ namespace Subdivision
 		// window resize callback
 		this->window->SetWindowSizeFunction([this](int width, int height)
 		{
-			this->windowWidth = width;
-			this->windowHeight = height;
-			this->windowMidX = windowWidth / 2.0f;
-			this->windowMidY = windowHeight / 2.0f;
-			this->window->SetSize(this->windowWidth, this->windowHeight);
+			if (!minimized)
+			{
+				this->windowWidth = width;
+				this->windowHeight = height;
+				this->windowMidX = windowWidth / 2.0f;
+				this->windowMidY = windowHeight / 2.0f;
+				this->window->SetSize(this->windowWidth, this->windowHeight);
+				currentCamera->UpdateSize(width, height);
+			}
+		});
+		window->SetMousePressFunction([this](int button, int action, int mods)
+		{
+			if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
+			{
+				isLeftMouseButtonPressed = true;
+			}
+			else if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE)
+			{
+				isLeftMouseButtonPressed = false;
+			}
+			else if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS)
+			{
 
-			currentCamera->UpdateSize(width, height);
+			}
+			else if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_RELEASE)
+			{
+			}
+			else if (button == GLFW_MOUSE_BUTTON_MIDDLE && action == GLFW_PRESS)
+			{
+				Scene::Instance()->InitializeSceneTree();
+				GraphicsManager::ReloadShaders();
+			}
+			else if (button == GLFW_MOUSE_BUTTON_MIDDLE && action == GLFW_RELEASE)
+			{
+			}
+
 		});
 
+		window->SetWindowIconifyFunction([this](int iconified) {
+			if (iconified) minimized = true;
+			else minimized = false;
+		});
 		if (this->window->Open())
 		{
 			running = true;
@@ -206,14 +239,15 @@ namespace Subdivision
 				}
 			}
 			else if (key == GLFW_KEY_S && window->GetKey(GLFW_KEY_LEFT_CONTROL)) {
-				GraphicsManager::SaveToOBJ(GraphicsStorage::objects.back());
+				auto it = --GraphicsStorage::objs.end();
+				GraphicsManager::SaveToOBJ(it->second);
 				std::cout << "Last Mesh Saved" << std::endl;
 			}
 
 			else if (key == GLFW_KEY_E)
 			{
-				Object* cube = Scene::Instance()->addPhysicObject("cube", Vector3(0.f, 8.f, 0.f));
-				cube->SetPosition(Vector3(0.f, (float)Scene::Instance()->idCounter * 2.f - 10.f + 0.001f, 0.f));
+				Object* cube = Scene::Instance()->addPhysicObject("cube", Vector3(0.0, 8.0, 0.0));
+				cube->node->SetPosition(Vector3(0.0, (double)Object::Count() * 2.0 - 10.0 + 0.001, 0.0));
 			}
 		}
 	}
@@ -287,11 +321,11 @@ namespace Subdivision
 			delete obj;
 		}
 		dynamicOBJs.clear();
-		for (auto& mesh : dynamicMeshes)
+		for (auto& mesh : dynamicVaos)
 		{
 			delete mesh;
 		}
-		dynamicMeshes.clear();
+		dynamicVaos.clear();
 		for (auto& mesh : dynamicHEMeshes)
 		{
 			delete mesh;
@@ -303,63 +337,63 @@ namespace Subdivision
 	SubdivisionApp::LoadScene1()
 	{
 		Clear();
-		Subdivide(GraphicsStorage::objects[0]);
+		Subdivide(GraphicsStorage::objs["pyramid"]);
 	}
 
 	void
 	SubdivisionApp::LoadScene2()
 	{
 		Clear();
-		Subdivide(GraphicsStorage::objects[1]);
+		Subdivide(GraphicsStorage::objs["cube"]);
 	}
 
 	void
 	SubdivisionApp::LoadScene3()
 	{
 		Clear();
-		Subdivide(GraphicsStorage::objects[2]);
+		Subdivide(GraphicsStorage::objs["sphere"]);
 	}
 
 	void
 	SubdivisionApp::LoadScene4()
 	{
 		Clear();
-		Subdivide(GraphicsStorage::objects[3]);
+		Subdivide(GraphicsStorage::objs["icosahedron"]);
 	}
 
 	void
 	SubdivisionApp::LoadScene5()
 	{
 		Clear();
-		Subdivide(GraphicsStorage::objects[4]);
+		Subdivide(GraphicsStorage::objs["octahedron"]);
 	}
 
 	void
 	SubdivisionApp::LoadScene6()
 	{
 		Clear();
-		Subdivide(GraphicsStorage::objects[5]);
+		Subdivide(GraphicsStorage::objs["pentagonal_bipyramid"]);
 	}
 
 	void
 	SubdivisionApp::LoadScene7()
 	{
 		Clear();
-		Subdivide(GraphicsStorage::objects[6]);
+		Subdivide(GraphicsStorage::objs["tetrahedron"]);
 	}
 
 	void
 	SubdivisionApp::LoadScene8()
 	{
 		Clear();
-		Subdivide(GraphicsStorage::objects[7]);
+		Subdivide(GraphicsStorage::objs["triangular_bipyramid"]);
 	}
 
 	void
 	SubdivisionApp::LoadScene9()
 	{
 		Clear();
-		Subdivide(GraphicsStorage::objects[8]);
+		Subdivide(GraphicsStorage::objs["tri_sphere1"]);
 	}
 
 	void
@@ -421,24 +455,26 @@ namespace Subdivision
 		dynamicOBJs.push_back(subdividedOBJ);
 		HalfEdgeMesh::ExportMeshToOBJ(newHMesh, subdividedOBJ);
 		subdividedOBJ->CalculateDimensions();
-		GraphicsManager::LoadOBJToVBO(subdividedOBJ, newHMesh);
+		Vao* halfEdgeMeshVao = new Vao();
+		GraphicsManager::LoadOBJToVAO(subdividedOBJ, halfEdgeMeshVao);
 		dynamicHEMeshes.push_back(newHMesh);
+		dynamicVaos.push_back(halfEdgeMeshVao);
 		
-		ObjectHalfMesh->AssignMesh(newHMesh); //we assign the subdivided and exported mesh
+		ObjectHalfMesh->AssignMesh(halfEdgeMeshVao); //we assign the subdivided and exported mesh
 		Material* newMaterial = new Material();
 		newMaterial->AssignTexture(GraphicsStorage::textures.at(0));
 		GraphicsStorage::materials.push_back(newMaterial);
 		ObjectHalfMesh->AssignMaterial(newMaterial);
-		ObjectHalfMesh->SetScale(Vector3(4.0f, 4.0f, 4.0f));
-		ObjectHalfMesh->SetPosition(Vector3(0.f, 0.f, -10.f));
+		ObjectHalfMesh->node->SetScale(Vector3(4.0f, 4.0f, 4.0f));
+		ObjectHalfMesh->node->SetPosition(Vector3(0.f, 0.f, -10.f));
 		printf("\nDONE\n");
 
 		printf("\nCreating proxy mesh\n");
 		Object* ObjectHalfMeshProxy = Scene::Instance()->addObjectTo(ObjectHalfMesh); //we create the object for proxy
 
-		Mesh* proxyMesh = new Mesh(); //and a new mesh for proxy
-		GraphicsManager::LoadOBJToVBO(constructedOBJ, proxyMesh); //proxy will use the originally generated OBJ from constructed half edge mesh
-		dynamicMeshes.push_back(proxyMesh);
+		Vao* proxyMesh = new Vao(); //and a new mesh for proxy
+		GraphicsManager::LoadOBJToVAO(constructedOBJ, proxyMesh); //proxy will use the originally generated OBJ from constructed half edge mesh
+		dynamicVaos.push_back(proxyMesh);
 
 		ObjectHalfMeshProxy->AssignMesh(proxyMesh); //and we assign now generated proxy mesh from constructedOBJ to the proxy Object
 		Material* newMaterialProxy = new Material();

@@ -3,7 +3,8 @@
 //
 #include "app.h"
 #include <imgui.h>
-#include "imgui_impl_glfw_gl3.h"
+#include "imgui_impl_glfw.h"
+#include "imgui_impl_opengl3.h"
 #include "gl_window.h"
 #include "MyMathLib.h"
 
@@ -11,11 +12,11 @@
 class BoundingBox;
 class Object;
 class OBJ;
-class Mesh;
 class HalfEdgeMesh;
 class Camera;
 class FrameBuffer;
 class Texture;
+class Vao;
 
 namespace SimpleWater
 {
@@ -47,18 +48,19 @@ namespace SimpleWater
 		void DrawSkybox();
 		void Draw();
 		void DrawReflection();
-		void DrawRefraction();
+		void DrawGeoUnderWater();
 		void DrawWater();
 		void DrawHDR(Texture* texture);
 		void DrawTextures(int width, int height);
 
-		Mesh* GenerateWaterMesh(int width, int height);
+		Vao* GenerateWaterMesh(int width, int height);
 		
 		bool windowLocked = true;
-
+		bool minimized = false;
 		bool running = false;
 		bool wireframe = false;
 		Display::Window* window;
+		bool isLeftMouseButtonPressed = false;
 		double leftMouseX;
 		double leftMouseY;
 		int windowWidth;
@@ -77,26 +79,22 @@ namespace SimpleWater
 		Object* water = nullptr;
 
 		Texture* reflectionBufferTexture;
-		Texture* refractionBufferTexture;
+		Texture* underWaterBufferTexture;
 		Texture* depthTextureBufferTexture;
 		GLuint depthBufferHandle;
 		FrameBuffer* frameBuffer;
 
 		FrameBuffer* postFrameBuffer;
-		GLuint hdrBufferTextureHandle;
-		GLuint brightLightTextureHandle;
-		Texture* brightLightTexture;
-
 		Texture* hdrTexture;
+		Texture* brightLightTexture;
 		Texture* blurredBrightTexture;
 
 		Object* selectedObject = nullptr;
 		
-		bool minimized = false;
 
 		std::vector<Object*> dynamicObjects;
-		std::vector<Mesh*> dynamicMeshes;
-
+		std::vector<Vao*> dynamicMeshes;
+		double waterShaderTime = 0.0;
 		//shader variables:
 		mwm::Vector3F water_color = mwm::Vector3F(0.0f, 0.6f, 0.5f);
 		float water_speed = 0.16f;
@@ -110,14 +108,16 @@ namespace SimpleWater
 		float wave_strength = 0.04f;
 		float wave_distortion = 4.f;
 		float max_depth_transparent = 4.f;
-		float water_color_refraction_blend = 23.f;
+		float water_transparency_depth = 23.f;
 		float fresnelAdjustment = 1.f;
 		float soften_normals = 3.0;
 		int waterSize = 2;
 		float blurSize = 1.0f;
 		int blurLevel = 0;
 		bool post = true;
-
+		const int querycount = 5;
+		GLuint queries[5];
+		int current_query = 0;
 #pragma pack (push)
 #pragma pack(1)
 		struct VertexData

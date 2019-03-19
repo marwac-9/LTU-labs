@@ -1,6 +1,0 @@
-color Resources/shaders/Forward
-water Resources/shaders/Water
-quadToScreen Resources/shaders/QuadToScreen
-skyboxWithClipPlane Resources/shaders/SkyboxWithClipPlane
-fastBlur Resources/shaders/FastBlur
-hdrBloom Resources/shaders/HDRBloom
