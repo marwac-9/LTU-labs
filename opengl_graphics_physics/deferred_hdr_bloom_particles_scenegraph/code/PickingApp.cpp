@@ -167,7 +167,7 @@ namespace Picking
 
 		SetUpCamera();
 
-		LoadScene0();
+		LoadScene9();
 
 		double customIntervalTime = 0;
 		Scene::Instance()->Update();
@@ -186,7 +186,7 @@ namespace Picking
 
 		// Setup Platform/Renderer bindings
 		ImGui_ImplGlfw_InitForOpenGL(this->window->GetGLFWWindow(), false);
-		const char* glsl_version = "#version 130";
+		const char* glsl_version = "#version 430";
 		ImGui_ImplOpenGL3_Init(glsl_version);
 
 		std::chrono::time_point<std::chrono::high_resolution_clock> start, end;
@@ -201,6 +201,7 @@ namespace Picking
 			glDisable(GL_BLEND);
 			this->window->Update();
 			if (minimized) continue;
+			
 			ImGui_ImplOpenGL3_NewFrame();
 			ImGui_ImplGlfw_NewFrame();
 			ImGui::NewFrame();
@@ -252,7 +253,7 @@ namespace Picking
 			updateTime = elapsed_seconds.count();
 
 			Render::Instance()->UpdateEBOs();
-
+			ImGui::ShowDemoWindow();
 			GenerateGUI();
 			DrawGeometryPass();
 			DrawGeometryPassInstanced();
@@ -622,7 +623,20 @@ namespace Picking
 				Vector3 dWorldPos = Vector3(world_position.x, world_position.y, world_position.z);
 				Vector3 impulse = (dWorldPos - currentCamera->GetPosition2()).vectNormalize();
 				if (RigidBody* body = this->lastPickedObject->GetComponent<RigidBody>()) body->ApplyImpulse(impulse, 1.0, dWorldPos);
-				if(!Scene::Instance()->fastInstanceSystemComponents.empty()) Scene::Instance()->fastInstanceSystemComponents[0]->ReturnObject(lastPickedObject); //just a test
+				if (!Scene::Instance()->fastInstanceSystemComponents.empty())
+				{
+					//Scene::Instance()->fastInstanceSystemComponents[0]->ReturnObject(lastPickedObject); //just a test
+					//Object* obj = Scene::Instance()->fastInstanceSystemComponents[0]->GetObject();
+					for (size_t i = 0; i < 4; i++)
+					{
+						Object* obj = Scene::Instance()->fastInstanceSystemComponents[0]->GetObject();
+						if (i % 2 == 0)
+						{
+							Scene::Instance()->fastInstanceSystemComponents[0]->ReturnObject(obj);
+						}
+					}
+					
+				}
 			}
 		}
 	}
@@ -1279,15 +1293,15 @@ namespace Picking
 		Object* directionalLight = Scene::Instance()->addDirectionalLight();
 		directionalLight->mat->SetDiffuseIntensity(1.0f);
 
-		Object* plane = Scene::Instance()->addObject("cube", Vector3(0.f, -2.5f, 0.f));
-		plane->mat->SetShininess(30.f);
-		plane->mat->SetSpecularIntensity(30.f);
-		plane->node->SetScale(Vector3(25.f, 2.f, 25.f));
+	//	Object* plane = Scene::Instance()->addObject("cube", Vector3(0.f, -2.5f, 0.f));
+	//	plane->mat->SetShininess(30.f);
+	//	plane->mat->SetSpecularIntensity(30.f);
+	//	plane->node->SetScale(Vector3(25.f, 2.f, 25.f));
 		currentScene = scene9Loaded;
 		//Object* instanceObject = Scene::Instance()->addInstanceSystem("icosphere", 100000);
 		//instanceObject->GetComponent<InstanceSystem>()->paused = true;
 
-		//Object* fastInstanceObject = Scene::Instance()->addFastInstanceSystem("tetra", 50000);
+		Object* fastInstanceObject = Scene::Instance()->addFastInstanceSystem("tetra", 10000);
 		/*
 		Object* pointLight = Scene::Instance()->addPointLight(false, Scene::Instance()->generateRandomIntervallVectorFlat(-20, 20, Scene::y), Scene::Instance()->generateRandomIntervallVectorCubic(0, 6000).toFloat() / 6000.f);
 		
