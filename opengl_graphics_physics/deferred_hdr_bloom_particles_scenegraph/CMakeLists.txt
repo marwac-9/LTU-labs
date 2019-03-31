@@ -28,7 +28,7 @@ ADD_EXECUTABLE(${PROJECT_NAME} ${ALLSRCS})
 
 SET_TARGET_PROPERTIES(${PROJECT_NAME} PROPERTIES FOLDER "LABS")
 SET_TARGET_PROPERTIES(${PROJECT_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-TARGET_LINK_LIBRARIES(${PROJECT_NAME} camera frustum graphics_manager scene gl_windowd app particle camera_manager luajit lua_tools imgui)
+TARGET_LINK_LIBRARIES(${PROJECT_NAME} camera frustum graphics_manager scene gl_windowd app particle camera_manager luajit lua_tools imgui_wrapper)
 
 if(MSVC)
     SET_TARGET_PROPERTIES(${PROJECT_NAME} PROPERTIES DEBUG_POSTFIX "_debug" RUNTIME_OUTPUT_DIRECTORY_DEBUG ${CMAKE_CURRENT_SOURCE_DIR})

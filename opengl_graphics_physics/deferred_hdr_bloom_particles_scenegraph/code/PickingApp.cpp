@@ -41,6 +41,8 @@
 #include <sstream>
 #include "stb_image_write.h"
 #include "FastInstanceSystem.h"
+#include "ImGuiWrapper.h"
+#include <imgui.h>
 
 using namespace mwm;
 using namespace Display;
@@ -67,7 +69,7 @@ namespace Picking
 	/**
 	*/
 	bool
-	PickingApp::Open()
+		PickingApp::Open()
 	{
 		App::Open();
 		this->window = new Display::Window;
@@ -109,7 +111,7 @@ namespace Picking
 			}
 			else if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS)
 			{
-				
+
 			}
 			else if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_RELEASE)
 			{
@@ -145,18 +147,20 @@ namespace Picking
 		}
 		return false;
 	}
-	
+
 	//------------------------------------------------------------------------------
 	/**
 	*/
 	void
-	PickingApp::Run()
+		PickingApp::Run()
 	{
 		window->SetTitle("Deferred HDR Bloom Particles Scenegraph Uniform-Buffers");
 		stbi_flip_vertically_on_write(true);
 		InitGL();
 
 		SetUpBuffers(this->windowWidth, this->windowHeight);
+
+		ImGuiWrapper ImGuiWrapper(window);
 
 		GraphicsManager::LoadAllAssets();
 		//DebugDraw::Instance()->LoadPrimitives();
@@ -171,27 +175,12 @@ namespace Picking
 
 		double customIntervalTime = 0;
 		Scene::Instance()->Update();
- 
+
 		//glfwSwapInterval(0); //unlock fps
-
-		IMGUI_CHECKVERSION();
-		ImGui::CreateContext();
-		ImGuiIO& io = ImGui::GetIO(); (void)io;
-		//io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
-		//io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;   // Enable Gamepad Controls
-
-		// Setup Dear ImGui style
-		ImGui::StyleColorsDark();
-		//ImGui::StyleColorsClassic();
-
-		// Setup Platform/Renderer bindings
-		ImGui_ImplGlfw_InitForOpenGL(this->window->GetGLFWWindow(), false);
-		const char* glsl_version = "#version 430";
-		ImGui_ImplOpenGL3_Init(glsl_version);
 
 		std::chrono::time_point<std::chrono::high_resolution_clock> start, end;
 		std::chrono::duration<double> elapsed_seconds;
-		
+
 		while (running)
 		{
 			glDepthMask(GL_TRUE);
@@ -201,10 +190,8 @@ namespace Picking
 			glDisable(GL_BLEND);
 			this->window->Update();
 			if (minimized) continue;
-			
-			ImGui_ImplOpenGL3_NewFrame();
-			ImGui_ImplGlfw_NewFrame();
-			ImGui::NewFrame();
+
+			ImGuiWrapper.NewFrame();
 
 			Times::Instance()->Update(glfwGetTime());
 
@@ -286,17 +273,13 @@ namespace Picking
 
 			if (drawMaps) DrawGeometryMaps(windowWidth, windowHeight);
 
-			ImGui::Render(); // <-- (draw) to screen
-			ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+			ImGuiWrapper.Render();
 			customIntervalTime += Times::Instance()->deltaTime;
 
 			this->window->SwapBuffers();
-			
+
 		}
 		GraphicsStorage::Clear();
-		ImGui_ImplOpenGL3_Shutdown();
-		ImGui_ImplGlfw_Shutdown();
-		ImGui::DestroyContext();
 		this->window->Close();
 	}
 

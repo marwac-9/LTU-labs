@@ -24,6 +24,8 @@
 #include "Times.h"
 #include "Box.h"
 #include "Plane.h"
+#include "ImGuiWrapper.h"
+#include <imgui.h>
 
 using namespace mwm;
 using namespace Display;
@@ -129,6 +131,8 @@ namespace SimpleWater
 
 		SetUpBuffers(this->windowWidth, this->windowHeight);
 
+		ImGuiWrapper ImGuiWrapper(window);
+
 		GraphicsManager::LoadAllAssets();
 		LoadScene1();
 		
@@ -139,22 +143,6 @@ namespace SimpleWater
 		Scene::Instance()->Update();
 
 		glfwSwapInterval(0); //unlock fps
-
-		IMGUI_CHECKVERSION();
-		ImGui::CreateContext();
-		ImGuiIO& io = ImGui::GetIO(); (void)io;
-		//io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
-		//io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;   // Enable Gamepad Controls
-
-		// Setup Dear ImGui style
-		ImGui::StyleColorsDark();
-		//ImGui::StyleColorsClassic();
-
-		// Setup Platform/Renderer bindings
-		ImGui_ImplGlfw_InitForOpenGL(this->window->GetGLFWWindow(), false);
-		const char* glsl_version = "#version 130";
-		ImGui_ImplOpenGL3_Init(glsl_version);
-		window->SetTitle("Simple Water");
 
 		// timer query setup
 		// use multiple queries to avoid stalling on getting the results
@@ -170,9 +158,7 @@ namespace SimpleWater
 
 			this->window->Update();
 			if (minimized) continue;
-			ImGui_ImplOpenGL3_NewFrame();
-			ImGui_ImplGlfw_NewFrame();
-			ImGui::NewFrame();
+			ImGuiWrapper.NewFrame();
 
 			Times::Instance()->Update(glfwGetTime());
 
@@ -220,14 +206,10 @@ namespace SimpleWater
 			
 			
 			DrawTextures(windowWidth, windowHeight);
-			ImGui::Render(); // <-- (draw) to screen
-			ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+			ImGuiWrapper.Render();
 			this->window->SwapBuffers();
 		}
 		GraphicsStorage::Clear();
-		ImGui_ImplOpenGL3_Shutdown();
-		ImGui_ImplGlfw_Shutdown();
-		ImGui::DestroyContext();
 		this->window->Close();
 	}
 

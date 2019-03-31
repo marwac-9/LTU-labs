@@ -2,9 +2,6 @@
 // Created by marwac-9 on 9/16/15.
 //
 #include "app.h"
-#include <imgui.h>
-#include "imgui_impl_glfw.h"
-#include "imgui_impl_opengl3.h"
 #include "gl_window.h"
 #include "MyMathLib.h"
 #include <vector>

@@ -26,6 +26,8 @@
 #include "CameraManager.h"
 #include "FrameBuffer.h"
 #include "Times.h"
+#include "ImGuiWrapper.h"
+#include <imgui.h>
 
 using namespace mwm;
 using namespace Display;
@@ -130,6 +132,8 @@ namespace Picking
         InitGL();
 
 		SetUpBuffers(this->windowWidth, this->windowHeight);
+
+		ImGuiWrapper ImGuiWrapper(window);
 		
 		GraphicsManager::LoadAllAssets();
 
@@ -147,23 +151,6 @@ namespace Picking
 
 		Scene::Instance()->Update();
 
-		IMGUI_CHECKVERSION();
-		ImGui::CreateContext();
-		ImGuiIO& io = ImGui::GetIO(); (void)io;
-		//io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
-		//io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;   // Enable Gamepad Controls
-
-		// Setup Dear ImGui style
-		ImGui::StyleColorsDark();
-		//ImGui::StyleColorsClassic();
-
-		// Setup Platform/Renderer bindings
-		ImGui_ImplGlfw_InitForOpenGL(this->window->GetGLFWWindow(), false);
-		const char* glsl_version = "#version 130";
-		ImGui_ImplOpenGL3_Init(glsl_version);
-
-
-
         while (running)
         {
 			glDepthMask(GL_TRUE);
@@ -173,9 +160,7 @@ namespace Picking
 
             this->window->Update();
 			if (minimized) continue;
-			ImGui_ImplOpenGL3_NewFrame();
-			ImGui_ImplGlfw_NewFrame();
-			ImGui::NewFrame();
+			ImGuiWrapper.NewFrame();
 
 			Times::Instance()->Update(glfwGetTime());
 			
@@ -208,15 +193,11 @@ namespace Picking
 			DebugDraw::Instance()->DrawCrossHair();
 			DrawMaps(windowWidth, windowHeight);
 
-			ImGui::Render(); // <-- (draw) to screen
-			ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+			ImGuiWrapper.Render();
 
             this->window->SwapBuffers();
         }
 		GraphicsStorage::Clear();
-		ImGui_ImplOpenGL3_Shutdown();
-		ImGui_ImplGlfw_Shutdown();
-		ImGui::DestroyContext();
         this->window->Close();
     }
 

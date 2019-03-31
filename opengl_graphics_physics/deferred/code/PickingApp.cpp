@@ -28,6 +28,8 @@
 #include "FrameBuffer.h"
 #include "Times.h"
 #include "BoundingBox.h"
+#include "ImGuiWrapper.h"
+#include <imgui.h>
 
 using namespace mwm;
 using namespace Display;
@@ -135,6 +137,8 @@ namespace Picking
 
 		GraphicsManager::LoadAllAssets();
 
+		ImGuiWrapper ImGuiWrapper(window);
+
         // For speed computation (FPS)
 		Times::Instance()->currentTime = glfwGetTime();
 
@@ -152,21 +156,6 @@ namespace Picking
 
 		glfwSwapInterval(0); //unlock fps
 
-		IMGUI_CHECKVERSION();
-		ImGui::CreateContext();
-		ImGuiIO& io = ImGui::GetIO(); (void)io;
-		//io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
-		//io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;   // Enable Gamepad Controls
-
-		// Setup Dear ImGui style
-		ImGui::StyleColorsDark();
-		//ImGui::StyleColorsClassic();
-
-		// Setup Platform/Renderer bindings
-		ImGui_ImplGlfw_InitForOpenGL(this->window->GetGLFWWindow(), false);
-		const char* glsl_version = "#version 130";
-		ImGui_ImplOpenGL3_Init(glsl_version);
-
         while (running)
         {
 			glDepthMask(GL_TRUE);
@@ -176,9 +165,7 @@ namespace Picking
 			glDisable(GL_BLEND);
             this->window->Update();
 			if (minimized) continue;
-			ImGui_ImplOpenGL3_NewFrame();
-			ImGui_ImplGlfw_NewFrame();
-			ImGui::NewFrame();
+			ImGuiWrapper.NewFrame();
 
 			Times::Instance()->Update(glfwGetTime());
 
@@ -229,17 +216,13 @@ namespace Picking
 			
 			DrawGeometryMaps(windowWidth, windowHeight);
 
-			ImGui::Render(); // <-- (draw) to screen
-			ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+			ImGuiWrapper.Render();
 
 			customIntervalTime += Times::Instance()->deltaTime;
             
             this->window->SwapBuffers();
         }
 		GraphicsStorage::Clear();
-		ImGui_ImplOpenGL3_Shutdown();
-		ImGui_ImplGlfw_Shutdown();
-		ImGui::DestroyContext();
         this->window->Close();
     }
 
