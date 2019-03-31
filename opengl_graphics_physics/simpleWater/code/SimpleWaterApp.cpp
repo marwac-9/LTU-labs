@@ -768,10 +768,7 @@ namespace SimpleWater
 			}
 		}
 
-		//Create VAO
-		glGenVertexArrays(1, &waterMesh->vaoHandle);
-		//Bind VAO
-		glBindVertexArray(waterMesh->vaoHandle);
+		waterMesh->Bind();
 
 		waterMesh->vertexBuffers.reserve(2);
 
@@ -793,7 +790,7 @@ namespace SimpleWater
 		waterMesh->vertexBuffers.push_back(elementbuffer);
 
 		//Unbind the VAO now that the VBOs have been set up
-		glBindVertexArray(0);
+		waterMesh->Unbind();
 
 		obj->dimensions = Vector3((float)width, 0.f, (float)height);
 		obj->center_of_mesh = obj->dimensions / 2.f;
