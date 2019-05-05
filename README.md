@@ -21,7 +21,8 @@ I continue working on this repository, refining the code and adding ⚠new proje
   - ⚠Particles
   - ⚠Soft Particles
   - ⚠HDR
-  - ⚠Bloom 
+  - ⚠Bloom
+  - ⚠Normal mapping
   
 ## Network
   - Socket programming for Windows & Linux
