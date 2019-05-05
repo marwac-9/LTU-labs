@@ -19,6 +19,7 @@ SOURCE_GROUP("DeferredHDRBloomParticlesSceneGraph\\Managers" FILES ${SRCSMANAGER
 FILE(GLOB SRCVS "resources/shaders/*.vs")
 FILE(GLOB SRCFS "resources/shaders/*.fs")
 FILE(GLOB SRCGS "resources/shaders/*.gs")
+FILE(GLOB SRCGS "resources/shaders/*.ubo")
 LIST(APPEND SRCSSHADERS ${SRCVS} ${SRCFS} ${SRCGS} )
 SOURCE_GROUP("DeferredHDRBloomParticlesSceneGraph\\shaders" FILES ${SRCSSHADERS})
 

@@ -1,7 +1,7 @@
 #version 420 core
 
 in vec2 TexCoord0;
-in vec3 Normal0;
+in mat3 TBN0;
 in vec3 WorldPos0;
 
 layout(location = 0) out vec3 WorldPosOut;
@@ -20,13 +20,17 @@ layout(std140, binding = 0) uniform GBVars
 	uint objectID;
 };
 
-layout(binding = 0) uniform sampler2D myTextureSampler;
+layout(binding = 0) uniform sampler2D diffuseSampler;
+layout(binding = 1) uniform sampler2D normalSampler;
 
 void main()
 {
 	WorldPosOut = WorldPos0;
-	DiffuseOut = MaterialColor + texture(myTextureSampler, TexCoord0).xyz;
-	NormalOut = normalize(Normal0);
+	DiffuseOut = MaterialColor + texture(diffuseSampler, TexCoord0).xyz;
+	
+	vec3 normalMapNormal = 2 * texture(normalSampler, TexCoord0).xyz - 1.0;
+	normalMapNormal = normalize(normalMapNormal);
+	NormalOut = normalize(TBN0 * normalMapNormal);
 
 	diffIntAmbIntShineSpecIntOut = MaterialProperties;
 }

@@ -1,3 +1,5 @@
+Resources/textures/default_diffuse.dds
+Resources/textures/default_normal_dtx5.dds
 Resources/textures/uvmap_2.dds
 Resources/textures/sun.dds
 Resources/textures/mercury.dds
@@ -10,3 +12,5 @@ Resources/textures/particle3.dds
 Resources/textures/wood.dds
 Resources/textures/particle4.dds
 Resources/textures/particle5.dds
+Resources/textures/brickwall.dds
+Resources/textures/brickwall_normal_dtx5.dds

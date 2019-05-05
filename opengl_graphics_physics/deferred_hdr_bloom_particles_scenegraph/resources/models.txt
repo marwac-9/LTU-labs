@@ -16,3 +16,4 @@ Resources/models/tunnel.obj 9
 Resources/models/skybox.obj 0
 Resources/models/cone.obj 0
 Resources/models/cube_inverted.obj 0
+Resources/models/cube_bevel.obj 0

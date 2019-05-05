@@ -390,7 +390,7 @@ namespace SimpleWater
 		}
 
 		Object* plane = Scene::Instance()->addObject("pond", Vector3(0.f, 0.f, 0.f));
-		plane->mat->AssignTexture(GraphicsStorage::textures[3]);
+		plane->mat->AssignTexture(GraphicsStorage::textures[5]);
 		plane->mat->tileX = 20;
 		plane->mat->tileY = 20;
 	}
@@ -582,8 +582,8 @@ namespace SimpleWater
 
 		reflectionBufferTexture->ActivateAndBind(0);
 		underWaterBufferTexture->ActivateAndBind(1);
-		GraphicsStorage::textures[1]->ActivateAndBind(2); //normal
-		GraphicsStorage::textures[2]->ActivateAndBind(3); //dudv
+		GraphicsStorage::textures[3]->ActivateAndBind(2); //normal
+		GraphicsStorage::textures[4]->ActivateAndBind(3); //dudv
 		depthTextureBufferTexture->ActivateAndBind(4);
 
 		GLuint CameraPos = glGetUniformLocation(currentShaderID, "CameraPos");

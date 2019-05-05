@@ -1,4 +1,4 @@
-#version 330 core
+#version 42 0 core
 
 in vec2 UV;
 

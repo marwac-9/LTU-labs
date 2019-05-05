@@ -56,25 +56,18 @@ namespace Picking
 	private:
 		void Clear();
 
-		void DrawFastBoundingBoxes();
         void PickingTest();
 
-		void DrawGeometryPass();
-		void DrawGeometryPassInstanced();
 		void PIDController();
-		void DrawLightPass();
 		void BlitDepthToScreenPass();
 		void BlitToScreenPass();
 		void FireLightProjectile();
 		void DrawGeometryMaps(int width, int height);
 
-		void DrawHDR(Texture* texture);
 		void Screenshot();
 		void Screenshot2();
 
 		void GenerateGUI();
-		void DrawGSkybox();
-		void DrawSkybox();
 
         void InitGL();
 		void SetUpBuffers(int windowWidth, int windowHeight);
@@ -181,6 +174,8 @@ namespace Picking
 		int bloomLevel = 3;
 
 		int instancedGeometryDrawn = 0;
+		float cubeShininess = 10.f;
+		float cubeSpecularIntensity = 0.25f;
 
 		Texture* diffuseTexture;
 		Texture* normalTexture;

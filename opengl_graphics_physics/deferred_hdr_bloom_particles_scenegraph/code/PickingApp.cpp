@@ -119,7 +119,7 @@ namespace Picking
 			else if (button == GLFW_MOUSE_BUTTON_MIDDLE && action == GLFW_PRESS)
 			{
 				Scene::Instance()->InitializeSceneTree();
-				GraphicsManager::ReloadShader("directionalLightShadow");
+				GraphicsManager::ReloadShader("geometry");
 			}
 			else if (button == GLFW_MOUSE_BUTTON_MIDDLE && action == GLFW_RELEASE)
 			{
@@ -171,7 +171,7 @@ namespace Picking
 
 		SetUpCamera();
 
-		LoadScene9();
+		LoadScene2();
 
 		double customIntervalTime = 0;
 		Scene::Instance()->Update();
@@ -242,24 +242,25 @@ namespace Picking
 			Render::Instance()->UpdateEBOs();
 			ImGui::ShowDemoWindow();
 			GenerateGUI();
-			DrawGeometryPass();
-			DrawGeometryPassInstanced();
-			DrawGSkybox();
+			objectsRendered = Render::Instance()->drawGeometry(Scene::Instance()->renderList, geometryBuffer);
+			instancedGeometryDrawn = Render::Instance()->drawInstancedGeometry(Scene::Instance()->instanceSystemComponents, geometryBuffer);
+			instancedGeometryDrawn += Render::Instance()->drawFastInstancedGeometry(Scene::Instance()->fastInstanceSystemComponents, geometryBuffer);
+			Render::Instance()->drawGSkybox(geometryBuffer, GraphicsStorage::cubemaps[0]);
 
 			if (altButtonToggle) PickingTest();
 
-			DrawLightPass();
+			lightsRendered = Render::Instance()->drawLight(lightAndPostBuffer, geometryBuffer);
 
-			//if (skybox != nullptr) DrawSkybox();
+			//if (skybox != nullptr) Render::Instance()->drawSkybox(lightAndPostBuffer, GraphicsStorage::cubemaps[0]);
 
-			if (drawLines) DrawFastLineSystems();  //<--- to light pass
-			if (drawPoints) DrawFastPointSystems();  //<--- to light pass
+			if (drawLines) DebugDraw::Instance()->DrawFastLineSystems(lightAndPostBuffer->handle);  //<--- to light pass
+			if (drawPoints) DebugDraw::Instance()->DrawFastPointSystems(lightAndPostBuffer->handle);  //<--- to light pass
 			if (drawParticles) DrawParticles();  //<--- to light pass
 
 			if (post)
 			{
 				blurredBrightTexture = Render::Instance()->MultiBlur(brightLightTexture, bloomLevel, blurBloomSize, GraphicsStorage::shaderIDs["fastBlur"]);
-				DrawHDR(blurredBrightTexture); //we draw color to screen here
+				Render::Instance()->drawHDR(finalColorTexture, blurredBrightTexture); //we draw color to screen here
 				BlitDepthToScreenPass(); //we blit depth so we can use it in forward rendering on top of deffered
 			}
 			else
@@ -267,7 +268,7 @@ namespace Picking
 				BlitToScreenPass(); //final color and depth
 			}
 
-			if (drawBB) DrawFastBoundingBoxes();
+			if (drawBB) DebugDraw::Instance()->DrawBoundingBoxes();
 
 			DebugDraw::Instance()->DrawCrossHair();
 
@@ -542,6 +543,21 @@ namespace Picking
 			directionalLightComp2->object->node->SetOrientation(dirTotalRotation2);
 			directionalLightComp2->object->node->SetPosition(currentCamera->GetPosition2());
 		}
+		if (currentScene == scene2Loaded)
+		{
+			Quaternion qX = Quaternion(xCubeAngle, Vector3(1, 0, 0));
+			Quaternion qY = Quaternion(yCubeAngle, Vector3(0, 1, 0));
+			Quaternion qZ = Quaternion(zCubeAngle, Vector3(0, 0, 1));
+
+			Quaternion totalRot = qX * qY * qZ;
+			
+			if (lastPickedObject != nullptr)
+			{
+				lastPickedObject->node->SetOrientation(totalRot);
+				lastPickedObject->mat->SetShininess(cubeShininess);
+				lastPickedObject->mat->SetSpecularIntensity(cubeSpecularIntensity);
+			}
+		}
 		/*
 		if (currentScene == scene0Loaded)
 		{
@@ -659,10 +675,7 @@ namespace Picking
 		sphere->mat->SetShininess(10.f);
 
 		Object* tunnel = Scene::Instance()->addObject("tunnel", Vector3(0.f, 0.f, 25.f));
-		Material* newMaterial = new Material();
-		newMaterial->AssignTexture(GraphicsStorage::textures.at(9));
-		GraphicsStorage::materials.push_back(newMaterial);
-		tunnel->AssignMaterial(newMaterial);
+		tunnel->mat->AssignTexture(GraphicsStorage::textures.at(11));
 		//tunnel->mat->SetSpecularIntensity(0.f);
 		//tunnel->mat->SetShininess(10.f);
 
@@ -749,22 +762,22 @@ namespace Picking
 		insideOutCube->node->SetScale(Vector3(40,40,40));
 		insideOutCube->mat->SetShininess(1.0);
 		insideOutCube->mat->SetMetallic(0.0);
-		insideOutCube->mat->AssignTexture(GraphicsStorage::textures.at(9));
+		insideOutCube->mat->AssignTexture(GraphicsStorage::textures.at(11));
 		insideOutCube->mat->tileX = 10;
 		insideOutCube->mat->tileY = 10;
 		insideOutCube->AddComponent(new RigidBody());
 
 		Object* insideOutCube2 = Scene::Instance()->addObject("cube");
 		insideOutCube2->node->SetScale(Vector3(41, 41, 41));
-		insideOutCube2->mat->AssignTexture(GraphicsStorage::textures.at(9));
+		insideOutCube2->mat->AssignTexture(GraphicsStorage::textures.at(11));
 
 		PhysicsManager::Instance()->gravity = Vector3();
 
-		pointLightTest = Scene::Instance()->addPointLight(true, Vector3(0,3,0));
-		pointLightTest->mat->SetDiffuseIntensity(20.f);
-		pointLightTest->node->SetScale(Vector3(100, 100, 100));
-		pointLightTest->node->SetMovable(true);
-		pointLightCompTest = pointLightTest->GetComponent<PointLight>();
+		//pointLightTest = Scene::Instance()->addPointLight(true, Vector3(0,3,0));
+		//pointLightTest->mat->SetDiffuseIntensity(20.f);
+		//pointLightTest->node->SetScale(Vector3(100, 100, 100));
+		//pointLightTest->node->SetMovable(true);
+		//pointLightCompTest = pointLightTest->GetComponent<PointLight>();
 		
 		//skybox->mat->SetDiffuseIntensity(10);
 		
@@ -772,15 +785,15 @@ namespace Picking
 		directionalLight->node->SetMovable(true);
 		directionalLightComp = directionalLight->GetComponent<DirectionalLight>();
 
-		Object* directionalLight2 = Scene::Instance()->addDirectionalLight(true);
-		directionalLight2->node->SetMovable(true);
-		directionalLightComp2 = directionalLight2->GetComponent<DirectionalLight>();
+		//Object* directionalLight2 = Scene::Instance()->addDirectionalLight(true);
+		//directionalLight2->node->SetMovable(true);
+		//directionalLightComp2 = directionalLight2->GetComponent<DirectionalLight>();
 
-		spotLight1 = Scene::Instance()->addSpotLight(true, Vector3(-25.f, 10.f, -50.f));
-		spotLight1->mat->SetColor(Vector3F(1.f, 0.7f, 0.8f));
-		spotLight1->node->SetMovable(true);
-		spotLightComp = spotLight1->GetComponent<SpotLight>();
-		spotLightComp->shadowMapBlurActive = false;
+		//spotLight1 = Scene::Instance()->addSpotLight(true, Vector3(-25.f, 10.f, -50.f));
+		//spotLight1->mat->SetColor(Vector3F(1.f, 0.7f, 0.8f));
+		//spotLight1->node->SetMovable(true);
+		//spotLightComp = spotLight1->GetComponent<SpotLight>();
+		//spotLightComp->shadowMapBlurActive = false;
 		
 		//LineSystem* lSystem = DebugDraw::Instance()->lineSystems.front();
 
@@ -799,6 +812,8 @@ namespace Picking
 			Object* sphere = Scene::Instance()->addObject("icosphere", pos);
 			sphere->mat->SetShininess(20.f);
 			sphere->mat->SetSpecularIntensity(3.f);
+			sphere->mat->AssignTexture(GraphicsStorage::textures.at(14));
+			sphere->mat->AssignTexture(GraphicsStorage::textures.at(15),1);
 			//it is better if we can attach the node to the object
 			//to do that we simply set the pointer of the node of line to the object we want to follow
 			//this will work for get lines but not for the generated ones,
@@ -818,6 +833,8 @@ namespace Picking
 				Object* child = Scene::Instance()->addObjectTo(sphere, "icosphere", childPos);
 				child->mat->SetShininess(20.f);
 				child->mat->SetSpecularIntensity(3.f);
+				child->mat->AssignTexture(GraphicsStorage::textures.at(14));
+				child->mat->AssignTexture(GraphicsStorage::textures.at(15), 1);
 				//FastLine* line = lSystem->GetLine();
 
 				//line->AttachEndA(&sphere->node);
@@ -835,6 +852,8 @@ namespace Picking
 					Object* childOfChild = Scene::Instance()->addObjectTo(child, "sphere", childOfChildPos);
 					childOfChild->mat->SetShininess(20.f);
 					childOfChild->mat->SetSpecularIntensity(3.f);
+					childOfChild->mat->AssignTexture(GraphicsStorage::textures.at(14));
+					childOfChild->mat->AssignTexture(GraphicsStorage::textures.at(15), 1);
 					//FastLine* line = lSystem->GetLine();
 
 					//line->AttachEndA(&child->node);
@@ -853,9 +872,12 @@ namespace Picking
 
 		Object* planezx = Scene::Instance()->addObject("fatplane", Vector3(0.f, -10.f, 0.f));
 		//Scene::Instance()->unregisterForPicking(planezx);
-		planezx->mat->AssignTexture(GraphicsStorage::textures.at(9));
+		planezx->mat->AssignTexture(GraphicsStorage::textures.at(14));
+		planezx->mat->AssignTexture(GraphicsStorage::textures.at(15), 1);
 		planezx->mat->tileX = 50;
 		planezx->mat->tileY = 50;
+		qXCube1 = planezx;
+		qXCube1->node->SetMovable(true);
 		planezx->node->SetScale(Vector3(10.0, 1.0, 10.0));
 		currentScene = scene2Loaded;
 		Scene::Instance()->InitializeSceneTree();
@@ -1196,23 +1218,19 @@ namespace Picking
 		currentCamera->SetPosition(Vector3(0.f, 20.f, 60.f));
 
 		Object* directionalLight = Scene::Instance()->addDirectionalLight();
-		directionalLight->mat->SetDiffuseIntensity(1.0f);
+		directionalLight->node->SetMovable(true);
+		directionalLightComp = directionalLight->GetComponent<DirectionalLight>();
 
 		Object* plane = Scene::Instance()->addPhysicObject("fatplane", Vector3(0.f, -10.f, 0.f));
 
-		Material* newMaterial = new Material();
-		newMaterial->AssignTexture(GraphicsStorage::textures.at(5));
-		newMaterial->tileX = 50;
-		newMaterial->tileY = 50;
-		GraphicsStorage::materials.push_back(newMaterial);
-		plane->AssignMaterial(newMaterial);
+		plane->mat->AssignTexture(GraphicsStorage::textures.at(5));
 		//plane->SetScale(Vector3(10.0,1.0,10.0));
 		RigidBody* body = plane->GetComponent<RigidBody>();
 		body->SetIsKinematic(true); //i might not have to set this to kinematic either, but then phycis will do some extra calculations in the sweep and collision response
 		
 		for (size_t i = 0; i < 300; i++)
 		{
-			Object* cube = Scene::Instance()->addPhysicObject("cube", Scene::Instance()->generateRandomIntervallVectorFlat(-400, 400, Scene::axis::y, 10) / 10.0);
+			Object* cube = Scene::Instance()->addPhysicObject("sphere", Scene::Instance()->generateRandomIntervallVectorFlat(-400, 400, Scene::axis::y, 10) / 10.0);
 			cube->node->SetMovable(true);
 			//cube->node->movable = true; //they update component because it is not kinematic so collisions work, we could set to kinematic it would work as well
 		}
@@ -1442,19 +1460,6 @@ namespace Picking
 	}
 
 	void
-	PickingApp::DrawGeometryPass()
-	{
-		objectsRendered = Render::Instance()->drawGeometry(Scene::Instance()->renderList, geometryBuffer);
-	}
-
-	void
-	PickingApp::DrawGeometryPassInstanced()
-	{
-		instancedGeometryDrawn = Render::Instance()->drawInstancedGeometry(Scene::Instance()->instanceSystemComponents, geometryBuffer);
-		instancedGeometryDrawn += Render::Instance()->drawFastInstancedGeometry(Scene::Instance()->fastInstanceSystemComponents, geometryBuffer);
-	}
-
-	void
 	PickingApp::PIDController()
 	{
 		int measured_value; //current value
@@ -1474,12 +1479,6 @@ namespace Picking
 		previous_error = error;
 		//wait(dt); //should wait until delta time passes before we continue
 		
-	}
-
-	void
-	PickingApp::DrawLightPass()
-	{
-		lightsRendered = Render::Instance()->drawLight(lightAndPostBuffer, geometryBuffer);
 	}
 
 	void
@@ -1526,18 +1525,13 @@ namespace Picking
 	PickingApp::SetUpCamera()
 	{
 		currentCamera = new Camera(Vector3(0.f, 10.f, 60.f), windowWidth, windowHeight);
+		currentCamera->speed = 50;
 		currentCamera->Update(Times::Instance()->timeStep);
 		window->SetCursorPos(windowMidX, windowMidY);
 		CameraManager::Instance()->AddCamera("default", currentCamera);
 		CameraManager::Instance()->SetCurrentCamera("default");
 		DebugDraw::Instance()->Projection = &currentCamera->ProjectionMatrix;
 		DebugDraw::Instance()->View = &currentCamera->ViewMatrix;
-	}
-	
-	void
-	PickingApp::DrawHDR(Texture* texture)
-	{
-		Render::Instance()->drawHDR(finalColorTexture, texture);
 	}
 
 	void
@@ -1693,12 +1687,15 @@ namespace Picking
 			ImGui::SliderFloat("PointPosZ", &pposZ, -100, 100);
 		}
 
-		if (currentScene == scene0Loaded)
+		if (currentScene == scene0Loaded || currentScene == scene2Loaded)
 		{
 			ImGui::NewLine();
 			ImGui::SliderFloat("CubeAnglesX", &xCubeAngle, start, stop);
 			ImGui::SliderFloat("CubeAnglesY", &yCubeAngle, start, stop);
 			ImGui::SliderFloat("CubeAnglesZ", &zCubeAngle, start, stop);
+
+			ImGui::SliderFloat("CubeSpecIntensity", &cubeSpecularIntensity, start, stop);
+			ImGui::SliderFloat("CubeSpecShininess", &cubeShininess, start, stop);
 		}
 
 		if (spotLightComp != nullptr)
@@ -1753,30 +1750,6 @@ namespace Picking
 			ImGui::SliderFloat("Dir2 Intensity", &directionalLightComp2->object->mat->diffuseIntensity, 0, 10);
 		}
 		ImGui::End();
-	}
-
-	void
-	PickingApp::DrawGSkybox()
-	{
-		Render::Instance()->drawGSkybox(geometryBuffer, GraphicsStorage::cubemaps[0]);
-	}
-
-	void
-	PickingApp::DrawSkybox()
-	{
-		Render::Instance()->drawSkybox(lightAndPostBuffer, GraphicsStorage::cubemaps[0]);
-	}
-
-	void
-	PickingApp::DrawFastLineSystems()
-	{
-		DebugDraw::Instance()->DrawFastLineSystems(lightAndPostBuffer->handle);
-	}
-
-	void
-	PickingApp::DrawFastPointSystems()
-	{
-		DebugDraw::Instance()->DrawFastPointSystems(lightAndPostBuffer->handle);
 	}
 
 	void
@@ -1836,11 +1809,5 @@ namespace Picking
 		//if (pointLightTest != drawRegion) DebugDraw::Instance()->DrawMap(width - glWidth, y, glWidth, glHeight, pointLightCompTest->shadowMapTexture->handle, width, height);
 		//else if (spotLight1 != nullptr) DebugDraw::Instance()->DrawMap(width - glWidth, y, glWidth, glHeight, spotLightComp->shadowMapTexture->handle, width, height);
 		Render::Instance()->drawRegion(width - glWidth, y, glWidth, glHeight, Render::Instance()->dirShadowMapBuffer->textures[0]);
-	}
-
-	void
-	PickingApp::DrawFastBoundingBoxes()
-	{
-		DebugDraw::Instance()->DrawBoundingBoxes();
 	}
 } 
