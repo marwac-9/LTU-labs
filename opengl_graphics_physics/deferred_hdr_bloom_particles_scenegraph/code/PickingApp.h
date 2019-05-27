@@ -5,7 +5,7 @@
 #include "gl_window.h"
 #include "MyMathLib.h"
 #include <vector>
-#include "Attenuation.h"
+#include "LightProperties.h"
 
 class ParticleSystem;
 class LineSystem;
@@ -89,7 +89,7 @@ namespace Picking
 
 		void DrawParticles();
 		void SpawnSomeLights();
-		bool altButtonToggle = true;
+		bool applicationInputEnabled = true;
         //camera type 1 == fps, 2 == tps 3 == monitoring camera
         int cameraMode = 1;
 		Camera* currentCamera;
@@ -124,17 +124,21 @@ namespace Picking
 		float near = 0.1f;
 		float far = 2000.f;
 		float fov = 45.0f;
-		float xAngled = 108.f;
-		float yAngled = 162.f;
-		float xAngled2 = 108.f;
-		float yAngled2 = 282.6f;
+		float xAngled = 45.f;
+		float yAngled = 310.f;
+		float xAngled2 = 45.f;
+		float yAngled2 = 74.6f;
+		float xAngled3 = 213.f;
+		float yAngled3 = 155.6f;
+		float xAngled4 = 207.f;
+		float yAngled4 = 226.6f;
 		std::vector<ParticleSystem*> particleSystems;
-		void DrawFastLineSystems();
-		void DrawFastPointSystems();
 		int increment = 0;
 		int prevGridPos[3];
 		DirectionalLight* directionalLightComp;
 		DirectionalLight* directionalLightComp2;
+		DirectionalLight* directionalLightComp3;
+		DirectionalLight* directionalLightComp4;
 		SpotLight* spotLightComp;
 
 		Object* spotLight1;
@@ -170,8 +174,8 @@ namespace Picking
 		float contrastPower = 0.5f;
 
 		bool post = true;
-		float blurBloomSize = 1.5f;
-		int bloomLevel = 3;
+		float blurBloomSize = 0.3f;
+		int bloomLevel = 1;
 
 		int instancedGeometryDrawn = 0;
 		float cubeShininess = 10.f;
@@ -196,5 +200,12 @@ namespace Picking
 		Object* testSphere1;
 		Object* firstObject = nullptr;
 		Object* secondObject = nullptr;
+
+		FrameBuffer* captureFBO;
+		unsigned int captureRBO;
+		Texture* irradianceCubeMap;
+		Texture* prefilteredHDRMap;
+		Texture* envCubeMap;
+		Texture* brdfTexture;		
 	};
 } // namespace Example

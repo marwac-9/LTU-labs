@@ -1,13 +1,14 @@
 #version 420
 
 layout(binding = 0) uniform sampler2D positionSampler;
-layout(binding = 1) uniform sampler2D diffuseSampler;
+layout(binding = 1) uniform sampler2D albedoSampler;
 layout(binding = 2) uniform sampler2D normalsSampler;
-layout(binding = 3) uniform sampler2D metDiffIntShinSpecIntSampler;
-layout(binding = 4) uniform sampler2D shadowMapSampler;
+layout(binding = 3) uniform sampler2D specularSampler;
+layout(binding = 7) uniform sampler2D shadowMapSampler;
 
 layout(std140, binding = 1) uniform LBVars
 {
+	mat4 depthBiasMVP;
 	vec3 lightInvDir;
 	float shadowTransitionSize;
 	float outerCutOff;
@@ -16,7 +17,8 @@ layout(std140, binding = 1) uniform LBVars
 	float lightPower;
 	vec3 lightColor;
 	float ambient;
-	mat4 depthBiasMVP;
+	float diffuse;
+	float specular;
 	mat4 MVP;
 	vec3 lightPosition;
 	float constant;
@@ -72,10 +74,10 @@ void main()
 {
 	vec2 TexCoord = gl_FragCoord.xy / screenSize;
 	vec3 WorldPos = texture(positionSampler, TexCoord).xyz;
-	vec3 MaterialDiffuseColor = texture(diffuseSampler, TexCoord).xyz;
+	vec3 MaterialDiffuseColor = pow(texture(albedoSampler, TexCoord).xyz, vec3(2.2));
 	vec3 Normal_worldSpace = texture(normalsSampler, TexCoord).xyz;
 	// Material properties
-	vec4 MatPropertiesMetDiffShinSpec = texture(metDiffIntShinSpecIntSampler, TexCoord);
+	vec4 AoRoughnessMetallicShininess = texture(specularSampler, TexCoord);
 
 	// Vector that goes from the vertex to the camera, in world space.
 	vec3 EyeDirection_worldSpace = cameraPos - WorldPos;
@@ -126,12 +128,13 @@ void main()
 	}
 
 
-	float Metallic = MatPropertiesMetDiffShinSpec.x;
-	float Diffuse = MatPropertiesMetDiffShinSpec.y * cosTheta;
-	float Specular = MatPropertiesMetDiffShinSpec.z * pow(cosAlpha, MatPropertiesMetDiffShinSpec.w);
-	vec3 SpecularColor = mix(vec3(1.0), MaterialDiffuseColor, Metallic);
+	float Metallic = AoRoughnessMetallicShininess.z;
+	float Diffuse = diffuse * cosTheta;
+	float Specular = specular * pow(cosAlpha, AoRoughnessMetallicShininess.w);
+	vec3 SpecularColor = mix(lightColor, MaterialDiffuseColor, Metallic);
+	float glossiness = 1.0 - AoRoughnessMetallicShininess.y;
 	
-	color = vec4((lightColor * lightPower * (MaterialDiffuseColor * ambient + (MaterialDiffuseColor * Diffuse + SpecularColor * Specular) * visibility) * attenuation) * intensity, 1.0);
+	color = vec4((lightColor * lightPower * (MaterialDiffuseColor * ambient + (MaterialDiffuseColor * Diffuse + SpecularColor * Specular * glossiness) * visibility) * attenuation) * intensity, 1.0);
 	float brightness = dot(color.rgb, vec3(0.2126, 0.7152, 0.0722));
 	if (brightness > 1.0)
 		brightColor = color;

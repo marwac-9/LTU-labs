@@ -1,13 +1,31 @@
 #version 420 core
 
 in vec3 UVdirection;
-in vec3 Normal0;
 
 layout(location = 1) out vec4 DiffuseOut;
 
-uniform vec3 MaterialColor;
+layout(std140, binding = 1) uniform LBVars
+{
+	mat4 depthBiasMVP;
+	vec3 lightInvDir;
+	float shadowTransitionSize;
+	float outerCutOff;
+	float innerCutOff;
+	float lightRadius;
+	float lightPower;
+	vec3 lightColor;
+	float ambient;
+	float diffuse;
+	float specular;
+	mat4 MVP;
+	vec3 lightPosition;
+	float constant;
+	float linear;
+	float exponential;
+};
+
 layout(binding = 0) uniform samplerCube cubeMap;
 
 void main(){
-	DiffuseOut = vec4(MaterialColor + texture(cubeMap, UVdirection).xyz, 1.0);
+	DiffuseOut = vec4(lightColor * lightPower * texture(cubeMap, UVdirection).xyz, 1.0);
 }

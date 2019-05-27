@@ -12,10 +12,9 @@ layout(std140, binding = 0) uniform GBVars
 								//16		80
 								//16		96
 								//16		112
-	vec4 MaterialProperties;	//16		128
-	vec3 MaterialColor;			//16		144
-	vec2 tiling;				//8			160
-	uint objectID;				//4			168 + 4 -> 172
+	vec4 MaterialColorShininess;//16		128
+	vec2 tiling;				//8			136
+	uint objectID;				//4			144 + 4 -> 148
 };
 
 void main()

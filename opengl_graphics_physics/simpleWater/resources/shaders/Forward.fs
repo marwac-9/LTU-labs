@@ -9,10 +9,9 @@ in vec3 LightDirection_worldspace;
 layout(location = 0) out vec4 color;
 layout(location = 1) out vec4 brightColor;
 
-layout(binding = 0) uniform sampler2D myTextureSampler;
+layout(binding = 0) uniform sampler2D diffuseSampler;
 
-uniform vec4 MaterialProperties;
-uniform vec3 MaterialColor;
+uniform vec4 MaterialColorShininess;
 
 uniform float lightPower;
 uniform vec3 lightColor;
@@ -22,7 +21,7 @@ const float Ambient = 0.25; //is light property
 void main(){
 
 	// Material properties
-	vec3 MaterialDiffuseColor = texture2D(myTextureSampler, UV).rgb + MaterialColor;
+	vec3 MaterialDiffuseColor = pow(texture2D(diffuseSampler, UV).rgb + MaterialColorShininess.rgb, vec3(2.2));
 
 	vec3 normal = normalize( Normal_worldspace );
 
@@ -38,9 +37,9 @@ void main(){
 
 	float specularFactor = clamp(dot(vertexToCamera, reflectedLightDir), 0, 1);
 
-	float Metallic = MaterialProperties.x; //metallic
-	float Diffuse = MaterialProperties.y * diffuseFactor; //diffuse intensity
-	float Specular = MaterialProperties.z * pow(specularFactor, MaterialProperties.w); //specular intensity, specular shininess
+	float Metallic = 1.0; //metallic
+	float Diffuse = 1.0 * diffuseFactor; //diffuse intensity
+	float Specular = 0.5 * pow(specularFactor, MaterialColorShininess.w); //specular intensity, specular shininess
 	vec3 SpecularColor = mix(vec3(1.0), MaterialDiffuseColor, Metallic); //roughness parameter and reflection map will help with black metallic objects 
 
 	color = vec4(lightColor * lightPower * (MaterialDiffuseColor * (Ambient + Diffuse) + SpecularColor * Specular), 0.1f);

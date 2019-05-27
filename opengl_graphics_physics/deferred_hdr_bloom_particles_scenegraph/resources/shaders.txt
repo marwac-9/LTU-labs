@@ -8,11 +8,17 @@ fastBlur Resources/shaders/FastBlur
 fastBlurShadow Resources/shaders/FastBlurShadow
 geometry Resources/shaders/Geometry
 pointLight Resources/shaders/PointLight
+pointLightPBR Resources/shaders/PointLightPBR
 pointLightShadow Resources/shaders/PointLightShadow
+pointLightShadowPBR Resources/shaders/PointLightShadowPBR
 spotLight Resources/shaders/SpotLight
+spotLightPBR Resources/shaders/SpotLightPBR
 spotLightShadow Resources/shaders/SpotLightShadow
+spotLightShadowPBR Resources/shaders/SpotLightShadowPBR
 directionalLight Resources/shaders/DirectionalLight
+directionalLightPBR Resources/shaders/DirectionalLightPBR
 directionalLightShadow Resources/shaders/DirectionalLightShadow
+directionalLightShadowPBR Resources/shaders/DirectionalLightShadowPBR
 stencil Resources/shaders/Stencil
 particle Resources/shaders/Particle
 softparticle Resources/shaders/SoftParticle
@@ -22,3 +28,7 @@ fastBB Resources/shaders/FastBB
 skybox Resources/shaders/Skybox
 gskybox Resources/shaders/GSkybox
 geometryInstanced Resources/shaders/GeometryInstanced
+radianceHDRSkyboxUnwrwap Resources/shaders/RadianceHDRSkyboxUnwrwap
+irradianceFromEnvironmentMap Resources/shaders/IrradianceFromEnvironmentMap
+prefilterHDRMap Resources/shaders/PrefilterHDRMap
+brdf Resources/shaders/BRDF

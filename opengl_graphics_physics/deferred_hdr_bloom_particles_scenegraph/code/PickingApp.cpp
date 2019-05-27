@@ -76,12 +76,36 @@ namespace Picking
 
 		window->SetKeyPressFunction([this](int32 key, int32 scancode, int32 action, int32 mode)
 		{
-			KeyCallback(key, scancode, action, mode);
+			if (action == GLFW_PRESS)
+			{
+				if (key == GLFW_KEY_ESCAPE) {
+					running = false;
+				}
+				else if (key == GLFW_KEY_LEFT_ALT) {
+					if (applicationInputEnabled) {
+						applicationInputEnabled = false;
+						window->SetCursorMode(GLFW_CURSOR_NORMAL);
+						currentCamera->holdingForward = false;
+						currentCamera->holdingBackward = false;
+						currentCamera->holdingRight = false;
+						currentCamera->holdingLeft = false;
+						currentCamera->holdingUp = false;
+						currentCamera->holdingDown = false;
+					}
+					else {
+						applicationInputEnabled = true;
+						window->SetCursorMode(GLFW_CURSOR_DISABLED);
+						window->SetCursorPos(windowWidth / 2.f, windowHeight / 2.f);
+					}
+				}
+			}
+			if (applicationInputEnabled) KeyCallback(key, scancode, action, mode);
+			
 		});
 
 		window->SetMouseMoveFunction([this](double mouseX, double mouseY)
 		{
-			MouseCallback(mouseX, mouseY);
+			if (applicationInputEnabled) MouseCallback(mouseX, mouseY);
 		});
 
 		window->SetWindowSizeFunction([this](int width, int height)
@@ -100,31 +124,34 @@ namespace Picking
 
 		window->SetMousePressFunction([this](int button, int action, int mods)
 		{
-			if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
+			if (applicationInputEnabled)
 			{
-				isLeftMouseButtonPressed = true;
-				if (currentScene == scene3Loaded) FireLightProjectile();
-			}
-			else if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE)
-			{
-				isLeftMouseButtonPressed = false;
-			}
-			else if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS)
-			{
+				if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
+				{
+					isLeftMouseButtonPressed = true;
+					if (currentScene == scene3Loaded) FireLightProjectile();
+				}
+				else if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE)
+				{
+					isLeftMouseButtonPressed = false;
+				}
+				else if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS)
+				{
 
+				}
+				else if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_RELEASE)
+				{
+				}
+				else if (button == GLFW_MOUSE_BUTTON_MIDDLE && action == GLFW_PRESS)
+				{
+					Scene::Instance()->InitializeSceneTree();
+					//GraphicsManager::ReloadShader("directionalLightPBR");
+					GraphicsManager::ReloadShaders();
+				}
+				else if (button == GLFW_MOUSE_BUTTON_MIDDLE && action == GLFW_RELEASE)
+				{
+				}
 			}
-			else if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_RELEASE)
-			{
-			}
-			else if (button == GLFW_MOUSE_BUTTON_MIDDLE && action == GLFW_PRESS)
-			{
-				Scene::Instance()->InitializeSceneTree();
-				GraphicsManager::ReloadShader("geometry");
-			}
-			else if (button == GLFW_MOUSE_BUTTON_MIDDLE && action == GLFW_RELEASE)
-			{
-			}
-
 		});
 
 		window->SetWindowIconifyFunction([this](int iconified) {
@@ -171,7 +198,7 @@ namespace Picking
 
 		SetUpCamera();
 
-		LoadScene2();
+		LoadScene0();
 
 		double customIntervalTime = 0;
 		Scene::Instance()->Update();
@@ -181,8 +208,23 @@ namespace Picking
 		std::chrono::time_point<std::chrono::high_resolution_clock> start, end;
 		std::chrono::duration<double> elapsed_seconds;
 
+		GLuint shader = GraphicsStorage::shaderIDs["radianceHDRSkyboxUnwrwap"];
+		Render::Instance()->captureTextureToCubeMap(shader, captureFBO, captureRBO, GraphicsStorage::textures[26], envCubeMap);
+		envCubeMap->ActivateAndBind(0);
+		envCubeMap->GenerateMipMaps();
+
+		shader = GraphicsStorage::shaderIDs["irradianceFromEnvironmentMap"];
+		Render::Instance()->captureTextureToCubeMap(shader, captureFBO, captureRBO, envCubeMap, irradianceCubeMap);
+
+		shader = GraphicsStorage::shaderIDs["prefilterHDRMap"];
+		Render::Instance()->captureTextureToCubeMapWithMips(shader, captureFBO, captureRBO, envCubeMap, prefilteredHDRMap);
+
+		shader = GraphicsStorage::shaderIDs["brdf"];
+		Render::Instance()->captureToTexture2D(shader, captureFBO, captureRBO, brdfTexture);
+		
 		while (running)
 		{
+			FBOManager::Instance()->BindFrameBuffer(GL_DRAW_FRAMEBUFFER, 0);
 			glDepthMask(GL_TRUE);
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 			glEnable(GL_DEPTH_TEST);
@@ -245,13 +287,17 @@ namespace Picking
 			objectsRendered = Render::Instance()->drawGeometry(Scene::Instance()->renderList, geometryBuffer);
 			instancedGeometryDrawn = Render::Instance()->drawInstancedGeometry(Scene::Instance()->instanceSystemComponents, geometryBuffer);
 			instancedGeometryDrawn += Render::Instance()->drawFastInstancedGeometry(Scene::Instance()->fastInstanceSystemComponents, geometryBuffer);
-			Render::Instance()->drawGSkybox(geometryBuffer, GraphicsStorage::cubemaps[0]);
+			//Render::Instance()->drawGSkybox(geometryBuffer, captureFBO->textures[0]);
 
-			if (altButtonToggle) PickingTest();
-
+			if (applicationInputEnabled) PickingTest();
+			//Render::Instance()->captureTextureToCubeMap(shader, captureFBO, captureRBO, captureFBO->textures[0], irradianceCubeMap, captureVPs);
+			irradianceCubeMap->ActivateAndBind(4);
+			prefilteredHDRMap->ActivateAndBind(5);
+			brdfTexture->ActivateAndBind(6);
 			lightsRendered = Render::Instance()->drawLight(lightAndPostBuffer, geometryBuffer);
 
 			//if (skybox != nullptr) Render::Instance()->drawSkybox(lightAndPostBuffer, GraphicsStorage::cubemaps[0]);
+			Render::Instance()->drawSkybox(lightAndPostBuffer, envCubeMap);
 
 			if (drawLines) DebugDraw::Instance()->DrawFastLineSystems(lightAndPostBuffer->handle);  //<--- to light pass
 			if (drawPoints) DebugDraw::Instance()->DrawFastPointSystems(lightAndPostBuffer->handle);  //<--- to light pass
@@ -269,6 +315,8 @@ namespace Picking
 			}
 
 			if (drawBB) DebugDraw::Instance()->DrawBoundingBoxes();
+
+			//Render::Instance()->drawHDRequirectangular(GraphicsStorage::textures[23]);
 
 			DebugDraw::Instance()->DrawCrossHair();
 
@@ -299,6 +347,8 @@ namespace Picking
 		spotLightComp = nullptr;
 		directionalLightComp = nullptr;
 		directionalLightComp2 = nullptr;
+		directionalLightComp3 = nullptr;
+		directionalLightComp4 = nullptr;
 		pointLightTest = nullptr;
 	}
 
@@ -344,29 +394,8 @@ namespace Picking
 	{
 		if (action == GLFW_PRESS)
 		{
-			if (key == GLFW_KEY_ESCAPE) {
-				running = false;
-			}
-			else if (key == GLFW_KEY_R) {
+			if (key == GLFW_KEY_R) {
 				//Scene::Instance()->addRandomObject();
-			}
-			//this is just used to show hide cursor, mouse steal on/off
-			else if (key == GLFW_KEY_LEFT_ALT) {
-				if (altButtonToggle) {
-					altButtonToggle = false;
-					window->SetCursorMode(GLFW_CURSOR_NORMAL);
-					currentCamera->holdingForward = false;
-					currentCamera->holdingBackward = false;
-					currentCamera->holdingRight = false;
-					currentCamera->holdingLeft = false;
-					currentCamera->holdingUp = false;
-					currentCamera->holdingDown = false;
-				}
-				else {
-					altButtonToggle = true;
-					window->SetCursorPos(windowWidth / 2.f, windowHeight / 2.f);
-					window->SetCursorMode(GLFW_CURSOR_DISABLED);
-				}
 			}
 			else if (key == GLFW_KEY_1) {
 				LoadScene1();
@@ -492,7 +521,7 @@ namespace Picking
 		if (window->GetKey(GLFW_KEY_LEFT) == GLFW_PRESS) if (lastPickedObject) lastPickedObject->node->Translate(Vector3(0.05f, 0.f, 0.f));
 		if (window->GetKey(GLFW_KEY_RIGHT) == GLFW_PRESS) if (lastPickedObject) lastPickedObject->node->Translate(Vector3(-0.05f, 0.f, 0.f));
 
-		if (altButtonToggle)
+		if (applicationInputEnabled)
 		{
 			currentCamera->holdingForward = (window->GetKey(GLFW_KEY_W) == GLFW_PRESS);
 			currentCamera->holdingBackward = (window->GetKey(GLFW_KEY_S) == GLFW_PRESS);
@@ -543,6 +572,24 @@ namespace Picking
 			directionalLightComp2->object->node->SetOrientation(dirTotalRotation2);
 			directionalLightComp2->object->node->SetPosition(currentCamera->GetPosition2());
 		}
+
+		if (directionalLightComp3 != nullptr)
+		{
+			Quaternion qXangled3 = Quaternion(xAngled3, Vector3(1.0, 0.0, 0.0));
+			Quaternion qYangled3 = Quaternion(yAngled3, Vector3(0.0, 1.0, 0.0));
+			Quaternion dirTotalRotation3 = qYangled3 * qXangled3;
+			directionalLightComp3->object->node->SetOrientation(dirTotalRotation3);
+			directionalLightComp3->object->node->SetPosition(currentCamera->GetPosition2());
+		}
+
+		if (directionalLightComp4 != nullptr)
+		{
+			Quaternion qXangled4 = Quaternion(xAngled4, Vector3(1.0, 0.0, 0.0));
+			Quaternion qYangled4 = Quaternion(yAngled4, Vector3(0.0, 1.0, 0.0));
+			Quaternion dirTotalRotation4 = qYangled4 * qXangled4;
+			directionalLightComp4->object->node->SetOrientation(dirTotalRotation4);
+			directionalLightComp4->object->node->SetPosition(currentCamera->GetPosition2());
+		}
 		if (currentScene == scene2Loaded)
 		{
 			Quaternion qX = Quaternion(xCubeAngle, Vector3(1, 0, 0));
@@ -555,7 +602,6 @@ namespace Picking
 			{
 				lastPickedObject->node->SetOrientation(totalRot);
 				lastPickedObject->mat->SetShininess(cubeShininess);
-				lastPickedObject->mat->SetSpecularIntensity(cubeSpecularIntensity);
 			}
 		}
 		/*
@@ -610,7 +656,6 @@ namespace Picking
 			if (lastPickedObject != nullptr) //reset previously picked object color
 			{
 				lastPickedObject->mat->color = Vector3F(0.f, 0.f, 0.f);
-				lastPickedObject->mat->SetDiffuseIntensity(1.f);
 			}
 			if (Scene::Instance()->pickingList.find(pickedID) != Scene::Instance()->pickingList.end())
 			{
@@ -654,6 +699,8 @@ namespace Picking
 		// Cull triangles which normal is not towards the camera
 		glEnable(GL_CULL_FACE);
 
+		glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
+
 		this->window->GetWindowSize(&this->windowWidth, &this->windowHeight);
 		windowMidX = windowWidth / 2.0f;
 		windowMidY = windowHeight / 2.0f;
@@ -671,11 +718,10 @@ namespace Picking
 		
 		RigidBody* body = sphere->GetComponent<RigidBody>();
 		body->SetIsKinematic(true);
-		sphere->mat->SetSpecularIntensity(4.f);
 		sphere->mat->SetShininess(10.f);
 
 		Object* tunnel = Scene::Instance()->addObject("tunnel", Vector3(0.f, 0.f, 25.f));
-		tunnel->mat->AssignTexture(GraphicsStorage::textures.at(11));
+		tunnel->mat->AssignTexture(GraphicsStorage::textures.at(12));
 		//tunnel->mat->SetSpecularIntensity(0.f);
 		//tunnel->mat->SetShininess(10.f);
 
@@ -686,12 +732,10 @@ namespace Picking
 		PhysicsManager::Instance()->RegisterRigidBody(body);
 
 		Object* directionalLight = Scene::Instance()->addDirectionalLight();
-		directionalLight->mat->SetDiffuseIntensity(0.15f);
 		directionalLightComp = directionalLight->GetComponent<DirectionalLight>();
 
 		///when rendering lights only diffuse intensity and color is important as they are light power and light color
 		Object* pointLight = Scene::Instance()->addPointLight(false, Vector3(0.f, 0.f, 50.f), Vector3F(1.0f, 1.0f, 1.0f));
-		pointLight->mat->SetDiffuseIntensity(10.f);
 		pointLight->node->SetScale(Vector3(40.f, 40.f, 40.f));
 		//pointLightCompTest = pointLight->GetComponent<PointLight>();
 		//pointLightTest = pointLight;
@@ -721,7 +765,6 @@ namespace Picking
 			double len = pos.vectLengt();
 			Object* sphere = Scene::Instance()->addObject("sphere", pos);
 			sphere->mat->SetShininess(20.f);
-			sphere->mat->SetSpecularIntensity(3.f);
 		}
 		currentScene = scene1Loaded;
 		Scene::Instance()->InitializeSceneTree();
@@ -761,20 +804,18 @@ namespace Picking
 		Object* insideOutCube = Scene::Instance()->addObject("cube_inverted");
 		insideOutCube->node->SetScale(Vector3(40,40,40));
 		insideOutCube->mat->SetShininess(1.0);
-		insideOutCube->mat->SetMetallic(0.0);
-		insideOutCube->mat->AssignTexture(GraphicsStorage::textures.at(11));
+		insideOutCube->mat->AssignTexture(GraphicsStorage::textures.at(12));
 		insideOutCube->mat->tileX = 10;
 		insideOutCube->mat->tileY = 10;
 		insideOutCube->AddComponent(new RigidBody());
 
 		Object* insideOutCube2 = Scene::Instance()->addObject("cube");
 		insideOutCube2->node->SetScale(Vector3(41, 41, 41));
-		insideOutCube2->mat->AssignTexture(GraphicsStorage::textures.at(11));
+		insideOutCube2->mat->AssignTexture(GraphicsStorage::textures.at(12));
 
 		PhysicsManager::Instance()->gravity = Vector3();
 
 		//pointLightTest = Scene::Instance()->addPointLight(true, Vector3(0,3,0));
-		//pointLightTest->mat->SetDiffuseIntensity(20.f);
 		//pointLightTest->node->SetScale(Vector3(100, 100, 100));
 		//pointLightTest->node->SetMovable(true);
 		//pointLightCompTest = pointLightTest->GetComponent<PointLight>();
@@ -811,9 +852,8 @@ namespace Picking
 			double len = pos.vectLengt();
 			Object* sphere = Scene::Instance()->addObject("icosphere", pos);
 			sphere->mat->SetShininess(20.f);
-			sphere->mat->SetSpecularIntensity(3.f);
-			sphere->mat->AssignTexture(GraphicsStorage::textures.at(14));
-			sphere->mat->AssignTexture(GraphicsStorage::textures.at(15),1);
+			sphere->mat->AssignTexture(GraphicsStorage::textures.at(15));
+			sphere->mat->AssignTexture(GraphicsStorage::textures.at(16),1);
 			//it is better if we can attach the node to the object
 			//to do that we simply set the pointer of the node of line to the object we want to follow
 			//this will work for get lines but not for the generated ones,
@@ -832,9 +872,8 @@ namespace Picking
 				double childLen = childPos.vectLengt();
 				Object* child = Scene::Instance()->addObjectTo(sphere, "icosphere", childPos);
 				child->mat->SetShininess(20.f);
-				child->mat->SetSpecularIntensity(3.f);
-				child->mat->AssignTexture(GraphicsStorage::textures.at(14));
-				child->mat->AssignTexture(GraphicsStorage::textures.at(15), 1);
+				child->mat->AssignTexture(GraphicsStorage::textures.at(15));
+				child->mat->AssignTexture(GraphicsStorage::textures.at(16), 1);
 				//FastLine* line = lSystem->GetLine();
 
 				//line->AttachEndA(&sphere->node);
@@ -851,9 +890,8 @@ namespace Picking
 					Vector3 childOfChildPos = Scene::Instance()->generateRandomIntervallVectorCubic((int)-childLen, (int)childLen) / 2.f;
 					Object* childOfChild = Scene::Instance()->addObjectTo(child, "sphere", childOfChildPos);
 					childOfChild->mat->SetShininess(20.f);
-					childOfChild->mat->SetSpecularIntensity(3.f);
-					childOfChild->mat->AssignTexture(GraphicsStorage::textures.at(14));
-					childOfChild->mat->AssignTexture(GraphicsStorage::textures.at(15), 1);
+					childOfChild->mat->AssignTexture(GraphicsStorage::textures.at(15));
+					childOfChild->mat->AssignTexture(GraphicsStorage::textures.at(16), 1);
 					//FastLine* line = lSystem->GetLine();
 
 					//line->AttachEndA(&child->node);
@@ -872,8 +910,8 @@ namespace Picking
 
 		Object* planezx = Scene::Instance()->addObject("fatplane", Vector3(0.f, -10.f, 0.f));
 		//Scene::Instance()->unregisterForPicking(planezx);
-		planezx->mat->AssignTexture(GraphicsStorage::textures.at(14));
-		planezx->mat->AssignTexture(GraphicsStorage::textures.at(15), 1);
+		planezx->mat->AssignTexture(GraphicsStorage::textures.at(15));
+		planezx->mat->AssignTexture(GraphicsStorage::textures.at(16), 1);
 		planezx->mat->tileX = 50;
 		planezx->mat->tileY = 50;
 		qXCube1 = planezx;
@@ -892,12 +930,10 @@ namespace Picking
 		currentCamera->SetPosition(Vector3(0.0, 10.0, 60.0));
 
 		Object* directionalLight = Scene::Instance()->addDirectionalLight();
-		directionalLight->mat->SetDiffuseIntensity(1.0f);
 
 		Object* pointLight = Scene::Instance()->addPointLight();
 		pointLight->node->SetScale(Vector3(20.0, 20.0, 20.0));
 		pointLight->mat->SetColor(Vector3F(1.f, 0.f, 0.f));
-		pointLight->mat->SetDiffuseIntensity(100.f);
 
 		float rS = 1.f;
 		for (int i = 0; i < 1000; i++)
@@ -960,7 +996,6 @@ namespace Picking
 		lightsPhysics = false;
 
 		Object* directionalLight = Scene::Instance()->addDirectionalLight();
-		directionalLight->mat->SetDiffuseIntensity(1.0f);
 
 
 		LineSystem* lSystem = DebugDraw::Instance()->lineSystems.front();
@@ -1085,7 +1120,6 @@ namespace Picking
 		//currentCamera->SetPosition(Vector3(0.f, 10.f, 60.f));
 
 		Object* directionalLight = Scene::Instance()->addDirectionalLight();
-		directionalLight->mat->SetDiffuseIntensity(1.0f);
 
 		LineSystem* lSystem = DebugDraw::Instance()->lineSystems.front();
 
@@ -1223,7 +1257,7 @@ namespace Picking
 
 		Object* plane = Scene::Instance()->addPhysicObject("fatplane", Vector3(0.f, -10.f, 0.f));
 
-		plane->mat->AssignTexture(GraphicsStorage::textures.at(5));
+		plane->mat->AssignTexture(GraphicsStorage::textures.at(6));
 		//plane->SetScale(Vector3(10.0,1.0,10.0));
 		RigidBody* body = plane->GetComponent<RigidBody>();
 		body->SetIsKinematic(true); //i might not have to set this to kinematic either, but then phycis will do some extra calculations in the sweep and collision response
@@ -1254,7 +1288,6 @@ namespace Picking
 		currentCamera->SetPosition(Vector3(0.f, 20.f, 60.f));
 		
 		Object* directionalLight = Scene::Instance()->addDirectionalLight();
-		directionalLight->mat->SetDiffuseIntensity(0.5f);
 
 		PhysicsManager::Instance()->gravity = Vector3(0.f, -9.f, 0.f);
 
@@ -1273,7 +1306,6 @@ namespace Picking
 		currentCamera->SetPosition(Vector3(0.f, 20.f, 60.f));
 
 		Object* directionalLight = Scene::Instance()->addDirectionalLight();
-		directionalLight->mat->SetDiffuseIntensity(0.5f);
 
 		PhysicsManager::Instance()->gravity = Vector3();
 
@@ -1292,7 +1324,6 @@ namespace Picking
 		currentCamera->SetPosition(Vector3(0.f, 20.f, 60.f));
 
 		Object* directionalLight = Scene::Instance()->addDirectionalLight();
-		directionalLight->mat->SetDiffuseIntensity(1.0f);
 
 	//	Object* plane = Scene::Instance()->addObject("cube", Vector3(0.f, -2.5f, 0.f));
 	//	plane->mat->SetShininess(30.f);
@@ -1317,7 +1348,6 @@ namespace Picking
 		Object* pointLight = Scene::Instance()->addPointLight(false, Scene::Instance()->generateRandomIntervallVectorFlat(-20, 20, Scene::y), Scene::Instance()->generateRandomIntervallVectorCubic(0, 6000).toFloat() / 6000.f);
 		Object* sphere = Scene::Instance()->addObject("sphere", pointLight->node->GetLocalPosition());
 		sphere->node->SetScale(Vector3(0.1f, 0.1f, 0.1f));
-		sphere->mat->diffuseIntensity = 20.f;
 		sphere->mat->shininess = 10.f;
 
 		Scene::Instance()->InitializeSceneTree();
@@ -1329,19 +1359,25 @@ namespace Picking
 		Clear();
 		DebugDraw::Instance()->Init(Scene::Instance()->addChild());
 		
-		Object* directionalLight = Scene::Instance()->addDirectionalLight(true);
+		Object* directionalLight = Scene::Instance()->addDirectionalLight(false);
 		directionalLightComp = directionalLight->GetComponent<DirectionalLight>();
 		directionalLight->node->SetMovable(true);
+		
+		//Object* directionalLight2 = Scene::Instance()->addDirectionalLight(true);
+		//directionalLightComp2 = directionalLight2->GetComponent<DirectionalLight>();
+		//directionalLight2->node->SetMovable(true);
 
-		Object* directionalLight2 = Scene::Instance()->addDirectionalLight(true);
-		directionalLightComp2 = directionalLight2->GetComponent<DirectionalLight>();
-		directionalLight2->node->SetMovable(true);
+		//Object* directionalLight3 = Scene::Instance()->addDirectionalLight(true);
+		//directionalLightComp3 = directionalLight3->GetComponent<DirectionalLight>();
+		//directionalLight3->node->SetMovable(true);
+
+		//Object* directionalLight4 = Scene::Instance()->addDirectionalLight(true);
+		//directionalLightComp4 = directionalLight4->GetComponent<DirectionalLight>();
+		//directionalLight4->node->SetMovable(true);
 
 		spotLight1 = Scene::Instance()->addSpotLight(true, Vector3(-25.f, 10.f, -50.f));
-		spotLight1->mat->SetDiffuseIntensity(10.f);
 		spotLight1->node->SetMovable(true);
 		spotLightComp = spotLight1->GetComponent<SpotLight>();
-		spotLightComp->shadowMapBlurActive = false;
 		/*
 		qXCube1 = Scene::Instance()->addObject("cube");
 		qXCube1->mat->SetColor(Vector3F(1,0,0));
@@ -1357,25 +1393,48 @@ namespace Picking
 		qZCube2 = Scene::Instance()->addObject("cube");
 		qZCube2->mat->SetColor(Vector3F(0, 0, 1));
 		*/
-		testCube1 = Scene::Instance()->addObject("cube", Vector3(-3,0,0));
-		testCube1->node->SetOrientation(Quaternion(20, Vector3(1, 0, 0)));
-		testCube1->node->SetScale(Vector3(4, 2, 1));
-		testPyramid = Scene::Instance()->addObjectTo(testCube1, "pyramid", Vector3(5, 0, 0));
-		testPyramid->node->SetOrientation(Quaternion(20, Vector3(0, 1, 0)));
-		testSphere1 = Scene::Instance()->addObject("sphere", Vector3(3,-3,0));
+		//testCube1 = Scene::Instance()->addObject("cube", Vector3(-3,0,0));
+		//testCube1->node->SetOrientation(Quaternion(20, Vector3(1, 0, 0)));
+		//testCube1->node->SetScale(Vector3(4, 2, 1));
+		//testPyramid = Scene::Instance()->addObjectTo(testCube1, "pyramid", Vector3(5, 0, 0));
+		//testPyramid->node->SetOrientation(Quaternion(20, Vector3(0, 1, 0)));
+		//testSphere1 = Scene::Instance()->addObject("sphere", Vector3(3,-3,0));
 
 
-		Object* planezx = Scene::Instance()->addObject("fatplane", Vector3(0.f, -10.f, 0.f));
-		Scene::Instance()->unregisterForPicking(planezx);
-		planezx->mat->AssignTexture(GraphicsStorage::textures.at(5));
-		planezx->mat->tileX = 50;
-		planezx->mat->tileY = 50;
-		planezx->node->SetScale(Vector3(10.0, 1.0, 10.0));
+		//Object* planezx = Scene::Instance()->addObject("fatplane", Vector3(0.f, -10.f, 0.f));
+		//Scene::Instance()->unregisterForPicking(planezx);
+		//planezx->mat->AssignTexture(GraphicsStorage::textures.at(6));
+		//planezx->mat->tileX = 50;
+		//planezx->mat->tileY = 50;
+		//planezx->node->SetScale(Vector3(10.0, 1.0, 10.0));
 		//Object* spaceInstances = Scene::Instance()->addInstanceSystem("spaceship", 30000);
 		//for (size_t i = 0; i < 10000; i++)
 		//{
 		//	Scene::Instance()->addChild();
 		//}
+		
+		for (size_t i = 0; i < 10; i++)
+		{
+			for (size_t j = 0; j < 10; j++)
+			{
+				Object* sphere = Scene::Instance()->addObject("sphere", Vector3(2 * i, 2 * j, 0));
+				sphere->mat->AssignTexture(GraphicsStorage::textures.at(20), 0);
+				sphere->mat->AssignTexture(GraphicsStorage::textures.at(21), 1);
+				sphere->mat->AssignTexture(GraphicsStorage::textures.at(22), 2);
+				sphere->mat->shininess = 10 * 1.0 - ((float)i * 0.1);
+			}
+		}
+		
+		Object* previewSphere = Scene::Instance()->addObject("previewSphere", Vector3(0.f, 10.f, 10.f));
+		previewSphere->mat->AssignTexture(GraphicsStorage::textures.at(17), 0);
+		previewSphere->mat->AssignTexture(GraphicsStorage::textures.at(18), 1);
+		previewSphere->mat->AssignTexture(GraphicsStorage::textures.at(19), 2);
+
+		Object* cerberusGun = Scene::Instance()->addObject("cerberusGun", Vector3(0.f, 10.f, 10.f));
+		cerberusGun->mat->AssignTexture(GraphicsStorage::textures.at(23), 0);
+		cerberusGun->mat->AssignTexture(GraphicsStorage::textures.at(24), 1);
+		cerberusGun->mat->AssignTexture(GraphicsStorage::textures.at(25), 2);
+
 		currentScene = scene0Loaded;
 		Scene::Instance()->InitializeSceneTree();
 	}
@@ -1384,7 +1443,6 @@ namespace Picking
 	PickingApp::FireLightProjectile()
 	{
 		Object* pointLight = Scene::Instance()->addPointLight(false, currentCamera->GetPosition2()+currentCamera->direction*3.0, Vector3F(1.f, 1.f, 0.f));
-		pointLight->mat->SetDiffuseIntensity(50.f);
 		pointLight->mat->SetColor(Vector3F(1.f,0.f,0.f));
 		pointLight->node->SetScale(Vector3(15.0, 15.0, 15.0));
 		Scene::Instance()->SwitchObjectMovableMode(pointLight, true);
@@ -1478,7 +1536,6 @@ namespace Picking
 		output = Kp * error + Ki * integral + Kd * derivative;
 		previous_error = error;
 		//wait(dt); //should wait until delta time passes before we continue
-		
 	}
 
 	void
@@ -1506,7 +1563,6 @@ namespace Picking
 			Object* pointLight = Scene::Instance()->addPointLight(false, Scene::Instance()->generateRandomIntervallVectorFlat(-20, 20, Scene::y), Scene::Instance()->generateRandomIntervallVectorCubic(0, 6000).toFloat() / 6000.f);
 			Object* sphere = Scene::Instance()->addObject("sphere", pointLight->node->GetLocalPosition());
 			sphere->node->SetScale(Vector3(0.1f, 0.1f, 0.1f));
-			sphere->mat->diffuseIntensity = 2.f;
 			sphere->mat->shininess = 10.f;
 		}
 	}
@@ -1514,7 +1570,7 @@ namespace Picking
 	void
 	PickingApp::MouseCallback(double mouseX, double mouseY)
 	{
-		if (altButtonToggle)
+		if (applicationInputEnabled)
 		{
 			currentCamera->UpdateOrientation(mouseX, mouseY);
 			window->SetCursorPos(windowMidX, windowMidY);
@@ -1588,167 +1644,237 @@ namespace Picking
 	void
 	PickingApp::GenerateGUI()
 	{
-		ImGui::Begin("Properties", NULL, ImGuiWindowFlags_AlwaysAutoResize);
+		ImGui::Begin("UI", NULL);
 		float start = 0;
 		float stop = 360;
-		if (ImGui::Button("Reload Shaders")) {
-			GraphicsManager::ReloadShaders();
-		}
-		if (ImGui::Button("Select First")) {
-			firstObject = lastPickedObject;
-		}
-		if (ImGui::Button("Select Second")) {
-			secondObject = lastPickedObject;
-		}
-		if (ImGui::Button("Reparent In Place")) {
-			firstObject->node->ParentInPlace(secondObject->node);
-		}
 
-		if (ImGui::Button("Set Dynamic")) {
-			Scene::Instance()->SwitchObjectMovableMode(lastPickedObject, true);
-		}
-		if (ImGui::Button("Set Static")) {
-			Scene::Instance()->SwitchObjectMovableMode(lastPickedObject, false);
-		}
-		if (firstObject)
+		if (ImGui::CollapsingHeader("Tools"))
 		{
-			ImGui::Text("Object1: %s ID: %d", typeid(firstObject).name(), firstObject->ID);
+			if (ImGui::Button("Reload Shaders")) {
+				GraphicsManager::ReloadShaders();
+			}
+			if (ImGui::Button("Select First")) {
+				firstObject = lastPickedObject;
+			}
+			if (ImGui::Button("Select Second")) {
+				secondObject = lastPickedObject;
+			}
+			if (ImGui::Button("Reparent In Place")) {
+				firstObject->node->ParentInPlace(secondObject->node);
+			}
+
+			if (ImGui::Button("Set Dynamic")) {
+				Scene::Instance()->SwitchObjectMovableMode(lastPickedObject, true);
+			}
+			if (ImGui::Button("Set Static")) {
+				Scene::Instance()->SwitchObjectMovableMode(lastPickedObject, false);
+			}
+			if (firstObject)
+			{
+				ImGui::Text("Object1: %s ID: %d", typeid(firstObject).name(), firstObject->ID);
+			}
+			if (secondObject)
+			{
+				ImGui::Text("Object2: %s ID: %d", typeid(secondObject).name(), secondObject->ID);
+			}
+			if (lastPickedObject)
+			{
+				ImGui::Text("LastObject: %s ID: %d", typeid(lastPickedObject).name(), lastPickedObject->ID);
+			}
 		}
-		if (secondObject)
-		{
-			ImGui::Text("Object2: %s ID: %d", typeid(secondObject).name(), secondObject->ID);
+		if (ImGui::CollapsingHeader("Post")) {
+			ImGui::Checkbox("Post Effects:", &post);
+			ImGui::Checkbox("HDR", &Render::Instance()->pb.hdrEnabled);
+			ImGui::Checkbox("Bloom", &Render::Instance()->pb.bloomEnabled);
+			ImGui::SliderFloat("Bloom Intensity", &Render::Instance()->pb.bloomIntensity, 0.0f, 5.f);
+			ImGui::SliderFloat("Exposure", &Render::Instance()->pb.exposure, 0.0f, 5.0f);
+			ImGui::SliderFloat("Gamma", &Render::Instance()->pb.gamma, 0.0f, 5.0f);
+			ImGui::SliderFloat("Contrast", &Render::Instance()->pb.contrast, -5.0f, 5.0f);
+			ImGui::SliderFloat("Brightness", &Render::Instance()->pb.brightness, -5.0f, 5.0f);
+			ImGui::SliderFloat("Bloom Blur Size", &blurBloomSize, 0.0f, 10.0f);
+			ImGui::SliderInt("Bloom Level", &bloomLevel, 0, 3);
+			ImGui::SliderFloat("Fov", &fov, 0.0f, 180.f);
+			ImGui::SliderFloat("Near plane", &near, 0.0f, 5.f);
+			ImGui::SliderFloat("Far plane", &far, 0.0f, 5000.f);
 		}
-		if (lastPickedObject)
-		{
-			ImGui::Text("LastObject: %s ID: %d", typeid(lastPickedObject).name(), lastPickedObject->ID);
-		}
-
-		ImGui::NewLine();
-		ImGui::Checkbox("Post Effects:", &post);
-		ImGui::Checkbox("HDR", &Render::Instance()->pb.hdrEnabled);
-		ImGui::Checkbox("Bloom", &Render::Instance()->pb.bloomEnabled);
-		ImGui::SliderFloat("Bloom Intensity", &Render::Instance()->pb.bloomIntensity, 0.0f, 5.f);
-		ImGui::SliderFloat("Exposure", &Render::Instance()->pb.exposure, 0.0f, 5.0f);
-		ImGui::SliderFloat("Gamma", &Render::Instance()->pb.gamma, 0.0f, 5.0f);
-		ImGui::SliderFloat("Contrast", &Render::Instance()->pb.contrast, -5.0f, 5.0f);
-		ImGui::SliderFloat("Brightness", &Render::Instance()->pb.brightness, -5.0f, 5.0f);
-		ImGui::SliderFloat("Bloom Blur Size", &blurBloomSize, 0.0f, 10.0f);
-		ImGui::SliderInt("Bloom Level", &bloomLevel, 0, 3);
-		ImGui::SliderFloat("Fov", &fov, 0.0f, 180.f);
-		ImGui::SliderFloat("Near plane", &near, 0.0f, 5.f);
-		ImGui::SliderFloat("Far plane", &far, 0.0f, 5000.f);
-
-		ImGui::NewLine();
-		ImGui::Text("STATS:");
-		if (Times::Instance()->paused) ImGui::Text("PAUSED");
-		if (pausedPhysics) ImGui::Text("PAUSED PHYSICS");
-		if (drawBB) ImGui::Text("DRAW BB");
-		if (drawLines) ImGui::Text("LINES ON");
-		if (drawPoints) ImGui::Text("POINTS ON");
-		if (drawParticles) ImGui::Text("PARTICLES ON");
-		if (drawMaps) ImGui::Text("MAPS ON");
-		
-		ImGui::Text("Objects rendered %d", objectsRendered);
-		ImGui::Text("IObjects rendered %d", instancedGeometryDrawn);
-		ImGui::Text("BBs rendered %d", DebugDraw::Instance()->boundingBoxesDrawn);
-		ImGui::Text("Lights rendered %d", lightsRendered);
-		ImGui::Text("Particles rendered %d", particlesRendered);
-		ImGui::Text("Update Time %.6f", updateTime);
-		ImGui::Text("Update Dynamic Array Time %.6f", Scene::Instance()->updateDynamicArrayTime);
-		ImGui::Text("Update Transforms Time %.6f", Scene::Instance()->updateTransformsTime);
-		ImGui::Text("Update Bounds Time %.6f", Bounds::updateBoundsTime);
-		ImGui::Text("Update MinMax Time %.6f", Bounds::updateMinMaxTime);
-		ImGui::Text("Update Components Time %.6f", Scene::Instance()->updateComponentsTime);
-		ImGui::Text("Update Dirty Transforms Time %.6f", Scene::Instance()->updateDirtyTransformsTime);
-		ImGui::Text("Render Time %.6f", Times::Instance()->deltaTime - updateTime);
-		ImGui::Text("FPS %.3f", 1.0 / Times::Instance()->deltaTime);
-		ImGui::Text("TimeStep %.6f", 1.0 / Times::Instance()->timeStep);
-		ImGui::Text("PickedID %d", pickedID);
-		ImGui::Text("PRUNE %.8f", PhysicsManager::Instance()->pruneAndSweepTime);
-		ImGui::Text("SAT %.8f", PhysicsManager::Instance()->satTime);
-		ImGui::Text("Intersection Test %.8f", PhysicsManager::Instance()->intersectionTestTime);
-		ImGui::Text("Generate Contacts %.8f", PhysicsManager::Instance()->generateContactsTime);
-		ImGui::Text("Process Contacts %.8f", PhysicsManager::Instance()->processContactTime);
-		ImGui::Text("Positional Correction %.8f", PhysicsManager::Instance()->positionalCorrectionTime);
-		ImGui::Text("Iterations Count %d", PhysicsManager::Instance()->iterCount);
-		
-		
-		
-
-		if (pointLightTest != nullptr)
-		{
-			ImGui::Checkbox("PointCastShadow", &pointLightCompTest->shadowMapActive);
-			ImGui::Checkbox("PointBlurShadow", &pointLightCompTest->shadowMapBlurActive);
-			ImGui::SliderFloat("PointFov", &pointLightCompTest->fov, start, stop);
-			ImGui::SliderFloat("PointIntensity", &pointLightTest->mat->diffuseIntensity, start, stop);
-			ImGui::SliderFloat("PointSize", &pointScale, 1, 1000);
-			ImGui::SliderFloat("PointPosX", &pposX, -100, 100);
-			ImGui::SliderFloat("PointPosY", &pposY, -100, 100);
-			ImGui::SliderFloat("PointPosZ", &pposZ, -100, 100);
-		}
-
-		if (currentScene == scene0Loaded || currentScene == scene2Loaded)
-		{
-			ImGui::NewLine();
-			ImGui::SliderFloat("CubeAnglesX", &xCubeAngle, start, stop);
-			ImGui::SliderFloat("CubeAnglesY", &yCubeAngle, start, stop);
-			ImGui::SliderFloat("CubeAnglesZ", &zCubeAngle, start, stop);
-
-			ImGui::SliderFloat("CubeSpecIntensity", &cubeSpecularIntensity, start, stop);
-			ImGui::SliderFloat("CubeSpecShininess", &cubeShininess, start, stop);
-		}
-
-		if (spotLightComp != nullptr)
-		{
-			ImGui::NewLine();
-			ImGui::Checkbox("SpotCastShadow", &spotLightComp->shadowMapActive);
-			ImGui::Checkbox("SpotBlurShadow", &spotLightComp->shadowMapBlurActive);
+		if (ImGui::CollapsingHeader("Stats")) {
+			if (ImGui::TreeNode("Modes")) {
+				if (Times::Instance()->paused) ImGui::Text("PAUSED");
+				if (pausedPhysics) ImGui::Text("PAUSED PHYSICS");
+				if (drawBB) ImGui::Text("DRAW BB");
+				if (drawLines) ImGui::Text("LINES ON");
+				if (drawPoints) ImGui::Text("POINTS ON");
+				if (drawParticles) ImGui::Text("PARTICLES ON");
+				if (drawMaps) ImGui::Text("MAPS ON");
+				ImGui::NewLine();
+				ImGui::TreePop();
+			}
+			ImGui::Text("Objects rendered %d", objectsRendered);
+			ImGui::Text("IObjects rendered %d", instancedGeometryDrawn);
+			ImGui::Text("BBs rendered %d", DebugDraw::Instance()->boundingBoxesDrawn);
+			ImGui::Text("Lights rendered %d", lightsRendered);
+			ImGui::Text("Particles rendered %d", particlesRendered);
+			ImGui::Text("Update Time %.6f", updateTime);
+			ImGui::Text("Update Dynamic Array Time %.6f", Scene::Instance()->updateDynamicArrayTime);
+			ImGui::Text("Update Transforms Time %.6f", Scene::Instance()->updateTransformsTime);
+			ImGui::Text("Update Bounds Time %.6f", Bounds::updateBoundsTime);
+			ImGui::Text("Update MinMax Time %.6f", Bounds::updateMinMaxTime);
+			ImGui::Text("Update Components Time %.6f", Scene::Instance()->updateComponentsTime);
+			ImGui::Text("Update Dirty Transforms Time %.6f", Scene::Instance()->updateDirtyTransformsTime);
+			ImGui::Text("Render Time %.6f", Times::Instance()->deltaTime - updateTime);
 			ImGui::Text("FPS %.3f", 1.0 / Times::Instance()->deltaTime);
-			ImGui::SliderFloat("Spot X angle", &xAngles, start, stop);
-			ImGui::SliderFloat("Spot Y angle", &yAngles, start, stop);
-			ImGui::SliderFloat("Spot1PosX", &posX, -100, 100);
-			ImGui::SliderFloat("Spot1PosY", &posY, -100, 100);
-			ImGui::SliderFloat("Spot1PosZ", &posZ, -100, 100);
-
-			ImGui::SliderFloat("Spot1Const", &spotLightComp->attenuation.Constant, 0, 1);
-			ImGui::SliderFloat("Spot1Lin", &spotLightComp->attenuation.Linear, 0, 1);
-			ImGui::SliderFloat("Spot1Exp", &spotLightComp->attenuation.Exponential, 0, 1);
-
-			ImGui::SliderFloat("Spot CutOff", &spotLightCutOff, 0, 360);
-			ImGui::SliderFloat("Spot OuterCutOff", &spotLightOuterCutOff, 0, 180);
-			ImGui::SliderFloat("Spot Intensity", &spotLightComp->object->mat->diffuseIntensity, 0, 1000);
-
-			ImGui::SliderFloat("SpotSizeZ", &spotSZ, 1, 100);
+			ImGui::Text("TimeStep %.6f", 1.0 / Times::Instance()->timeStep);
+			ImGui::Text("PickedID %d", pickedID);
+			ImGui::Text("PRUNE %.8f", PhysicsManager::Instance()->pruneAndSweepTime);
+			ImGui::Text("SAT %.8f", PhysicsManager::Instance()->satTime);
+			ImGui::Text("Intersection Test %.8f", PhysicsManager::Instance()->intersectionTestTime);
+			ImGui::Text("Generate Contacts %.8f", PhysicsManager::Instance()->generateContactsTime);
+			ImGui::Text("Process Contacts %.8f", PhysicsManager::Instance()->processContactTime);
+			ImGui::Text("Positional Correction %.8f", PhysicsManager::Instance()->positionalCorrectionTime);
+			ImGui::Text("Iterations Count %d", PhysicsManager::Instance()->iterCount);
 		}
-		if (directionalLightComp != nullptr)
-		{
-			ImGui::NewLine();
-			ImGui::Text("DIR1:");
-			ImGui::Checkbox("Dir1 CastShadow", &directionalLightComp->shadowMapActive);
-			ImGui::Checkbox("Dir1 BlurShadow", &directionalLightComp->shadowMapBlurActive);
-			ImGui::SliderFloat("Dir1 X angle", &xAngled, start, stop);
-			ImGui::SliderFloat("Dir1 Y angle", &yAngled, start, stop);
-			ImGui::SliderFloat("Dir1 Shadow Blur Size", &directionalLightComp->blurIntensity, 0.0f, 10.0f);
-			ImGui::SliderInt("Dir1 Shadow Blur Level", &directionalLightComp->activeBlurLevel, 0, 3);
-			ImGui::SliderFloat("Dir1 Ortho Size", &directionalLightComp->radius, 0.0f, 2000.f);
-			ImGui::SliderFloat("Dir1 Shadow Fade Range", &directionalLightComp->shadowFadeRange, 0.0f, 50.f);
-			ImGui::SliderFloat("Dir1 Intensity", &directionalLightComp->object->mat->diffuseIntensity, 0, 10);
-		}
+		if (ImGui::CollapsingHeader("Lights")) {
+			if (pointLightTest != nullptr)
+			{
+				if (ImGui::TreeNode("Point Light"))
+				{
+					//if (ImGui::TreeNode("Child windows"))
+					//{
+					ImGui::Checkbox("PointCastShadow", &pointLightCompTest->shadowMapActive);
+					ImGui::Checkbox("PointBlurShadow", &pointLightCompTest->shadowMapBlurActive);
+					ImGui::SliderFloat("PointFov", &pointLightCompTest->fov, start, stop);
+					ImGui::SliderFloat("Point Power", &pointLightCompTest->properties.power, start, stop);
+					ImGui::SliderFloat("Point Diffuse", &pointLightCompTest->properties.diffuse, start, stop);
+					ImGui::SliderFloat("Point Specular", &pointLightCompTest->properties.specular, start, stop);
+					ImGui::ColorEdit3("Point Color", (float*)&pointLightCompTest->properties.color);
+					ImGui::SliderFloat("PointSize", &pointScale, 1, 1000);
+					ImGui::SliderFloat("PointPosX", &pposX, -100, 100);
+					ImGui::SliderFloat("PointPosY", &pposY, -100, 100);
+					ImGui::SliderFloat("PointPosZ", &pposZ, -100, 100);
+					ImGui::TreePop();
+				}
+			}
+			if (spotLightComp != nullptr)
+			{
+				if (ImGui::TreeNode("Spot Light"))
+				{
+					ImGui::NewLine();
+					ImGui::Checkbox("SpotCastShadow", &spotLightComp->shadowMapActive);
+					ImGui::Checkbox("SpotBlurShadow", &spotLightComp->shadowMapBlurActive);
+					ImGui::Text("FPS %.3f", 1.0 / Times::Instance()->deltaTime);
+					ImGui::SliderFloat("Spot Power", &spotLightComp->properties.power, start, stop);
+					ImGui::SliderFloat("Spot Diffuse", &spotLightComp->properties.diffuse, start, stop);
+					ImGui::SliderFloat("Spot Specular", &spotLightComp->properties.specular, start, stop);
+					ImGui::ColorEdit3("Spot Color", (float*)&spotLightComp->properties.color);
+					ImGui::SliderFloat("Spot X angle", &xAngles, start, stop);
+					ImGui::SliderFloat("Spot Y angle", &yAngles, start, stop);
+					ImGui::SliderFloat("Spot1PosX", &posX, -100, 100);
+					ImGui::SliderFloat("Spot1PosY", &posY, -100, 100);
+					ImGui::SliderFloat("Spot1PosZ", &posZ, -100, 100);
 
-		if (directionalLightComp2 != nullptr)
-		{
-			ImGui::NewLine();
-			ImGui::Text("DIR2:");
-			ImGui::Checkbox("Dir2 CastShadow", &directionalLightComp2->shadowMapActive);
-			ImGui::Checkbox("Dir2 BlurShadow", &directionalLightComp2->shadowMapBlurActive);
-			ImGui::SliderFloat("Dir2 X angle", &xAngled2, start, stop);
-			ImGui::SliderFloat("Dir2 Y angle", &yAngled2, start, stop);
-			ImGui::SliderFloat("Dir2 Shadow Blur Size", &directionalLightComp2->blurIntensity, 0.0f, 10.0f);
-			ImGui::SliderInt("Dir2 Shadow Blur Level", &directionalLightComp2->activeBlurLevel, 0, 3);
-			ImGui::SliderFloat("Dir 2Ortho Size", &directionalLightComp2->radius, 0.0f, 2000.f);
-			ImGui::SliderFloat("Dir2 Shadow Fade Range", &directionalLightComp2->shadowFadeRange, 0.0f, 50.f);
-			ImGui::SliderFloat("Dir2 Intensity", &directionalLightComp2->object->mat->diffuseIntensity, 0, 10);
+					ImGui::SliderFloat("Spot1Const", &spotLightComp->attenuation.Constant, 0, 1);
+					ImGui::SliderFloat("Spot1Lin", &spotLightComp->attenuation.Linear, 0, 1);
+					ImGui::SliderFloat("Spot1Exp", &spotLightComp->attenuation.Exponential, 0, 1);
+
+					ImGui::SliderFloat("Spot CutOff", &spotLightCutOff, 0, 360);
+					ImGui::SliderFloat("Spot OuterCutOff", &spotLightOuterCutOff, 0, 180);
+
+					ImGui::SliderFloat("SpotSizeZ", &spotSZ, 1, 100);
+					ImGui::TreePop();
+				}
+			}
+			if (directionalLightComp != nullptr)
+			{
+				if (ImGui::TreeNode("Directional Light 1"))
+				{
+					ImGui::NewLine();
+					ImGui::Text("DIR1:");
+					ImGui::Checkbox("Dir1 CastShadow", &directionalLightComp->shadowMapActive);
+					ImGui::Checkbox("Dir1 BlurShadow", &directionalLightComp->shadowMapBlurActive);
+					ImGui::SliderFloat("Dir1 Power", &directionalLightComp->properties.power, start, stop);
+					ImGui::SliderFloat("Dir1 Diffuse", &directionalLightComp->properties.diffuse, start, stop);
+					ImGui::SliderFloat("Dir1 Specular", &directionalLightComp->properties.specular, start, stop);
+					ImGui::ColorEdit3("Dir1 Color", (float*)&directionalLightComp->properties.color);
+					ImGui::SliderFloat("Dir1 X angle", &xAngled, start, stop);
+					ImGui::SliderFloat("Dir1 Y angle", &yAngled, start, stop);
+					ImGui::SliderFloat("Dir1 Shadow Blur Size", &directionalLightComp->blurIntensity, 0.0f, 10.0f);
+					ImGui::SliderInt("Dir1 Shadow Blur Level", &directionalLightComp->activeBlurLevel, 0, 3);
+					ImGui::SliderFloat("Dir1 Ortho Size", &directionalLightComp->radius, 0.0f, 2000.f);
+					ImGui::SliderFloat("Dir1 Shadow Fade Range", &directionalLightComp->shadowFadeRange, 0.0f, 50.f);
+					ImGui::TreePop();
+				}
+			}
+			if (directionalLightComp2 != nullptr)
+			{
+				if (ImGui::TreeNode("Directional Light 2"))
+				{
+					ImGui::NewLine();
+					ImGui::Text("DIR2:");
+					ImGui::Checkbox("Dir2 CastShadow", &directionalLightComp2->shadowMapActive);
+					ImGui::Checkbox("Dir2 BlurShadow", &directionalLightComp2->shadowMapBlurActive);
+					ImGui::SliderFloat("Dir2 Power", &directionalLightComp2->properties.power, start, stop);
+					ImGui::SliderFloat("Dir2 Diffuse", &directionalLightComp2->properties.diffuse, start, stop);
+					ImGui::SliderFloat("Dir2 Specular", &directionalLightComp2->properties.specular, start, stop);
+					ImGui::ColorEdit3("Dir2 Color", (float*)&directionalLightComp2->properties.color);
+					ImGui::SliderFloat("Dir2 X angle", &xAngled2, start, stop);
+					ImGui::SliderFloat("Dir2 Y angle", &yAngled2, start, stop);
+					ImGui::SliderFloat("Dir2 Shadow Blur Size", &directionalLightComp2->blurIntensity, 0.0f, 10.0f);
+					ImGui::SliderInt("Dir2 Shadow Blur Level", &directionalLightComp2->activeBlurLevel, 0, 3);
+					ImGui::SliderFloat("Dir2 2Ortho Size", &directionalLightComp2->radius, 0.0f, 2000.f);
+					ImGui::SliderFloat("Dir2 Shadow Fade Range", &directionalLightComp2->shadowFadeRange, 0.0f, 50.f);
+					ImGui::TreePop();
+				}
+			}
+			if (directionalLightComp3 != nullptr)
+			{
+				if (ImGui::TreeNode("Directional Light 3"))
+				{
+					ImGui::NewLine();
+					ImGui::Text("DIR3:");
+					ImGui::Checkbox("Dir3 CastShadow", &directionalLightComp3->shadowMapActive);
+					ImGui::Checkbox("Dir3 BlurShadow", &directionalLightComp3->shadowMapBlurActive);
+					ImGui::SliderFloat("Dir3 X angle", &xAngled3, start, stop);
+					ImGui::SliderFloat("Dir3 Y angle", &yAngled3, start, stop);
+					ImGui::SliderFloat("Dir3 Shadow Blur Size", &directionalLightComp3->blurIntensity, 0.0f, 10.0f);
+					ImGui::SliderInt("Dir3 Shadow Blur Level", &directionalLightComp3->activeBlurLevel, 0, 3);
+					ImGui::SliderFloat("Dir3 2Ortho Size", &directionalLightComp3->radius, 0.0f, 2000.f);
+					ImGui::SliderFloat("Dir3 Shadow Fade Range", &directionalLightComp3->shadowFadeRange, 0.0f, 50.f);
+					ImGui::TreePop();
+				}
+			}
+			if (directionalLightComp4 != nullptr)
+			{
+				if (ImGui::TreeNode("Directional Light 4"))
+				{
+					ImGui::NewLine();
+					ImGui::Text("DIR4:");
+					ImGui::Checkbox("Dir4 CastShadow", &directionalLightComp4->shadowMapActive);
+					ImGui::Checkbox("Dir4 BlurShadow", &directionalLightComp4->shadowMapBlurActive);
+					ImGui::SliderFloat("Dir4 X angle", &xAngled4, start, stop);
+					ImGui::SliderFloat("Dir4 Y angle", &yAngled4, start, stop);
+					ImGui::SliderFloat("Dir4 Shadow Blur Size", &directionalLightComp4->blurIntensity, 0.0f, 10.0f);
+					ImGui::SliderInt("Dir4 Shadow Blur Level", &directionalLightComp4->activeBlurLevel, 0, 3);
+					ImGui::SliderFloat("Dir4 2Ortho Size", &directionalLightComp4->radius, 0.0f, 2000.f);
+					ImGui::SliderFloat("Dir4 Shadow Fade Range", &directionalLightComp4->shadowFadeRange, 0.0f, 50.f);
+					ImGui::TreePop();
+				}
+			}
 		}
+		if(ImGui::CollapsingHeader("Misc")) {
+			ImGui::SliderFloat("EnvAngleX", &Render::Instance()->angleX, start, stop);
+			ImGui::SliderFloat("EnvAngleY", &Render::Instance()->angleY, start, stop);
+			if (currentScene == scene0Loaded || currentScene == scene2Loaded)
+			{
+				ImGui::NewLine();
+				ImGui::SliderFloat("CubeAnglesX", &xCubeAngle, start, stop);
+				ImGui::SliderFloat("CubeAnglesY", &yCubeAngle, start, stop);
+				ImGui::SliderFloat("CubeAnglesZ", &zCubeAngle, start, stop);
+
+				ImGui::SliderFloat("CubeSpecIntensity", &cubeSpecularIntensity, start, stop);
+				ImGui::SliderFloat("CubeSpecShininess", &cubeShininess, start, stop);
+			}
+		}
+		
 		ImGui::End();
 	}
 
@@ -1780,6 +1906,31 @@ namespace Picking
 		
 		finalColorTexture = lightAndPostBuffer->textures[0];
 		brightLightTexture = lightAndPostBuffer->textures[1];
+
+		captureFBO = FBOManager::Instance()->GenerateFBO(); //need to distinguish between buffers that we have to update and resize with screen and buffers we don't need to resize
+		captureFBO->dynamicSize = false;
+		//captureFBO->AddRenderBuffer(GL_DEPTH_COMPONENT24, 512, 512);
+		captureFBO->GenerateAndAddTextures();
+		captureFBO->CheckAndCleanup();
+
+		envCubeMap = new Texture(GL_TEXTURE_CUBE_MAP, 0, GL_RGB16F, 512, 512, GL_RGB, GL_FLOAT, NULL, GL_COLOR_ATTACHMENT0);
+		envCubeMap->AddClampingToEdge();
+		envCubeMap->SetFiltering(GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR);
+		envCubeMap->Generate();
+
+		irradianceCubeMap = new Texture(GL_TEXTURE_CUBE_MAP, 0, GL_RGB16F, 32, 32, GL_RGB, GL_FLOAT, NULL, GL_COLOR_ATTACHMENT0);
+		irradianceCubeMap->AddDefaultTextureParameters();
+		irradianceCubeMap->Generate();
+		
+		prefilteredHDRMap = new Texture(GL_TEXTURE_CUBE_MAP, 0, GL_RGB16F, 128, 128, GL_RGB, GL_FLOAT, NULL, GL_COLOR_ATTACHMENT0);
+		prefilteredHDRMap->hasMipMaps = true; //allocateMipMap memory
+		prefilteredHDRMap->AddClampingToEdge();
+		prefilteredHDRMap->SetFiltering(GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR);
+		prefilteredHDRMap->Generate();
+
+		brdfTexture = new Texture(GL_TEXTURE_2D, 0, GL_RG16F, 512, 512, GL_RG, GL_FLOAT, NULL, GL_COLOR_ATTACHMENT0);
+		brdfTexture->AddDefaultTextureParameters();
+		brdfTexture->Generate();
 
 		Render::Instance()->AddDirectionalShadowMapBuffer(4096, 4096);
 		Render::Instance()->AddMultiBlurBuffer(this->windowWidth, this->windowHeight);
