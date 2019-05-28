@@ -4,7 +4,7 @@ in vec2 blurTextureCoords[11];
 
 layout(location = 0) out vec3 color;
 
-layout(binding = 8) uniform sampler2D blurMapSampler;
+layout(binding = 5) uniform sampler2D blurMapSampler;
 
 void main(){
 
