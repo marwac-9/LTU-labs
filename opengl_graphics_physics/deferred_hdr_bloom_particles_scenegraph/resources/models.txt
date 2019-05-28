@@ -17,5 +17,4 @@ resources/models/skybox.obj 0
 resources/models/cone.obj 0
 resources/models/cube_inverted.obj 0
 resources/models/cube_bevel.obj 0
-resources/models/previewSphere.obj 0
 resources/models/cerberusGun.obj 0
