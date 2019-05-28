@@ -23,6 +23,7 @@ I continue working on this repository, refining the code and adding ⚠new proje
   - ⚠HDR
   - ⚠Bloom
   - ⚠Normal mapping
+  - ⚠PBR with shadows
   
 ## Network
   - Socket programming for Windows & Linux
