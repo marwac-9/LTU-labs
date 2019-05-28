@@ -1425,10 +1425,10 @@ namespace Picking
 			}
 		}
 		
-		Object* previewSphere = Scene::Instance()->addObject("previewSphere", Vector3(0.f, 10.f, 10.f));
-		previewSphere->mat->AssignTexture(GraphicsStorage::textures.at(17), 0);
-		previewSphere->mat->AssignTexture(GraphicsStorage::textures.at(18), 1);
-		previewSphere->mat->AssignTexture(GraphicsStorage::textures.at(19), 2);
+		Object* sphere = Scene::Instance()->addObject("sphere", Vector3(0.f, 10.f, 10.f));
+		sphere->mat->AssignTexture(GraphicsStorage::textures.at(17), 0);
+		sphere->mat->AssignTexture(GraphicsStorage::textures.at(18), 1);
+		sphere->mat->AssignTexture(GraphicsStorage::textures.at(19), 2);
 
 		Object* cerberusGun = Scene::Instance()->addObject("cerberusGun", Vector3(0.f, 10.f, 10.f));
 		cerberusGun->mat->AssignTexture(GraphicsStorage::textures.at(23), 0);
