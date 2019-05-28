@@ -208,7 +208,7 @@ namespace Picking
 		std::chrono::time_point<std::chrono::high_resolution_clock> start, end;
 		std::chrono::duration<double> elapsed_seconds;
 
-		GLuint shader = GraphicsStorage::shaderIDs["radianceHDRSkyboxUnwrwap"];
+		GLuint shader = GraphicsStorage::shaderIDs["radianceHDRSkyboxUnwrap"];
 		Render::Instance()->captureTextureToCubeMap(shader, captureFBO, captureRBO, GraphicsStorage::textures[26], envCubeMap);
 		envCubeMap->ActivateAndBind(0);
 		envCubeMap->GenerateMipMaps();
