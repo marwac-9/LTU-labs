@@ -291,10 +291,10 @@ namespace Picking
 
 			if (applicationInputEnabled) PickingTest();
 			//Render::Instance()->captureTextureToCubeMap(shader, captureFBO, captureRBO, captureFBO->textures[0], irradianceCubeMap, captureVPs);
-			irradianceCubeMap->ActivateAndBind(4);
-			prefilteredHDRMap->ActivateAndBind(5);
-			brdfTexture->ActivateAndBind(6);
+			
 			lightsRendered = Render::Instance()->drawLight(lightAndPostBuffer, geometryBuffer);
+			
+			lightsRendered += Render::Instance()->drawAmbientLight(lightAndPostBuffer, geometryBuffer->textures, pbrEnvTextures);
 
 			//if (skybox != nullptr) Render::Instance()->drawSkybox(lightAndPostBuffer, GraphicsStorage::cubemaps[0]);
 			Render::Instance()->drawSkybox(lightAndPostBuffer, envCubeMap);
@@ -815,10 +815,10 @@ namespace Picking
 
 		PhysicsManager::Instance()->gravity = Vector3();
 
-		//pointLightTest = Scene::Instance()->addPointLight(true, Vector3(0,3,0));
-		//pointLightTest->node->SetScale(Vector3(100, 100, 100));
-		//pointLightTest->node->SetMovable(true);
-		//pointLightCompTest = pointLightTest->GetComponent<PointLight>();
+		pointLightTest = Scene::Instance()->addPointLight(true, Vector3(0,3,0));
+		pointLightTest->node->SetScale(Vector3(100, 100, 100));
+		pointLightTest->node->SetMovable(true);
+		pointLightCompTest = pointLightTest->GetComponent<PointLight>();
 		
 		//skybox->mat->SetDiffuseIntensity(10);
 		
@@ -826,15 +826,23 @@ namespace Picking
 		directionalLight->node->SetMovable(true);
 		directionalLightComp = directionalLight->GetComponent<DirectionalLight>();
 
-		//Object* directionalLight2 = Scene::Instance()->addDirectionalLight(true);
-		//directionalLight2->node->SetMovable(true);
-		//directionalLightComp2 = directionalLight2->GetComponent<DirectionalLight>();
+		Object* directionalLight2 = Scene::Instance()->addDirectionalLight(true);
+		directionalLight2->node->SetMovable(true);
+		directionalLightComp2 = directionalLight2->GetComponent<DirectionalLight>();
 
-		//spotLight1 = Scene::Instance()->addSpotLight(true, Vector3(-25.f, 10.f, -50.f));
-		//spotLight1->mat->SetColor(Vector3F(1.f, 0.7f, 0.8f));
-		//spotLight1->node->SetMovable(true);
-		//spotLightComp = spotLight1->GetComponent<SpotLight>();
-		//spotLightComp->shadowMapBlurActive = false;
+		Object* directionalLight3 = Scene::Instance()->addDirectionalLight(true);
+		directionalLight3->node->SetMovable(true);
+		directionalLightComp3 = directionalLight3->GetComponent<DirectionalLight>();
+
+		Object* directionalLight4 = Scene::Instance()->addDirectionalLight(true);
+		directionalLight4->node->SetMovable(true);
+		directionalLightComp4 = directionalLight4->GetComponent<DirectionalLight>();
+
+		spotLight1 = Scene::Instance()->addSpotLight(true, Vector3(-25.f, 10.f, -50.f));
+		spotLight1->mat->SetColor(Vector3F(1.f, 0.7f, 0.8f));
+		spotLight1->node->SetMovable(true);
+		spotLightComp = spotLight1->GetComponent<SpotLight>();
+		spotLightComp->shadowMapBlurActive = false;
 		
 		//LineSystem* lSystem = DebugDraw::Instance()->lineSystems.front();
 
@@ -1417,7 +1425,7 @@ namespace Picking
 		{
 			for (size_t j = 0; j < 10; j++)
 			{
-				Object* sphere = Scene::Instance()->addObject("sphere", Vector3(2 * i, 2 * j, 0));
+				Object* sphere = Scene::Instance()->addObject("preview_sphere", Vector3(2 * i, 2 * j, 0));
 				sphere->mat->AssignTexture(GraphicsStorage::textures.at(20), 0);
 				sphere->mat->AssignTexture(GraphicsStorage::textures.at(21), 1);
 				sphere->mat->AssignTexture(GraphicsStorage::textures.at(22), 2);
@@ -1430,7 +1438,7 @@ namespace Picking
 		sphere->mat->AssignTexture(GraphicsStorage::textures.at(18), 1);
 		sphere->mat->AssignTexture(GraphicsStorage::textures.at(19), 2);
 
-		Object* cerberusGun = Scene::Instance()->addObject("cerberusGun", Vector3(0.f, 10.f, 10.f));
+		Object* cerberusGun = Scene::Instance()->addObject("cerberus_gun", Vector3(0.f, 10.f, 10.f));
 		cerberusGun->mat->AssignTexture(GraphicsStorage::textures.at(23), 0);
 		cerberusGun->mat->AssignTexture(GraphicsStorage::textures.at(24), 1);
 		cerberusGun->mat->AssignTexture(GraphicsStorage::textures.at(25), 2);
@@ -1907,8 +1915,7 @@ namespace Picking
 		finalColorTexture = lightAndPostBuffer->textures[0];
 		brightLightTexture = lightAndPostBuffer->textures[1];
 
-		captureFBO = FBOManager::Instance()->GenerateFBO(); //need to distinguish between buffers that we have to update and resize with screen and buffers we don't need to resize
-		captureFBO->dynamicSize = false;
+		captureFBO = FBOManager::Instance()->GenerateFBO(false);
 		//captureFBO->AddRenderBuffer(GL_DEPTH_COMPONENT24, 512, 512);
 		captureFBO->GenerateAndAddTextures();
 		captureFBO->CheckAndCleanup();
@@ -1931,6 +1938,10 @@ namespace Picking
 		brdfTexture = new Texture(GL_TEXTURE_2D, 0, GL_RG16F, 512, 512, GL_RG, GL_FLOAT, NULL, GL_COLOR_ATTACHMENT0);
 		brdfTexture->AddDefaultTextureParameters();
 		brdfTexture->Generate();
+
+		pbrEnvTextures.push_back(irradianceCubeMap);
+		pbrEnvTextures.push_back(prefilteredHDRMap);
+		pbrEnvTextures.push_back(brdfTexture);
 
 		Render::Instance()->AddDirectionalShadowMapBuffer(4096, 4096);
 		Render::Instance()->AddMultiBlurBuffer(this->windowWidth, this->windowHeight);

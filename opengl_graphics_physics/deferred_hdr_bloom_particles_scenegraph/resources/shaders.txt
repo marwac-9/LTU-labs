@@ -32,3 +32,4 @@ radianceHDRSkyboxUnwrap Resources/shaders/RadianceHDRSkyboxUnwrap
 irradianceFromEnvironmentMap Resources/shaders/IrradianceFromEnvironmentMap
 prefilterHDRMap Resources/shaders/PrefilterHDRMap
 brdf Resources/shaders/BRDF
+ambientLightPBR Resources/shaders/AmbientLightPBR

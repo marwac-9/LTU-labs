@@ -206,6 +206,7 @@ namespace Picking
 		Texture* irradianceCubeMap;
 		Texture* prefilteredHDRMap;
 		Texture* envCubeMap;
-		Texture* brdfTexture;		
+		Texture* brdfTexture;
+		std::vector<Texture*> pbrEnvTextures;
 	};
 } // namespace Example
