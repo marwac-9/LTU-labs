@@ -17,7 +17,7 @@ layout(binding = 3) uniform sampler2D dudvMapSampler;
 layout(binding = 4) uniform sampler2D depthMapSampler;
 
 uniform float shininess;
-uniform float specularIntensity;
+uniform float specular;
 uniform vec2 screenSize;
 uniform float near;
 uniform float far;
@@ -67,7 +67,7 @@ void main(){
 	vec3 vertexToCamera = normalize(EyeDirection_worldspace);
 
 	float specularFactor = max(dot(reflectedLightDir, vertexToCamera), 0.0);
-	float Specular = specularIntensity * pow(specularFactor, shininess);
+	float Specular = specular * pow(specularFactor, shininess);
 	vec3 specularHighlights = lightColor*lightPower*Specular * clamp(waterDepth / 10.0, 0.0, 1.0);
 
 	float fresnelFactor = dot(vertexToCamera, normalFromMap); //how much refraction replaces the reflection

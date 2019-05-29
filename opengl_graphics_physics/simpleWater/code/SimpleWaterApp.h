@@ -99,7 +99,10 @@ namespace SimpleWater
 		float water_tiling = 8.f;
 		float sun_angle = 260.f;
 		float sun_height = 2.f;
-		float light_power = 1.f;
+		float light_power = 7.f;
+		float light_specularIntensity = 0.5;
+		float light_diffuseIntensity = 1.0;
+		float light_ambientIntensity = 0.03;
 		mwm::Vector3F light_color = mwm::Vector3F(1.0f, 0.89f, 0.74f);
 		mwm::Vector3F lightInvDir = mwm::Vector3F(-15.f, 2.f, 0.f);
 		float wave_strength = 0.04f;
@@ -109,8 +112,8 @@ namespace SimpleWater
 		float fresnelAdjustment = 1.f;
 		float soften_normals = 3.0;
 		int waterSize = 2;
-		float blurSize = 1.0f;
-		int blurLevel = 0;
+		float blurSize = 1.8f;
+		int blurLevel = 3;
 		bool post = true;
 		const int querycount = 5;
 		GLuint queries[5];

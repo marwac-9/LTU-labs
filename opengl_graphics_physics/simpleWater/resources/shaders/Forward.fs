@@ -12,11 +12,12 @@ layout(location = 1) out vec4 brightColor;
 layout(binding = 0) uniform sampler2D diffuseSampler;
 
 uniform vec4 MaterialColorShininess;
+uniform float specular;
+uniform float diffuse;
+uniform float ambient;
 
 uniform float lightPower;
 uniform vec3 lightColor;
-
-const float Ambient = 0.25; //is light property
 
 void main(){
 
@@ -38,11 +39,11 @@ void main(){
 	float specularFactor = clamp(dot(vertexToCamera, reflectedLightDir), 0, 1);
 
 	float Metallic = 1.0; //metallic
-	float Diffuse = 1.0 * diffuseFactor; //diffuse intensity
-	float Specular = 0.5 * pow(specularFactor, MaterialColorShininess.w); //specular intensity, specular shininess
+	float Diffuse = diffuse * diffuseFactor; //diffuse intensity
+	float Specular = specular * pow(specularFactor, MaterialColorShininess.w); //specular intensity, specular shininess
 	vec3 SpecularColor = mix(vec3(1.0), MaterialDiffuseColor, Metallic); //roughness parameter and reflection map will help with black metallic objects 
 
-	color = vec4(lightColor * lightPower * (MaterialDiffuseColor * (Ambient + Diffuse) + SpecularColor * Specular), 0.1f);
+	color = vec4(lightColor * lightPower * (MaterialDiffuseColor * (ambient + Diffuse) + SpecularColor * Specular), 0.1f);
 	float brightness = dot(color.rgb, vec3(0.2126, 0.7152, 0.0722));
 	if (brightness > 1.0)
 		brightColor = color;

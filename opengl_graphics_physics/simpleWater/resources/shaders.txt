@@ -1,5 +1,5 @@
-color Resources/shaders/Forward
-colorRefRaf Resources/shaders/ForwardRefRaf
+forward Resources/shaders/Forward
+forwardRefRaf Resources/shaders/ForwardRefRaf
 water Resources/shaders/Water
 quadToScreen Resources/shaders/QuadToScreen
 skyboxWithClipPlane Resources/shaders/SkyboxWithClipPlane

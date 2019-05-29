@@ -320,7 +320,7 @@ namespace SimpleWater
 		water->node->SetPosition(Vector3(-50.f, 0.f, 50.f));
 		water->node->SetOrientation(Quaternion(90.f, Vector3(0.f, 1.f, 0.f)));
 
-		waterMaterial->SetShininess(10.f);
+		waterMaterial->SetShininess(300.f);
 		waterMaterial->tileX = 6.f;
 		waterMaterial->tileY = 6.f;
 		GraphicsStorage::materials.push_back(waterMaterial);
@@ -330,53 +330,53 @@ namespace SimpleWater
 
 		sphere2 = Scene::Instance()->addObject("sphere", Vector3(0.f, 5.f, 0.f));
 		sphere2->node->SetScale(Vector3(4.f, 4.f, 4.f));
-		sphere2->mat->SetShininess(20.f);
+		sphere2->mat->SetShininess(200.f);
 
 		Box::Instance()->mat->AssignTexture(GraphicsStorage::cubemaps[0]);
 
 		for (int i = 0; i < 20; i++)
 		{
 			Object* sphere = Scene::Instance()->addObject("icosphere", Scene::Instance()->generateRandomIntervallVectorFlat(-20, 20, Scene::axis::y, -5));
-			sphere->mat->SetShininess(20.0f);
+			sphere->mat->SetShininess(200.0f);
 			//sphere->mat->SetColor(Vector3(2.f,2.f,2.f));
 		}
 
 		for (int i = 0; i < 20; i++)
 		{
 			Object* sphere = Scene::Instance()->addObject("sphere", Scene::Instance()->generateRandomIntervallVectorFlat(-20, 20, Scene::axis::y, 5));
-			sphere->mat->SetShininess(20.0f);
+			sphere->mat->SetShininess(200.0f);
 			//sphere->mat->SetColor(Vector3(2.f, 2.f, 2.f));
 		}
 
 		for (int i = 0; i < 8; i++)
 		{
 			Object* sphere = Scene::Instance()->addObject("cube", Vector3(30.f, i * 2.f, 30.f));
-			sphere->mat->SetShininess(20.0f);
+			sphere->mat->SetShininess(200.0f);
 			//sphere->mat->SetColor(Vector3(2.f, 2.f, 2.f));
 		}
 
 		for (int i = 0; i < 8; i++)
 		{
 			Object* sphere = Scene::Instance()->addObject("cube", Vector3(-30.f, i * 2.f, 30.f));
-			sphere->mat->SetShininess(20.0f);
+			sphere->mat->SetShininess(200.0f);
 		}
 
 		for (int i = 0; i < 8; i++)
 		{
 			Object* sphere = Scene::Instance()->addObject("cube", Vector3(-30.f, i * 2.f, -30.f));
-			sphere->mat->SetShininess(20.0f);
+			sphere->mat->SetShininess(200.0f);
 		}
 
 		for (int i = 0; i < 8; i++)
 		{
 			Object* sphere = Scene::Instance()->addObject("cube", Vector3(30.f, i * 2.f, -30.f));
-			sphere->mat->SetShininess(20.0f);
+			sphere->mat->SetShininess(200.0f);
 		}
 
 		for (int i = 0; i < 12; i++)
 		{
 			Object* sphere = Scene::Instance()->addObject("cube", Vector3(0.f, -2.f + i * 2.f, 0.f));
-			sphere->mat->SetShininess(20.0f);
+			sphere->mat->SetShininess(200.0f);
 		}
 
 		Object* plane = Scene::Instance()->addObject("pond", Vector3(0.f, 0.f, 0.f));
@@ -419,6 +419,9 @@ namespace SimpleWater
 		ImGui::Text("LIGHTING:");
 		ImGui::ColorEdit3("Sun Color", (float*)&light_color);
 		ImGui::SliderFloat("Sun Power", &light_power, 0.0f, 10.0f);
+		ImGui::SliderFloat("Sun Specular Intensity", &light_specularIntensity, 0.0f, 10.0f);
+		ImGui::SliderFloat("Sun Diffuse Intensity", &light_diffuseIntensity, 0.0f, 10.0f);
+		ImGui::SliderFloat("Sun Ambient Intensity", &light_ambientIntensity, 0.0f, 1.0);
 		ImGui::SliderFloat("Sun Height", &sun_height, 0.0f, 45.0f);
 		ImGui::SliderFloat("Rotate Sun", &sun_angle, 0.0f, 360.0f);
 		lightInvDir = Matrix3F::rotateAngle(Vector3F(0.f, 1.f, 0.f), sun_angle) * (Vector3F(-25.f, sun_height, 0.f) - Vector3F(0.f, 0.f, 0.f));
@@ -427,7 +430,7 @@ namespace SimpleWater
 		ImGui::NewLine();
 		ImGui::Text("SHADING:");
 		ImGui::ColorEdit3("Water Color", (float*)&water_color);
-		ImGui::SliderFloat("Water Shininess", (float*)&water->mat->shininess, 0.0f, 100.0f);
+		ImGui::SliderFloat("Water Shininess", (float*)&water->mat->shininess, 0.0f, 300.0f);
 		ImGui::SliderFloat("Water Speed", &speed_multiplier, 0.0f, 5.0f);
 		water_speed = (float)Times::Instance()->currentTime * 0.2f * speed_multiplier;
 		ImGui::SliderFloat("Water Tile", &water_tiling, 0.0f, 30.0f);
@@ -460,7 +463,7 @@ namespace SimpleWater
 	void
 	SimpleWaterApp::Draw()
 	{
-		GLuint currentShaderID = GraphicsStorage::shaderIDs["color"];
+		GLuint currentShaderID = GraphicsStorage::shaderIDs["forward"];
 		ShaderManager::Instance()->SetCurrentShader(currentShaderID);
 
 		float plane[4] = { 0.0, 1.0, 0.0, 10000.f };
@@ -480,6 +483,13 @@ namespace SimpleWater
 
 		GLuint liColor = glGetUniformLocation(currentShaderID, "lightColor");
 		glUniform3fv(liColor, 1, &light_color.x);
+
+		GLuint specularIntensity = glGetUniformLocation(currentShaderID, "specular");
+		GLuint diffuseIntensity = glGetUniformLocation(currentShaderID, "diffuse");
+		GLuint ambientIntensity = glGetUniformLocation(currentShaderID, "ambient");
+		glUniform1f(specularIntensity, light_specularIntensity);
+		glUniform1f(diffuseIntensity, light_diffuseIntensity);
+		glUniform1f(ambientIntensity, light_ambientIntensity);
 
 		objectsRendered = Render::Instance()->draw(Scene::Instance()->renderList, CameraManager::Instance()->ViewProjection, currentShaderID);
 	}
@@ -509,7 +519,7 @@ namespace SimpleWater
 
 		Render::Instance()->drawSkyboxWithClipPlane(frameBuffer, GraphicsStorage::cubemaps[0], plane, View);
 
-		GLuint currentShaderID = GraphicsStorage::shaderIDs["colorRefRaf"];
+		GLuint currentShaderID = GraphicsStorage::shaderIDs["forwardRefRaf"];
 		ShaderManager::Instance()->SetCurrentShader(currentShaderID);
 
 		glEnable(GL_CLIP_PLANE0);
@@ -530,6 +540,13 @@ namespace SimpleWater
 		GLuint liColor = glGetUniformLocation(currentShaderID, "lightColor");
 		glUniform3fv(liColor, 1, &light_color.x);
 
+		GLuint specularIntensity = glGetUniformLocation(currentShaderID, "specular");
+		GLuint diffuseIntensity = glGetUniformLocation(currentShaderID, "diffuse");
+		GLuint ambientIntensity = glGetUniformLocation(currentShaderID, "ambient");
+		glUniform1f(specularIntensity, light_specularIntensity);
+		glUniform1f(diffuseIntensity, light_diffuseIntensity);
+		glUniform1f(ambientIntensity, light_ambientIntensity);
+
 		Matrix4 ViewProjection = View * currentCamera->ProjectionMatrix;
 
 		FrustumManager::Instance()->ExtractPlanes(ViewProjection); //we do frustum culling against reflected frustum planes
@@ -542,7 +559,7 @@ namespace SimpleWater
 	void
 	SimpleWaterApp::DrawGeoUnderWater()
 	{
-		GLuint currentShaderID = GraphicsStorage::shaderIDs["colorRefRaf"];
+		GLuint currentShaderID = GraphicsStorage::shaderIDs["forwardRefRaf"];
 		glDrawBuffer(GL_COLOR_ATTACHMENT1);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -623,8 +640,12 @@ namespace SimpleWater
 		GLuint shininess = glGetUniformLocation(currentShaderID, "shininess");
 		glUniform1f(shininess, water->mat->shininess);
 
-		//GLuint specularIntensity = glGetUniformLocation(currentShaderID, "specularIntensity");
-		//glUniform1f(specularIntensity, water->mat->specularIntensity);
+		GLuint specularIntensity = glGetUniformLocation(currentShaderID, "specular");
+		GLuint diffuseIntensity = glGetUniformLocation(currentShaderID, "diffuse");
+		GLuint ambientIntensity = glGetUniformLocation(currentShaderID, "ambient");
+		glUniform1f(specularIntensity, light_specularIntensity);
+		glUniform1f(diffuseIntensity, light_diffuseIntensity);
+		glUniform1f(ambientIntensity, light_ambientIntensity);
 
 		GLuint tiling = glGetUniformLocation(currentShaderID, "tiling");
 		glUniform2f(tiling, water->mat->tileX, water->mat->tileY);
@@ -646,7 +667,6 @@ namespace SimpleWater
 		glDrawElements(GL_TRIANGLES, water->vao->indicesCount, GL_UNSIGNED_INT, (void*)0); // mode, count, type, element array buffer offset
 		glEndQuery(GL_TIME_ELAPSED);
 	}
-
 
 	void
 	SimpleWaterApp::SetUpBuffers(int windowWidth, int windowHeight)
