@@ -1,5 +1,6 @@
 Resources/textures/default_diffuse.dds
 Resources/textures/default_normal_dtx5.dds
+resources/textures/default_aometrough.dds
 Resources/textures/uvmap_2.dds
 Resources/textures/sun.dds
 Resources/textures/mercury.dds

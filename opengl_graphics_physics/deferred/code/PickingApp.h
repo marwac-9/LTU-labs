@@ -12,6 +12,7 @@ class Object;
 class Camera;
 class FrameBuffer;
 class Texture;
+class DirectionalLight;
 
 enum loadedScene
 {
@@ -86,6 +87,7 @@ namespace Picking
 		unsigned int pickedID = 0;
 
 		Object* directionalLightObject;
+		DirectionalLight* dirLightComp;
 		Object* planeObject;
 
 
@@ -101,9 +103,10 @@ namespace Picking
 
 		Texture* pickingTexture;
 		Texture* worldPosTexture;
+		Texture* finalColorTexture;
 
 		Texture* diffuseTexture;
 		Texture* normalTexture;
-		Texture* metDiffIntShinSpecIntTexture;
+		Texture* ORMSTexture;
 	};
 } // namespace Example

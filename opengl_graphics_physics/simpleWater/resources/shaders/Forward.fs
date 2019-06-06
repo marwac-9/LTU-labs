@@ -41,7 +41,7 @@ void main(){
 	float Metallic = 1.0; //metallic
 	float Diffuse = diffuse * diffuseFactor; //diffuse intensity
 	float Specular = specular * pow(specularFactor, MaterialColorShininess.w); //specular intensity, specular shininess
-	vec3 SpecularColor = mix(vec3(1.0), MaterialDiffuseColor, Metallic); //roughness parameter and reflection map will help with black metallic objects 
+	vec3 SpecularColor = mix(lightColor, MaterialDiffuseColor, Metallic); //roughness parameter and reflection map will help with black metallic objects 
 
 	color = vec4(lightColor * lightPower * (MaterialDiffuseColor * (ambient + Diffuse) + SpecularColor * Specular), 0.1f);
 	float brightness = dot(color.rgb, vec3(0.2126, 0.7152, 0.0722));

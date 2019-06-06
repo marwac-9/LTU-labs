@@ -7,6 +7,7 @@ layout(binding = 3) uniform sampler2D metDiffIntShinSpecIntSampler;
 
 layout(std140, binding = 1) uniform LBVars
 {
+	mat4 depthBiasMVP;
 	vec3 lightInvDir;
 	float shadowTransitionSize;
 	float outerCutOff;
@@ -15,7 +16,8 @@ layout(std140, binding = 1) uniform LBVars
 	float lightPower;
 	vec3 lightColor;
 	float ambient;
-	mat4 depthBiasMVP;
+	float diffuse;
+	float specular;
 	mat4 MVP;
 	vec3 lightPosition;
 	float constant;
@@ -96,7 +98,7 @@ void main()
 	float Metallic = MatPropertiesMetDiffShinSpec.x;
 	float Diffuse = MatPropertiesMetDiffShinSpec.y * cosTheta;
 	float Specular = MatPropertiesMetDiffShinSpec.z * pow(cosAlpha, MatPropertiesMetDiffShinSpec.w);
-	vec3 SpecularColor = mix(vec3(1.0), MaterialDiffuseColor, Metallic); //roughness parameter and reflection map will help with black metallic objects 
+	vec3 SpecularColor = mix(lightColor, MaterialDiffuseColor, Metallic); //roughness parameter and reflection map will help with black metallic objects 
 
 	//point light only
 	color = lightColor * lightPower * (MaterialDiffuseColor * (ambient + Diffuse) + SpecularColor * Specular) * attenuation;

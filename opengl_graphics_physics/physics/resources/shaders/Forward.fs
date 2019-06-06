@@ -12,16 +12,16 @@ out vec3 color;
 
 // Values that stay constant for the whole mesh.
 uniform sampler2D myTextureSampler;
-uniform vec4 MaterialProperties;
-uniform vec3 MaterialColor;
+uniform vec4 MaterialColorShininess;
+uniform float specular;
+uniform float diffuse;
+uniform float ambient;
 uniform vec3 LightInvDirection_worldspace;
 uniform float PointLightRadius;
 uniform vec3 SpotLightDirection_worldspace;
 uniform float SpotLightCutOff;
 uniform float SpotLightOuterCutOff;
 uniform float SpotLightRadius;
-
-const float Ambient = 0.25; //is light property
 
 struct Attenuation
 {
@@ -47,7 +47,7 @@ void main(){
 	float SpotLightPower = 100.0;
 
 	// Material properties
-	vec3 MaterialDiffuseColor = texture2D(myTextureSampler, UV).rgb + MaterialColor;
+	vec3 MaterialDiffuseColor = texture2D(myTextureSampler, UV).rgb + MaterialColorShininess.rgb;
 	// Distance to the light
 	float distance = length(PointLightDirectionFromVertex_worldspace);
 	float distances = length(SpotLightDirectionFromVertex_worldspace);
@@ -92,17 +92,19 @@ void main(){
 	float attenuationp = pointAttenuation.constant + pointAttenuation.linear * distance + pointAttenuation.exponential * distance * distance;
 	float attenuations = spotAttenuation.constant + spotAttenuation.linear * distance + spotAttenuation.exponential * distance * distance;
 
-	float Metallic = MaterialProperties.x;
-	float Diffused = MaterialProperties.y * cosThetad;
-	float Diffusep = MaterialProperties.y * cosThetap;
-	float Diffuses = MaterialProperties.y * cosThetas;// *intensity;
-	float Speculard = MaterialProperties.z * pow(cosAlphad, MaterialProperties.w);
-	float Specularp = MaterialProperties.z * pow(cosAlphap, MaterialProperties.w);
-	float Speculars = MaterialProperties.z * pow(cosAlphas, MaterialProperties.w);// *intensity;
-	vec3 SpecularColor = mix(vec3(1.0), MaterialDiffuseColor, Metallic); //roughness parameter and reflection map will help with black metallic objects 
+	float Metallic = 1.0;
+	float Diffused = diffuse * cosThetad;
+	float Diffusep = diffuse * cosThetap;
+	float Diffuses = diffuse * cosThetas;// *intensity;
+	float Speculard = specular * pow(cosAlphad, MaterialColorShininess.w);
+	float Specularp = specular * pow(cosAlphap, MaterialColorShininess.w);
+	float Speculars = specular * pow(cosAlphas, MaterialColorShininess.w);// *intensity;
+	vec3 SpecularColord = mix(DirectionalLightColor, MaterialDiffuseColor, Metallic); //roughness parameter and reflection map will help with black metallic objects 
+	vec3 SpecularColorp = mix(PointLightColor, MaterialDiffuseColor, Metallic); //roughness parameter and reflection map will help with black metallic objects 
+	vec3 SpecularColors = mix(SpotLightColor, MaterialDiffuseColor, Metallic); //roughness parameter and reflection map will help with black metallic objects 
 
-	color = DirectionalLightColor * DirectionalLightPower * (MaterialDiffuseColor * (Ambient + Diffused) + SpecularColor * Speculard)
-		+ PointLightColor * PointLightPower * (MaterialDiffuseColor * (Ambient + Diffusep) + SpecularColor * Specularp) / attenuationp
-		+ (SpotLightColor * SpotLightPower * (MaterialDiffuseColor * (Ambient + Diffuses) + SpecularColor * Speculars) / attenuations) * intensity; //  * (1.0 - (1.0 - spotTetha) / (1.0 - SpotLightCutOff));
+	color = DirectionalLightColor * DirectionalLightPower * (MaterialDiffuseColor * (ambient + Diffused) + SpecularColord * Speculard)
+		+ PointLightColor * PointLightPower * (MaterialDiffuseColor * (ambient + Diffusep) + SpecularColorp * Specularp) / attenuationp
+		+ (SpotLightColor * SpotLightPower * (MaterialDiffuseColor * (ambient + Diffuses) + SpecularColors * Speculars) / attenuations) * intensity; //  * (1.0 - (1.0 - spotTetha) / (1.0 - SpotLightCutOff));
 
 }

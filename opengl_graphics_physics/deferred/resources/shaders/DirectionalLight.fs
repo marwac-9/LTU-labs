@@ -3,10 +3,11 @@
 layout(binding = 0) uniform sampler2D positionSampler;
 layout(binding = 1) uniform sampler2D diffuseSampler;
 layout(binding = 2) uniform sampler2D normalsSampler;
-layout(binding = 3) uniform sampler2D metDiffIntShinSpecIntSampler;
+layout(binding = 3) uniform sampler2D specularSampler;
 
 layout(std140, binding = 1) uniform LBVars
 {
+	mat4 depthBiasMVP;
 	vec3 lightInvDir;
 	float shadowTransitionSize;
 	float outerCutOff;
@@ -15,7 +16,8 @@ layout(std140, binding = 1) uniform LBVars
 	float lightPower;
 	vec3 lightColor;
 	float ambient;
-	mat4 depthBiasMVP;
+	float diffuse;
+	float specular;
 	mat4 MVP;
 	vec3 lightPosition;
 	float constant;
@@ -41,7 +43,7 @@ void main()
 	vec3 MaterialDiffuseColor = texture(diffuseSampler, TexCoord).xyz;
 	vec3 Normal_worldSpace = texture(normalsSampler, TexCoord).xyz;
 	// Material properties
-	vec4 MatPropertiesMetDiffShinSpec = texture(metDiffIntShinSpecIntSampler, TexCoord);
+	vec4 AoRoughnessMetallicShininess = texture(specularSampler, TexCoord);
 
 	// Vector that goes from the vertex to the camera, in world space.
 	vec3 EyeDirection_worldSpace = cameraPos - WorldPos;
@@ -83,18 +85,11 @@ void main()
 	//these are only light calculations
 	//we add the texture color later
 
-	float Metallic = MatPropertiesMetDiffShinSpec.x;
-	float Diffuse = MatPropertiesMetDiffShinSpec.y * cosTheta;
-	float Specular = MatPropertiesMetDiffShinSpec.z * pow(cosAlpha, MatPropertiesMetDiffShinSpec.w);
-	vec3 SpecularColor = mix(vec3(1.0), MaterialDiffuseColor, Metallic); //roughness parameter and reflection map will help with black metallic objects 
+	float Metallic = AoRoughnessMetallicShininess.z;
+	float Diffuse = diffuse * cosTheta;
+	float Specular = specular * pow(cosAlpha, AoRoughnessMetallicShininess.w);
+	vec3 SpecularColor = mix(lightColor, MaterialDiffuseColor, Metallic);
+	float smoothness = 1.0 - AoRoughnessMetallicShininess.y;
 
-	//directional only
-	color = lightColor * lightPower * (MaterialDiffuseColor * (ambient + Diffuse) + SpecularColor * Specular);
-
-		// Ambient : simulates indirect lighting
-		//MaterialAmbientColor * MaterialDiffuseIntensityValue +
-		// Diffuse : "color" of the object
-		//MaterialDiffuseColor * lightColor * lightPower * cosTheta * MaterialDiffuseIntensityValue +
-		// Specular : reflective highlight, like a mirror
-		//MaterialSpecularColor * lightColor * lightPower * pow(cosAlpha, shininess);
+	color = lightColor * lightPower * (MaterialDiffuseColor * (ambient + Diffuse) + SpecularColor * Specular * smoothness);
 }

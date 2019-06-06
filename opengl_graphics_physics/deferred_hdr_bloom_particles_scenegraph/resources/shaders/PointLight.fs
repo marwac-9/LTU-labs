@@ -104,9 +104,9 @@ void main()
 	float Diffuse = diffuse * cosTheta;
 	float Specular = specular * pow(cosAlpha, AoRoughnessMetallicShininess.w);
 	vec3 SpecularColor = mix(lightColor, MaterialDiffuseColor, Metallic);
-	float glossiness = 1.0 - AoRoughnessMetallicShininess.y;
+	float smoothness = 1.0 - AoRoughnessMetallicShininess.y;
 
-	color = vec4(lightColor * lightPower * (MaterialDiffuseColor * (ambient + Diffuse) + SpecularColor * Specular * glossiness) * attenuation, 1.0);
+	color = vec4(lightColor * lightPower * (MaterialDiffuseColor * (ambient + Diffuse) + SpecularColor * Specular * smoothness) * attenuation, 1.0);
 	float brightness = dot(color.rgb, vec3(0.2126, 0.7152, 0.0722));
 	if (brightness > 1.0)
 		brightColor = color;

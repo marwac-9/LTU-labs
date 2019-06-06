@@ -301,7 +301,7 @@ namespace Subdivision
 		Vector3F camPos = currentCamera->GetPosition2().toFloat();
 		glUniform3fv(cameraPos, 1, &camPos.x);
 
-		objectsRendered = Render::Instance()->draw(Scene::Instance()->renderList, CameraManager::Instance()->ViewProjection, currentShaderID);
+		objectsRendered = Render::Instance()->draw(currentShaderID, Scene::Instance()->renderList, CameraManager::Instance()->ViewProjection);
 	}
 
 	void
@@ -337,6 +337,7 @@ namespace Subdivision
 	SubdivisionApp::LoadScene1()
 	{
 		Clear();
+		window->SetTitle("pyramid");
 		Subdivide(GraphicsStorage::objs["pyramid"]);
 	}
 
@@ -344,6 +345,7 @@ namespace Subdivision
 	SubdivisionApp::LoadScene2()
 	{
 		Clear();
+		window->SetTitle("cube");
 		Subdivide(GraphicsStorage::objs["cube"]);
 	}
 
@@ -351,6 +353,7 @@ namespace Subdivision
 	SubdivisionApp::LoadScene3()
 	{
 		Clear();
+		window->SetTitle("sphere");
 		Subdivide(GraphicsStorage::objs["sphere"]);
 	}
 
@@ -358,6 +361,7 @@ namespace Subdivision
 	SubdivisionApp::LoadScene4()
 	{
 		Clear();
+		window->SetTitle("icosahedron");
 		Subdivide(GraphicsStorage::objs["icosahedron"]);
 	}
 
@@ -365,6 +369,7 @@ namespace Subdivision
 	SubdivisionApp::LoadScene5()
 	{
 		Clear();
+		window->SetTitle("octahedron");
 		Subdivide(GraphicsStorage::objs["octahedron"]);
 	}
 
@@ -372,6 +377,7 @@ namespace Subdivision
 	SubdivisionApp::LoadScene6()
 	{
 		Clear();
+		window->SetTitle("pentagonal_bipyramid");
 		Subdivide(GraphicsStorage::objs["pentagonal_bipyramid"]);
 	}
 
@@ -379,6 +385,7 @@ namespace Subdivision
 	SubdivisionApp::LoadScene7()
 	{
 		Clear();
+		window->SetTitle("tetrahedron");
 		Subdivide(GraphicsStorage::objs["tetrahedron"]);
 	}
 
@@ -386,6 +393,7 @@ namespace Subdivision
 	SubdivisionApp::LoadScene8()
 	{
 		Clear();
+		window->SetTitle("triangular_bipyramid");
 		Subdivide(GraphicsStorage::objs["triangular_bipyramid"]);
 	}
 
@@ -393,6 +401,7 @@ namespace Subdivision
 	SubdivisionApp::LoadScene9()
 	{
 		Clear();
+		window->SetTitle("tri_sphere1");
 		Subdivide(GraphicsStorage::objs["tri_sphere1"]);
 	}
 
@@ -503,7 +512,6 @@ namespace Subdivision
 		window->SetCursorPos(windowMidX, windowMidY);
 		CameraManager::Instance()->AddCamera("default", currentCamera);
 		CameraManager::Instance()->SetCurrentCamera("default");
-		currentCamera->ProjectionMatrix = Matrix4::OpenGLPersp(45.0, (double)this->windowWidth / (double)this->windowHeight, 0.1, 200.0);
 	}
 
 } // namespace Example

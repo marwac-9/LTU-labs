@@ -16,8 +16,10 @@ uniform sampler2D myTextureSampler;
 uniform sampler2D shadowMapSampler;
 uniform mat4 MV;
 uniform vec3 LightPosition_worldspace;
-uniform vec3 MaterialColor;
-uniform vec4 MaterialProperties;
+uniform vec4 MaterialColorShininess;
+uniform float specular;
+uniform float diffuse;
+uniform float ambient;
 
 float linstep(float low, float high, float v){
     return clamp((v-low)/(high-low), 0.0, 1.0);
@@ -62,7 +64,7 @@ void main(){
 	float LightPower = 1.f;
 	
 	// Material properties
-	vec3 MaterialDiffuseColor = texture2D( myTextureSampler, UV ).rgb + MaterialColor;
+	vec3 MaterialDiffuseColor = texture2D( myTextureSampler, UV ).rgb + MaterialColorShininess.rgb;
 
 	// Distance to the light
 	float distance = length( LightPosition_worldspace - Position_worldspace );
@@ -97,9 +99,9 @@ void main(){
 	//if ( depth  <  ShadowCoord.z - bias){
 	//	visibility = 0.5f;
 	//}
-	float Ambient = MaterialProperties.x;
-	float Diffuse = MaterialProperties.y * cosTheta;
-	float SpecularColor = MaterialProperties.z * pow(cosAlpha, MaterialProperties.w);
+	float Ambient = ambient;
+	float Diffuse = diffuse * cosTheta;
+	float SpecularColor = specular * pow(cosAlpha, MaterialColorShininess.w);
 
 	//1 directional
 	float totalLight = (Ambient + Diffuse + SpecularColor);

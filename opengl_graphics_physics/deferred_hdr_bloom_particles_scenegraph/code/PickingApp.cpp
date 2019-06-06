@@ -41,6 +41,7 @@
 #include <sstream>
 #include "stb_image_write.h"
 #include "FastInstanceSystem.h"
+#include "RenderPass.h"
 #include "ImGuiWrapper.h"
 #include <imgui.h>
 
@@ -208,20 +209,31 @@ namespace Picking
 		std::chrono::time_point<std::chrono::high_resolution_clock> start, end;
 		std::chrono::duration<double> elapsed_seconds;
 
-		GLuint shader = GraphicsStorage::shaderIDs["radianceHDRSkyboxUnwrap"];
-		Render::Instance()->captureTextureToCubeMap(shader, captureFBO, captureRBO, GraphicsStorage::textures[26], envCubeMap);
+		GLuint radianceShader = GraphicsStorage::shaderIDs["radianceHDRSkyboxUnwrap"];
+		GLuint irradianceShader = GraphicsStorage::shaderIDs["irradianceFromEnvironmentMap"];
+		GLuint prefilterShader = GraphicsStorage::shaderIDs["prefilterHDRMap"];
+		GLuint brdfShader = GraphicsStorage::shaderIDs["brdf"];
+		GLuint geometryShader = GraphicsStorage::shaderIDs["geometry"];
+		GLuint geometryInstancedShader = GraphicsStorage::shaderIDs["geometryInstanced"];
+		GLuint pointLightShader = GraphicsStorage::shaderIDs["pointLightPBR"];
+		GLuint pointLightShadowShader = GraphicsStorage::shaderIDs["pointLightShadowPBR"];
+		GLuint spotLightShader = GraphicsStorage::shaderIDs["spotLightPBR"];
+		GLuint spotLightShadowShader = GraphicsStorage::shaderIDs["spotLightShadowPBR"];
+		GLuint directionalLightShader = GraphicsStorage::shaderIDs["directionalLightPBR"];
+		GLuint directionalLightShadowShader = GraphicsStorage::shaderIDs["directionalLightShadowPBR"];
+		GLuint ambientLightShader = GraphicsStorage::shaderIDs["ambientLightPBR"];
+		GLuint skyboxShader = GraphicsStorage::shaderIDs["skybox"];
+		GLuint fastBlurShader = GraphicsStorage::shaderIDs["fastBlur"];
+		GLuint hdrBloomShader = GraphicsStorage::shaderIDs["hdrBloom"];
+
+		Render::Instance()->captureTextureToCubeMap(radianceShader, captureFBO, captureRBO, GraphicsStorage::textures[26], envCubeMap);
 		envCubeMap->ActivateAndBind(0);
 		envCubeMap->GenerateMipMaps();
 
-		shader = GraphicsStorage::shaderIDs["irradianceFromEnvironmentMap"];
-		Render::Instance()->captureTextureToCubeMap(shader, captureFBO, captureRBO, envCubeMap, irradianceCubeMap);
+		Render::Instance()->captureTextureToCubeMap(irradianceShader, captureFBO, captureRBO, envCubeMap, irradianceCubeMap);
+		Render::Instance()->captureTextureToCubeMapWithMips(prefilterShader, captureFBO, captureRBO, envCubeMap, prefilteredHDRMap);
+		Render::Instance()->captureToTexture2D(brdfShader, captureFBO, captureRBO, brdfTexture);
 
-		shader = GraphicsStorage::shaderIDs["prefilterHDRMap"];
-		Render::Instance()->captureTextureToCubeMapWithMips(shader, captureFBO, captureRBO, envCubeMap, prefilteredHDRMap);
-
-		shader = GraphicsStorage::shaderIDs["brdf"];
-		Render::Instance()->captureToTexture2D(shader, captureFBO, captureRBO, brdfTexture);
-		
 		while (running)
 		{
 			FBOManager::Instance()->BindFrameBuffer(GL_DRAW_FRAMEBUFFER, 0);
@@ -284,20 +296,20 @@ namespace Picking
 			Render::Instance()->UpdateEBOs();
 			ImGui::ShowDemoWindow();
 			GenerateGUI();
-			objectsRendered = Render::Instance()->drawGeometry(Scene::Instance()->renderList, geometryBuffer);
-			instancedGeometryDrawn = Render::Instance()->drawInstancedGeometry(Scene::Instance()->instanceSystemComponents, geometryBuffer);
-			instancedGeometryDrawn += Render::Instance()->drawFastInstancedGeometry(Scene::Instance()->fastInstanceSystemComponents, geometryBuffer);
+			objectsRendered = Render::Instance()->drawGeometry(geometryShader, Scene::Instance()->renderList, geometryBuffer);
+			instancedGeometryDrawn = Render::Instance()->drawInstancedGeometry(geometryInstancedShader, Scene::Instance()->instanceSystemComponents, geometryBuffer);
+			instancedGeometryDrawn += Render::Instance()->drawFastInstancedGeometry(geometryInstancedShader, Scene::Instance()->fastInstanceSystemComponents, geometryBuffer);
 			//Render::Instance()->drawGSkybox(geometryBuffer, captureFBO->textures[0]);
 
 			if (applicationInputEnabled) PickingTest();
 			//Render::Instance()->captureTextureToCubeMap(shader, captureFBO, captureRBO, captureFBO->textures[0], irradianceCubeMap, captureVPs);
 			
-			lightsRendered = Render::Instance()->drawLight(lightAndPostBuffer, geometryBuffer);
+			lightsRendered = Render::Instance()->drawLight(pointLightShader, pointLightShadowShader, spotLightShader, spotLightShadowShader, directionalLightShader, directionalLightShadowShader, lightAndPostBuffer, geometryBuffer);
 			
-			lightsRendered += Render::Instance()->drawAmbientLight(lightAndPostBuffer, geometryBuffer->textures, pbrEnvTextures);
+			lightsRendered += Render::Instance()->drawAmbientLight(ambientLightShader, lightAndPostBuffer, geometryBuffer->textures, pbrEnvTextures);
 
 			//if (skybox != nullptr) Render::Instance()->drawSkybox(lightAndPostBuffer, GraphicsStorage::cubemaps[0]);
-			Render::Instance()->drawSkybox(lightAndPostBuffer, envCubeMap);
+			Render::Instance()->drawSkybox(skyboxShader, lightAndPostBuffer, envCubeMap);
 
 			if (drawLines) DebugDraw::Instance()->DrawFastLineSystems(lightAndPostBuffer->handle);  //<--- to light pass
 			if (drawPoints) DebugDraw::Instance()->DrawFastPointSystems(lightAndPostBuffer->handle);  //<--- to light pass
@@ -305,8 +317,8 @@ namespace Picking
 
 			if (post)
 			{
-				blurredBrightTexture = Render::Instance()->MultiBlur(brightLightTexture, bloomLevel, blurBloomSize, GraphicsStorage::shaderIDs["fastBlur"]);
-				Render::Instance()->drawHDR(finalColorTexture, blurredBrightTexture); //we draw color to screen here
+				blurredBrightTexture = Render::Instance()->MultiBlur(brightLightTexture, bloomLevel, blurBloomSize, fastBlurShader);
+				Render::Instance()->drawHDR(hdrBloomShader, finalColorTexture, blurredBrightTexture); //we draw color to screen here
 				BlitDepthToScreenPass(); //we blit depth so we can use it in forward rendering on top of deffered
 			}
 			else
@@ -737,8 +749,8 @@ namespace Picking
 		///when rendering lights only diffuse intensity and color is important as they are light power and light color
 		Object* pointLight = Scene::Instance()->addPointLight(false, Vector3(0.f, 0.f, 50.f), Vector3F(1.0f, 1.0f, 1.0f));
 		pointLight->node->SetScale(Vector3(40.f, 40.f, 40.f));
-		//pointLightCompTest = pointLight->GetComponent<PointLight>();
-		//pointLightTest = pointLight;
+		pointLightCompTest = pointLight->GetComponent<PointLight>();
+		pointLightTest = pointLight;
 
 		pointLight = Scene::Instance()->addPointLight(false, Vector3(-1.4f, -1.9f, 9.0f), Vector3F(0.1f, 0.0f, 0.0f));
 		pointLight->node->SetScale(Vector3(10.f, 10.f, 10.f));
@@ -1420,7 +1432,7 @@ namespace Picking
 		//{
 		//	Scene::Instance()->addChild();
 		//}
-		
+		/*
 		for (size_t i = 0; i < 10; i++)
 		{
 			for (size_t j = 0; j < 10; j++)
@@ -1437,7 +1449,7 @@ namespace Picking
 		sphere->mat->AssignTexture(GraphicsStorage::textures.at(17), 0);
 		sphere->mat->AssignTexture(GraphicsStorage::textures.at(18), 1);
 		sphere->mat->AssignTexture(GraphicsStorage::textures.at(19), 2);
-
+		*/
 		Object* cerberusGun = Scene::Instance()->addObject("cerberus_gun", Vector3(0.f, 10.f, 10.f));
 		cerberusGun->mat->AssignTexture(GraphicsStorage::textures.at(23), 0);
 		cerberusGun->mat->AssignTexture(GraphicsStorage::textures.at(24), 1);
@@ -1952,7 +1964,7 @@ namespace Picking
 	void
 	PickingApp::DrawGeometryMaps(int width, int height)
 	{
-		ShaderManager::Instance()->SetCurrentShader(GraphicsStorage::shaderIDs["depthPanel"]);
+		GLuint depthPanelShader = GraphicsStorage::shaderIDs["depthPanel"];
 
 		float fHeight = (float)height;
 		float fWidth = (float)width;
@@ -1960,16 +1972,16 @@ namespace Picking
 		int glWidth = (int)(fWidth *0.1f);
 		int glHeight = (int)(fHeight*0.1f);
 
-		Render::Instance()->drawRegion(0, y, glWidth, glHeight, worldPosTexture);
-		Render::Instance()->drawRegion(0, 0, glWidth, glHeight, diffuseTexture);
-		Render::Instance()->drawRegion(glWidth, 0, glWidth, glHeight, normalTexture);
-		Render::Instance()->drawRegion(glWidth, y, glWidth, glHeight, metDiffIntShinSpecIntTexture);
-		Render::Instance()->drawRegion(width - glWidth, height - glHeight, glWidth, glHeight, blurredBrightTexture);
-		Render::Instance()->drawRegion(0, height - glHeight, glWidth, glHeight, finalColorTexture);
-		Render::Instance()->drawRegion(width - glWidth, 0, glWidth, glHeight, pickingTexture);
-		Render::Instance()->drawRegion(0, height - glHeight - glHeight, glWidth, glHeight, depthTexture);
+		Render::Instance()->drawRegion(depthPanelShader, 0, y, glWidth, glHeight, worldPosTexture);
+		Render::Instance()->drawRegion(depthPanelShader, 0, 0, glWidth, glHeight, diffuseTexture);
+		Render::Instance()->drawRegion(depthPanelShader, glWidth, 0, glWidth, glHeight, normalTexture);
+		Render::Instance()->drawRegion(depthPanelShader, glWidth, y, glWidth, glHeight, metDiffIntShinSpecIntTexture);
+		Render::Instance()->drawRegion(depthPanelShader, width - glWidth, height - glHeight, glWidth, glHeight, blurredBrightTexture);
+		Render::Instance()->drawRegion(depthPanelShader, 0, height - glHeight, glWidth, glHeight, finalColorTexture);
+		Render::Instance()->drawRegion(depthPanelShader, width - glWidth, 0, glWidth, glHeight, pickingTexture);
+		Render::Instance()->drawRegion(depthPanelShader, 0, height - glHeight - glHeight, glWidth, glHeight, depthTexture);
 		//if (pointLightTest != drawRegion) DebugDraw::Instance()->DrawMap(width - glWidth, y, glWidth, glHeight, pointLightCompTest->shadowMapTexture->handle, width, height);
 		//else if (spotLight1 != nullptr) DebugDraw::Instance()->DrawMap(width - glWidth, y, glWidth, glHeight, spotLightComp->shadowMapTexture->handle, width, height);
-		Render::Instance()->drawRegion(width - glWidth, y, glWidth, glHeight, Render::Instance()->dirShadowMapBuffer->textures[0]);
+		Render::Instance()->drawRegion(depthPanelShader, width - glWidth, y, glWidth, glHeight, Render::Instance()->dirShadowMapBuffer->textures[0]);
 	}
 } 

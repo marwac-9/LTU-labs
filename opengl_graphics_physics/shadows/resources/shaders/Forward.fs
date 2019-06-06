@@ -12,8 +12,7 @@ layout(location = 0) out vec3 color;
 // Values that stay constant for the whole mesh.
 layout(binding = 0) uniform sampler2D myTextureSampler;
 layout(binding = 1) uniform sampler2D shadowMapSampler;
-uniform vec4 MaterialProperties;
-uniform vec3 MaterialColor;
+uniform vec4 MaterialColorShininess;
 uniform vec3 LightInvDirection_worldspace;
 uniform vec3 CameraPos;
 uniform float shadowDistance;
@@ -58,9 +57,11 @@ void main(){
 	// You probably want to put them as uniforms
 	vec3 LightColor = vec3(1,1,1);
 	float LightPower = 1.0f;
-	const float Ambient = 0.25; 
+	float specular = 0.5;
+	float diffuse = 1.0;
+	float ambient = 0.25;
 	// Material properties
-	vec3 MaterialDiffuseColor = texture2D(myTextureSampler, UV).rgb + MaterialColor;
+	vec3 MaterialDiffuseColor = texture2D(myTextureSampler, UV).rgb + MaterialColorShininess.rgb;
 
 	// Vector that goes from the vertex to the camera, in world space.
 	vec3 EyeDirection_worldSpace = CameraPos - Position_worldspace;
@@ -110,11 +111,11 @@ void main(){
 	//}
 	
 	//just directional light
-	float Metallic = MaterialProperties.x;
-	float Diffuse = MaterialProperties.y * cosTheta;
-	float Specular = MaterialProperties.z * pow(cosAlpha, MaterialProperties.w);
+	float Metallic = 1.0;
+	float Diffuse = diffuse * cosTheta;
+	float Specular = specular * pow(cosAlpha, MaterialColorShininess.w);
 	//vec3 SpecularColor = mix(MaterialDiffuseColor, vec3(1.0), MaterialProperties.x);
-	vec3 SpecularColor = mix(vec3(1.0), MaterialDiffuseColor, Metallic); //roughness parameter and reflection map will help with black metallic objects 
+	vec3 SpecularColor = mix(LightColor, MaterialDiffuseColor, Metallic); //roughness parameter and reflection map will help with black metallic objects 
 
-	color = LightColor * LightPower * (vec3(0.0, 0.2, 0.2) * shadowMapColor + vec3(0.0, 0.2, 0.0) * shadowFadeFactor + MaterialDiffuseColor * Ambient + (MaterialDiffuseColor * Diffuse + SpecularColor * Specular) * visibility);
+	color = LightColor * LightPower * (vec3(0.0, 0.2, 0.2) * shadowMapColor + vec3(0.0, 0.2, 0.0) * shadowFadeFactor + MaterialDiffuseColor * ambient + (MaterialDiffuseColor * Diffuse + SpecularColor * Specular) * visibility);
 }

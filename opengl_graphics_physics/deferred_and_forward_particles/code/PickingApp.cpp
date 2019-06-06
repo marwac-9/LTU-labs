@@ -367,13 +367,11 @@ namespace Picking
 			if(lastPickedObject != nullptr) //reset previously picked object color
 			{
 				lastPickedObject->mat->color = Vector3F(0.f, 0.f, 0.f);
-				lastPickedObject->mat->SetDiffuseIntensity(1.f);
 			}  
 			if(Scene::Instance()->pickingList.find(pickedID) != Scene::Instance()->pickingList.end())
 			{
 				lastPickedObject = Scene::Instance()->pickingList[pickedID];
 				lastPickedObject->mat->color = Vector3F(0.5f, 0.25f, 0.f);
-				lastPickedObject->mat->SetDiffuseIntensity(3.f);
 				Vector3F world_position;
 				geometryBuffer->ReadPixelData((unsigned int)leftMouseX, this->windowHeight - (unsigned int)leftMouseY, 1, 1, GL_FLOAT, world_position.vect, worldPosTexture);
 				Vector3 dWorldPos = Vector3(world_position.x, world_position.y, world_position.z);
@@ -407,7 +405,7 @@ namespace Picking
 	PickingApp::DrawPicking()
 	{
 		GLenum DrawBuffers[] = { GL_COLOR_ATTACHMENT0 };
-		Render::Instance()->drawPicking(Scene::Instance()->pickingList, pickingBuffer, DrawBuffers, 1);
+		Render::Instance()->drawPicking(GraphicsStorage::shaderIDs["picking"], Scene::Instance()->pickingList, pickingBuffer, DrawBuffers, 1);
 	}
 
 	void
@@ -427,15 +425,12 @@ namespace Picking
 		Object* sphere = Scene::Instance()->addPhysicObject("sphere", Vector3(0.f, 3.f, 0.f));//automatically registered for collision detection and response
 		RigidBody* body = sphere->GetComponent<RigidBody>();
 		body->SetIsKinematic(true);
-		sphere->mat->specularIntensity = 4.f;
 		sphere->mat->shininess = 10.f;
 
 		Object* directionalLight = Scene::Instance()->addDirectionalLight();
-		directionalLight->mat->SetDiffuseIntensity(1.0f);
 
 		Object* plane = Scene::Instance()->addObject("cube", Vector3(0.f, -2.5f, 0.f));
 		plane->mat->SetShininess(30.f);
-		plane->mat->SetSpecularIntensity(30.f);
 		body = new RigidBody();
 		plane->AddComponent(body);
 		plane->node->SetScale(Vector3(25.f, 2.f, 25.f));
@@ -452,7 +447,6 @@ namespace Picking
 		DebugDraw::Instance()->Init(Scene::Instance()->addChild());
 
 		Object* directionalLight = Scene::Instance()->addDirectionalLight();
-		directionalLight->mat->SetDiffuseIntensity(1.0f);
 
 		for (int i = 0; i < 300; i++)
 		{
@@ -473,7 +467,6 @@ namespace Picking
 		Object* pointLight = Scene::Instance()->addPointLight(false, Vector3(0.f, 10.f, 0.f));
 		pointLight->node->SetScale(Vector3(20.f, 20.f, 20.f));
 		pointLight->mat->SetColor(Vector3F(1.f, 0.f, 0.f));
-		pointLight->mat->SetDiffuseIntensity(10.f);
 
 		ParticleSystem* pSystem = new ParticleSystem(100000, 1000);
 		pSystem->SetTexture(GraphicsStorage::textures[10]->handle);
@@ -493,7 +486,6 @@ namespace Picking
 		DebugDraw::Instance()->Init(Scene::Instance()->addChild());
 
 		Object* directionalLight = Scene::Instance()->addDirectionalLight();
-		directionalLight->mat->SetDiffuseIntensity(1.0f);
 
 		float rS = 1.f;
 		for (int i = 0; i < 500; i++)
@@ -562,13 +554,20 @@ namespace Picking
 	void PickingApp::DrawGeometryPass()
 	{
 		GLenum DrawBuffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3 };
-		objectsRendered = Render::Instance()->drawGeometry(Scene::Instance()->renderList, geometryBuffer, DrawBuffers, 4);
+		objectsRendered = Render::Instance()->drawGeometry(GraphicsStorage::shaderIDs["geometry"], Scene::Instance()->renderList, geometryBuffer, DrawBuffers, 4);
 	}
 
 	void PickingApp::DrawLightPass()
 	{
+		GLuint pointLightShader = GraphicsStorage::shaderIDs["pointLight"];
+		GLuint pointLightShadowShader = GraphicsStorage::shaderIDs["pointLightShadow"];
+		GLuint spotLightShader = GraphicsStorage::shaderIDs["spotLight"];
+		GLuint spotLightShadowShader = GraphicsStorage::shaderIDs["spotLightShadow"];
+		GLuint directionalLightShader = GraphicsStorage::shaderIDs["directionalLight"];
+		GLuint directionalLightShadowShader = GraphicsStorage::shaderIDs["directionalLightShadow"];
+
 		GLenum drawLightAttachments[] = { GL_COLOR_ATTACHMENT4 };
-		lightsRendered = Render::Instance()->drawLight(geometryBuffer, geometryBuffer, drawLightAttachments, 1);
+		lightsRendered = Render::Instance()->drawLight(pointLightShader, pointLightShadowShader, spotLightShader, spotLightShadowShader, directionalLightShader, directionalLightShadowShader, geometryBuffer, geometryBuffer, drawLightAttachments, 1);
 	}
 
 	void PickingApp::BlitToScreenPass()
@@ -601,7 +600,6 @@ namespace Picking
 			Object* pointLight = Scene::Instance()->addPointLight(false, Scene::Instance()->generateRandomIntervallVectorFlat(-20, 20, Scene::y), Scene::Instance()->generateRandomIntervallVectorCubic(0, 6000).toFloat() / 6000.f);
 			Object* sphere = Scene::Instance()->addObject("sphere", pointLight->node->GetLocalPosition());
 			sphere->node->SetScale(Vector3(0.1f, 0.1f, 0.1f));
-			sphere->mat->diffuseIntensity = 2.f;
 			sphere->mat->shininess = 10.f;
 		}
 	}
@@ -655,7 +653,7 @@ namespace Picking
 
 	void PickingApp::DrawGeometryMaps(int width, int height)
 	{
-		ShaderManager::Instance()->SetCurrentShader(GraphicsStorage::shaderIDs["depthPanel"]);
+		GLuint depthPanelShader = GraphicsStorage::shaderIDs["depthPanel"];
 
 		float fHeight = (float)height;
 		float fWidth = (float)width;
@@ -663,9 +661,9 @@ namespace Picking
 		int glWidth = (int)(fWidth *0.1f);
 		int glHeight = (int)(fHeight*0.1f);
 
-		Render::Instance()->drawRegion(0, y, glWidth, glHeight, worldPosTexture);
-		Render::Instance()->drawRegion(0, 0, glWidth, glHeight, diffuseTexture);
-		Render::Instance()->drawRegion(glWidth, 0, glWidth, glHeight, normalTexture);
+		Render::Instance()->drawRegion(depthPanelShader, 0, y, glWidth, glHeight, worldPosTexture);
+		Render::Instance()->drawRegion(depthPanelShader, 0, 0, glWidth, glHeight, diffuseTexture);
+		Render::Instance()->drawRegion(depthPanelShader, glWidth, 0, glWidth, glHeight, normalTexture);
 	}
 
 

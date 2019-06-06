@@ -457,7 +457,7 @@ namespace SimpleWater
 	SimpleWaterApp::DrawSkybox()
 	{
 		Vector4F plane = Vector4F(0.f, 1.f, 0.f, 100000.146f);
-		Render::Instance()->drawSkyboxWithClipPlane(postFrameBuffer, GraphicsStorage::cubemaps[0], plane, currentCamera->ViewMatrix);
+		Render::Instance()->drawSkyboxWithClipPlane(GraphicsStorage::shaderIDs["skyboxWithClipPlane"], postFrameBuffer, GraphicsStorage::cubemaps[0], plane, currentCamera->ViewMatrix);
 	}
 
 	void
@@ -491,7 +491,7 @@ namespace SimpleWater
 		glUniform1f(diffuseIntensity, light_diffuseIntensity);
 		glUniform1f(ambientIntensity, light_ambientIntensity);
 
-		objectsRendered = Render::Instance()->draw(Scene::Instance()->renderList, CameraManager::Instance()->ViewProjection, currentShaderID);
+		objectsRendered = Render::Instance()->draw(currentShaderID, Scene::Instance()->renderList, CameraManager::Instance()->ViewProjection);
 	}
 
 	void
@@ -517,7 +517,7 @@ namespace SimpleWater
 		
 		Vector4F plane = Vector4F(0.0, 1.0, 0.0, 0.f); //plane normal and height
 
-		Render::Instance()->drawSkyboxWithClipPlane(frameBuffer, GraphicsStorage::cubemaps[0], plane, View);
+		Render::Instance()->drawSkyboxWithClipPlane(GraphicsStorage::shaderIDs["skyboxWithClipPlane"], frameBuffer, GraphicsStorage::cubemaps[0], plane, View);
 
 		GLuint currentShaderID = GraphicsStorage::shaderIDs["forwardRefRaf"];
 		ShaderManager::Instance()->SetCurrentShader(currentShaderID);
@@ -551,7 +551,7 @@ namespace SimpleWater
 
 		FrustumManager::Instance()->ExtractPlanes(ViewProjection); //we do frustum culling against reflected frustum planes
 
-		Render::Instance()->draw(Scene::Instance()->renderList, ViewProjection, currentShaderID);
+		Render::Instance()->draw(currentShaderID, Scene::Instance()->renderList, ViewProjection);
 
 		glCullFace(GL_BACK);
 	}
@@ -575,7 +575,7 @@ namespace SimpleWater
 
 		FrustumManager::Instance()->ExtractPlanes(CameraManager::Instance()->ViewProjection);
 
-		Render::Instance()->draw(Scene::Instance()->renderList, CameraManager::Instance()->ViewProjection, currentShaderID);
+		Render::Instance()->draw(currentShaderID, Scene::Instance()->renderList, CameraManager::Instance()->ViewProjection);
 
 		glDisable(GL_CLIP_PLANE0);
 	}
@@ -696,13 +696,13 @@ namespace SimpleWater
 	void
 	SimpleWaterApp::DrawHDR(Texture* blurredBrightLightTexture)
 	{
-		Render::Instance()->drawHDR(hdrTexture, blurredBrightLightTexture);
+		Render::Instance()->drawHDR(GraphicsStorage::shaderIDs["hdrBloom"], hdrTexture, blurredBrightLightTexture);
 	}
 
 	void
 	SimpleWaterApp::DrawTextures(int width, int height)
 	{
-		ShaderManager::Instance()->SetCurrentShader(GraphicsStorage::shaderIDs["quadToScreen"]);
+		GLuint quadToScreen = GraphicsStorage::shaderIDs["quadToScreen"];
 
 		float fHeight = (float)height;
 		float fWidth = (float)width;
@@ -710,10 +710,10 @@ namespace SimpleWater
 		int glWidth = (int)(fWidth *0.1f);
 		int glHeight = (int)(fHeight*0.1f);
 
-		Render::Instance()->drawRegion(0, 0, glWidth, glHeight, reflectionBufferTexture);
-		Render::Instance()->drawRegion(width - glWidth, 0, glWidth, glHeight, underWaterBufferTexture);
-		Render::Instance()->drawRegion(width - glWidth, height - glHeight, glWidth, glHeight, blurredBrightTexture);
-		Render::Instance()->drawRegion(0, height - glHeight, glWidth, glHeight, hdrTexture);
+		Render::Instance()->drawRegion(quadToScreen, 0, 0, glWidth, glHeight, reflectionBufferTexture);
+		Render::Instance()->drawRegion(quadToScreen, width - glWidth, 0, glWidth, glHeight, underWaterBufferTexture);
+		Render::Instance()->drawRegion(quadToScreen, width - glWidth, height - glHeight, glWidth, glHeight, blurredBrightTexture);
+		Render::Instance()->drawRegion(quadToScreen, 0, height - glHeight, glWidth, glHeight, hdrTexture);
 	}
 
 	Vao* SimpleWaterApp::GenerateWaterMesh(int width, int height)

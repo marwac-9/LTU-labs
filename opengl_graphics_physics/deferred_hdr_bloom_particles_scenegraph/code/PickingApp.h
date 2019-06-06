@@ -22,6 +22,7 @@ class DirectionalLight;
 class SpotLight;
 class PointLight;
 class InstanceSystem;
+class RenderPass;
 
 enum loadedScene
 {
@@ -208,5 +209,6 @@ namespace Picking
 		Texture* envCubeMap;
 		Texture* brdfTexture;
 		std::vector<Texture*> pbrEnvTextures;
+		RenderPass* geometryPass;
 	};
 } // namespace Example

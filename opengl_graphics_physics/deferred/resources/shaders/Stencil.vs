@@ -5,6 +5,7 @@ layout(location = 0) in vec3 vertexPosition_modelspace;
 
 layout(std140, binding = 1) uniform LBVars
 {
+	mat4 depthBiasMVP;
 	vec3 lightInvDir;
 	float shadowTransitionSize;
 	float outerCutOff;
@@ -13,7 +14,8 @@ layout(std140, binding = 1) uniform LBVars
 	float lightPower;
 	vec3 lightColor;
 	float ambient;
-	mat4 depthBiasMVP;
+	float diffuse;
+	float specular;
 	mat4 MVP;
 	vec3 lightPosition;
 	float constant;

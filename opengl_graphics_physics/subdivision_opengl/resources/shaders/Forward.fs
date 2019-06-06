@@ -12,10 +12,9 @@ layout(location = 0) out vec3 color;
 
 // Values that stay constant for the whole mesh.
 uniform sampler2D myTextureSampler;
-uniform mat4 MV;
 uniform vec3 LightPosition_worldspace;
-uniform vec4 MaterialProperties;
-uniform vec3 MaterialColor;
+uniform vec4 MaterialColorShininess;
+
 
 void main(){
 
@@ -23,9 +22,12 @@ void main(){
 	// You probably want to put them as uniforms
 	vec3 LightColor = vec3(1,1,1);
 	float LightPower = 1.f;
-	
+	float specular = 0.5;
+	float diffuse = 1.0;
+	float ambient = 0.25;
+
 	// Material properties
-	vec3 MaterialDiffuseColor = texture2D( myTextureSampler, UV ).rgb + MaterialColor;
+	vec3 MaterialDiffuseColor = texture2D( myTextureSampler, UV ).rgb + MaterialColorShininess.rgb;
 	// Distance to the light
 	float distance = length( LightPosition_worldspace - Position_worldspace );
 
@@ -50,9 +52,9 @@ void main(){
 	//  - Looking elsewhere -> < 1
 	float cosAlpha = clamp( dot( E,R ), 0,1 );
 	
-	float Ambient = MaterialProperties.x;
-	float Diffuse = MaterialProperties.y * cosTheta;
-	float SpecularColor = MaterialProperties.z * pow(cosAlpha, MaterialProperties.w);
+	float Ambient = ambient;
+	float Diffuse = diffuse * cosTheta;
+	float SpecularColor = specular * pow(cosAlpha, MaterialColorShininess.w);
 
 	//1 directional, 1 point
 	float totalLight = (Ambient + Diffuse + SpecularColor) + (Ambient + Diffuse + SpecularColor) / (distance*distance);

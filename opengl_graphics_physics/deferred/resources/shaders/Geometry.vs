@@ -8,18 +8,11 @@ layout(location = 4) in vec3 BiTangent;
 
 layout(std140, binding = 0) uniform GBVars
 {
-	mat4 MVP;					//16		0
-								//16		16
-								//16		32
-								//16		48
-	mat4 M;						//16		64
-								//16		80
-								//16		96
-								//16		112
-	vec4 MaterialProperties;	//16		0
-	vec3 MaterialColor;			//16		16
-	vec2 tiling;				//8			32
-	uint objectID;				//4			40 44
+	mat4 MVP;
+	mat4 M;
+	vec4 MaterialColorShininess;
+	vec2 tiling;
+	uint objectID;
 };
 
 out vec2 TexCoord0;

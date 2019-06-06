@@ -4,7 +4,7 @@
 #include "app.h"
 #include "gl_window.h"
 #include "MyMathLib.h"
-#include "Attenuation.h"
+#include "LightProperties.h"
 
 class BoundingBox;
 class Object;
@@ -98,6 +98,9 @@ namespace Picking
 		float spotLightOuterCutOff = 17.5f;
 		float spotLightRadius = 30.f;
 		Attenuation spotLightAttenuation;
+		float light_specularIntensity = 0.5;
+		float light_diffuseIntensity = 1.0;
+		float light_ambientIntensity = 0.03;
 
 		Camera* currentCamera;
         Object* lastPickedObject = nullptr;

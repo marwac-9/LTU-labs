@@ -448,13 +448,20 @@ namespace Picking
 		GLuint attenauationExponential = glGetUniformLocation(currentShaderID, "spotAttenuation.exponential");
 		glUniform1f(attenauationExponential, spotLightAttenuation.Exponential);
 
-		objectsRendered = Render::Instance()->draw(Scene::Instance()->renderList, CameraManager::Instance()->ViewProjection, currentShaderID);
+		GLuint specularIntensity = glGetUniformLocation(currentShaderID, "specular");
+		GLuint diffuseIntensity = glGetUniformLocation(currentShaderID, "diffuse");
+		GLuint ambientIntensity = glGetUniformLocation(currentShaderID, "ambient");
+		glUniform1f(specularIntensity, light_specularIntensity);
+		glUniform1f(diffuseIntensity, light_diffuseIntensity);
+		glUniform1f(ambientIntensity, light_ambientIntensity);
+
+		objectsRendered = Render::Instance()->draw(currentShaderID, Scene::Instance()->renderList, CameraManager::Instance()->ViewProjection);
     }
 
 	void
 	PickingApp::DrawPicking()
 	{
-		Render::Instance()->drawPicking(Scene::Instance()->pickingList, pickingBuffer);
+		Render::Instance()->drawPicking(GraphicsStorage::shaderIDs["picking"], Scene::Instance()->pickingList, pickingBuffer);
 	}
 
 	void
@@ -471,7 +478,6 @@ namespace Picking
 
 		Object* plane = Scene::Instance()->addObject("fatplane", Vector3(0.f, -1.5f, 0.f));
 		plane->mat->SetShininess(30.f);
-		plane->mat->SetSpecularIntensity(2.f);
 		RigidBody* body = new RigidBody();
 		plane->AddComponent(body);
 		//plane->SetScale(Vector3(25.f, 2.f, 25.f));
@@ -480,7 +486,6 @@ namespace Picking
 		
 		Object* plank = Scene::Instance()->addPhysicObject("cube", plane->node->GetLocalPosition() + Vector3(0.f, 5.f, 0.f));
 		plank->mat->SetShininess(30.f);
-		plank->mat->SetSpecularIntensity(20.f);
 		plank->node->SetScale(Vector3(3.f, 0.5f, 3.f));
 		Object* cube = Scene::Instance()->addPhysicObject("cube", plane->node->GetLocalPosition() + Vector3(0.f, 2.f, 0.f));
 		body = cube->GetComponent<RigidBody>();
@@ -488,7 +493,6 @@ namespace Picking
 		
 		Object * sphere = Scene::Instance()->addObject("sphere", plane->node->GetLocalPosition() + Vector3(5.f, 2.f, 5.f));
 		sphere->mat->SetShininess(30.f);
-		sphere->mat->SetSpecularIntensity(2.f);
 
 		spotLightObject = Scene::Instance()->addObject("cube", plane->node->GetLocalPosition() + Vector3(0.f, 2.f, 0.f));
 		directionalLightObject = Scene::Instance()->addObject("cube", plane->node->GetLocalPosition() + Vector3(0.f, 5.f, 0.f));

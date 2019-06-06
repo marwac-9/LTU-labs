@@ -30,7 +30,7 @@
 #include "BoundingBox.h"
 #include "ImGuiWrapper.h"
 #include <imgui.h>
-
+#include "DirectionalLight.h"
 using namespace mwm;
 using namespace Display;
 namespace Picking
@@ -355,16 +355,13 @@ namespace Picking
 		ImGui::Begin("Properties", NULL, ImGuiWindowFlags_AlwaysAutoResize);
 		
 		ImGui::NewLine();
-		if (directionalLightObject != nullptr)
+		if (dirLightComp != nullptr)
 		{
-			ImGui::SliderFloat("DirDif", &directionalLightObject->mat->diffuseIntensity, 0.f, 100.f);
-			ImGui::SliderFloat("DirSpec", &directionalLightObject->mat->specularIntensity, 0.f, 100.f);
-			ImGui::SliderFloat("DirShi", &directionalLightObject->mat->shininess, 0.f, 100.f);
+			ImGui::SliderFloat("DirDif", &dirLightComp->properties.diffuse, 0.f, 100.f);
+			ImGui::SliderFloat("DirSpec", &dirLightComp->properties.specular, 0.f, 100.f);
 		}
 		if (planeObject != nullptr)
 		{
-			ImGui::SliderFloat("PlaneDif", &planeObject->mat->diffuseIntensity, 0.f, 100.f);
-			ImGui::SliderFloat("PlaneSpec", &planeObject->mat->specularIntensity, 0.f, 100.f);
 			ImGui::SliderFloat("PlaneShi", &planeObject->mat->shininess, 0.f, 100.f);
 		}
 
@@ -400,13 +397,12 @@ namespace Picking
 			if(lastPickedObject != nullptr) //reset previously picked object color
 			{
 				lastPickedObject->mat->color = Vector3F(0.f, 0.f, 0.f);
-				lastPickedObject->mat->SetDiffuseIntensity(1.f);
+
 			}
 			if(Scene::Instance()->pickingList.find(pickedID) != Scene::Instance()->pickingList.end())
 			{
 				lastPickedObject = Scene::Instance()->pickingList[pickedID];
 				lastPickedObject->mat->color = Vector3F(0.5f, 0.25f, 0.f);
-				lastPickedObject->mat->SetDiffuseIntensity(3.f);
 				Vector3F world_position;
 				geometryBuffer->ReadPixelData((unsigned int)leftMouseX, this->windowHeight - (unsigned int)leftMouseY, 1, 1, GL_FLOAT, world_position.vect, worldPosTexture);
 				Vector3 dWorldPos = Vector3(world_position.x, world_position.y, world_position.z);
@@ -439,7 +435,7 @@ namespace Picking
 	PickingApp::DrawPicking()
 	{
 		GLenum DrawBuffers[] = { GL_COLOR_ATTACHMENT0 };
-		Render::Instance()->drawPicking(Scene::Instance()->pickingList, pickingBuffer, DrawBuffers, 1);
+		Render::Instance()->drawPicking(GraphicsStorage::shaderIDs["picking"], Scene::Instance()->pickingList, pickingBuffer, DrawBuffers, 1);
 	}
 
 	void
@@ -460,19 +456,15 @@ namespace Picking
 		Object* sphere = Scene::Instance()->addPhysicObject("sphere", Vector3(0.f, 3.f, 0.f));//automatically registered for collision detection and response
 		RigidBody* body = sphere->GetComponent<RigidBody>();
 		body->SetIsKinematic(true);
-		sphere->mat->specularIntensity = 4.f;
 		sphere->mat->shininess = 10.f;
 
 		Object* directionalLight = Scene::Instance()->addDirectionalLight();
 		//directionalLight->mat->SetDiffuseIntensity(0.1f);
-		directionalLight->mat->SetSpecularIntensity(0.1f);
-		directionalLight->mat->SetShininess(1.0f);
 		directionalLightObject = directionalLight;
 
 		Object* plane = Scene::Instance()->addObject("cube", Vector3(0.f, -2.5f, 0.f));
 		planeObject = plane;
 		plane->mat->SetShininess(12.f);
-		plane->mat->SetSpecularIntensity(3.f);
 		//plane->mat->tileX = 2;
 		//plane->mat->tileY = 2;
 		body = new RigidBody();
@@ -491,7 +483,6 @@ namespace Picking
 		DebugDraw::Instance()->Init(Scene::Instance()->addChild());
 
 		Object* directionalLight = Scene::Instance()->addDirectionalLight();
-		directionalLight->mat->SetDiffuseIntensity(0.5f);
 
 		for (int i = 0; i < 300; i++)
 		{
@@ -518,7 +509,6 @@ namespace Picking
 		DebugDraw::Instance()->Init(Scene::Instance()->addChild());
 
 		Object* directionalLight = Scene::Instance()->addDirectionalLight();
-		directionalLight->mat->SetDiffuseIntensity(0.5f);
 
 		float rS = 1.f;
 		for (int i = 0; i < 500; i++)
@@ -542,6 +532,7 @@ namespace Picking
 		DebugDraw::Instance()->Clear();
 		lastPickedObject = nullptr;
 		directionalLightObject = nullptr;
+		dirLightComp = nullptr;
 		planeObject = nullptr;
 	}
 
@@ -568,13 +559,20 @@ namespace Picking
 	void PickingApp::DrawGeometryPass()
 	{
 		GLenum DrawBuffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3 };
-		objectsRendered = Render::Instance()->drawGeometry(Scene::Instance()->renderList, geometryBuffer, DrawBuffers, 4);
+		objectsRendered = Render::Instance()->drawGeometry(GraphicsStorage::shaderIDs["geometry"], Scene::Instance()->renderList, geometryBuffer, DrawBuffers, 4);
 	}
 
 	void PickingApp::DrawLightPass()
 	{
+		GLuint pointLightShader = GraphicsStorage::shaderIDs["pointLight"];
+		GLuint pointLightShadowShader = GraphicsStorage::shaderIDs["pointLightShadow"];
+		GLuint spotLightShader = GraphicsStorage::shaderIDs["spotLight"];
+		GLuint spotLightShadowShader = GraphicsStorage::shaderIDs["spotLightShadow"];
+		GLuint directionalLightShader = GraphicsStorage::shaderIDs["directionalLight"];
+		GLuint directionalLightShadowShader = GraphicsStorage::shaderIDs["directionalLightShadow"];
+
 		GLenum drawLightAttachments[] = { GL_COLOR_ATTACHMENT4 };
-		lightsRendered = Render::Instance()->drawLight(geometryBuffer, geometryBuffer, drawLightAttachments, 1);
+		lightsRendered = Render::Instance()->drawLight(pointLightShader, pointLightShadowShader, spotLightShader, spotLightShadowShader, directionalLightShader, directionalLightShadowShader, geometryBuffer, geometryBuffer, drawLightAttachments, 1);
 	}
 
 	void PickingApp::BlitToScreenPass()
@@ -600,7 +598,7 @@ namespace Picking
 
 	void PickingApp::DrawGeometryMaps(int width, int height)
 	{
-		ShaderManager::Instance()->SetCurrentShader(GraphicsStorage::shaderIDs["depthPanel"]);
+		GLuint depthPanelShader = GraphicsStorage::shaderIDs["depthPanel"];
 
 		float fHeight = (float)height;
 		float fWidth = (float)width;
@@ -608,9 +606,10 @@ namespace Picking
 		int glWidth = (int)(fWidth *0.1f);
 		int glHeight = (int)(fHeight*0.1f);
 
-		Render::Instance()->drawRegion(0, y, glWidth, glHeight, worldPosTexture);
-		Render::Instance()->drawRegion(0, 0, glWidth, glHeight, diffuseTexture);
-		Render::Instance()->drawRegion(glWidth, 0, glWidth, glHeight, normalTexture);
+		Render::Instance()->drawRegion(depthPanelShader, 0, y, glWidth, glHeight, worldPosTexture);
+		Render::Instance()->drawRegion(depthPanelShader, 0, 0, glWidth, glHeight, diffuseTexture);
+		Render::Instance()->drawRegion(depthPanelShader, glWidth, 0, glWidth, glHeight, normalTexture);
+		Render::Instance()->drawRegion(depthPanelShader, glWidth, y, glWidth, glHeight, finalColorTexture);
 	}
 
 	void PickingApp::SpawnSomeLights()
@@ -620,7 +619,6 @@ namespace Picking
 			Object* pointLight = Scene::Instance()->addPointLight(false, Scene::Instance()->generateRandomIntervallVectorFlat(-20, 20, Scene::y), Scene::Instance()->generateRandomIntervallVectorCubic(0, 6000).toFloat() / 6000.f);
 			Object* sphere = Scene::Instance()->addObject("sphere", pointLight->node->GetLocalPosition());
 			sphere->node->SetScale(Vector3(0.1f, 0.1f, 0.1f));
-			sphere->mat->diffuseIntensity = 2.f;
 			sphere->mat->shininess = 10.f;
 		}
 	}
@@ -652,7 +650,7 @@ namespace Picking
 		diffuseTexture = geometryBuffer->RegisterTexture(new Texture(GL_TEXTURE_2D, 0, GL_RGB, windowWidthIn, windowHeightIn, GL_RGB, GL_FLOAT, NULL, GL_COLOR_ATTACHMENT1)); //diffuse
 		normalTexture = geometryBuffer->RegisterTexture(new Texture(GL_TEXTURE_2D, 0, GL_RGB32F, windowWidthIn, windowHeightIn, GL_RGB, GL_FLOAT, NULL, GL_COLOR_ATTACHMENT2)); //normal
 		Texture* materialPropertiesTexture = geometryBuffer->RegisterTexture(new Texture(GL_TEXTURE_2D, 0, GL_RGBA32F, windowWidthIn, windowHeightIn, GL_RGBA, GL_FLOAT, NULL, GL_COLOR_ATTACHMENT3)); //metDiffIntShinSpecInt
-		geometryBuffer->RegisterTexture(new Texture(GL_TEXTURE_2D, 0, GL_RGB32F, windowWidthIn, windowHeightIn, GL_RGB, GL_FLOAT, NULL, GL_COLOR_ATTACHMENT4)); //final color
+		finalColorTexture = geometryBuffer->RegisterTexture(new Texture(GL_TEXTURE_2D, 0, GL_RGB32F, windowWidthIn, windowHeightIn, GL_RGB, GL_FLOAT, NULL, GL_COLOR_ATTACHMENT4)); //final color
 		Texture* depthTexture = geometryBuffer->RegisterTexture(new Texture(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, windowWidthIn, windowHeightIn, GL_DEPTH_COMPONENT, GL_FLOAT, NULL, GL_DEPTH_STENCIL_ATTACHMENT)); //depth
 		geometryBuffer->AddDefaultTextureParameters();
 		geometryBuffer->GenerateAndAddTextures();
@@ -660,7 +658,7 @@ namespace Picking
 
 		diffuseTexture = diffuseTexture;
 		normalTexture = normalTexture;
-		metDiffIntShinSpecIntTexture = materialPropertiesTexture;
+		ORMSTexture = materialPropertiesTexture;
 		
 		pickingBuffer = FBOManager::Instance()->GenerateFBO();
 		pickingTexture = pickingBuffer->RegisterTexture(new Texture(GL_TEXTURE_2D, 0, GL_R32UI, windowWidthIn, windowHeightIn, GL_RED_INTEGER, GL_UNSIGNED_INT, NULL, GL_COLOR_ATTACHMENT0)); //picking

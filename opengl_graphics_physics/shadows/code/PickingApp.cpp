@@ -471,23 +471,19 @@ namespace Picking
     void
 	PickingApp::Draw()
     {
-		GLuint currentShaderID = ShaderManager::Instance()->GetCurrentShaderID();
-		objectsRendered = Render::Instance()->draw(Scene::Instance()->renderList, CameraManager::Instance()->ViewProjection, currentShaderID);
+		objectsRendered = Render::Instance()->draw(ShaderManager::Instance()->GetCurrentShaderID(), Scene::Instance()->renderList, CameraManager::Instance()->ViewProjection);
     }
 
 	void
 	PickingApp::DrawPicking()
 	{
-		Render::Instance()->drawPicking(Scene::Instance()->pickingList, frameBuffer);
+		Render::Instance()->drawPicking(GraphicsStorage::shaderIDs["picking"], Scene::Instance()->pickingList, frameBuffer);
 	}
 
 	void
 	PickingApp::DrawDepth(const Matrix4& ViewProjection)
 	{
-		GLuint currentShaderID = GraphicsStorage::shaderIDs["depth"];
-		ShaderManager::Instance()->SetCurrentShader(currentShaderID);
-
-		Render::Instance()->drawDepth(Scene::Instance()->renderList, ViewProjection, currentShaderID);
+		Render::Instance()->drawDepth(GraphicsStorage::shaderIDs["depth"], Scene::Instance()->renderList, ViewProjection);
 	}
 
 	void
@@ -506,7 +502,6 @@ namespace Picking
 		RigidBody* body = plane->GetComponent<RigidBody>();
 		plane->node->SetScale(Vector3(200.f, 1.f, 200.f));
 		body->SetIsKinematic(true);
-		plane->mat->SetSpecularIntensity(1.f);
 
 		Object* plank = Scene::Instance()->addPhysicObject("cube", plane->node->GetLocalPosition() + Vector3(0.f, 10.f, 0.f));
 		plank->node->SetScale(Vector3(3.f, 0.5f, 1.f));
@@ -515,31 +510,26 @@ namespace Picking
 		body->SetIsKinematic(true);
 
 		Object* sphere = Scene::Instance()->addPhysicObject("sphere", plane->node->GetLocalPosition() + Vector3(0.f, 10.f, 30.f));
-		sphere->mat->SetSpecularIntensity(1.f);
 		sphere->node->SetScale(Vector3(10.f, 10.f, 10.f));
 		body = sphere->GetComponent<RigidBody>();
 		body->SetIsKinematic(true);
 
 		sphere = Scene::Instance()->addPhysicObject("sphere", plane->node->GetLocalPosition() + Vector3(60.f, 10.f, 60.f));
-		sphere->mat->SetSpecularIntensity(1.f);
 		sphere->node->SetScale(Vector3(10.f, 10.f, 10.f));
 		body = sphere->GetComponent<RigidBody>();
 		body->SetIsKinematic(true);
 
 		sphere = Scene::Instance()->addPhysicObject("sphere", plane->node->GetLocalPosition() + Vector3(100.f, 10.f, 0.f));
-		sphere->mat->SetSpecularIntensity(1.f);
 		sphere->node->SetScale(Vector3(10.f, 10.f, 10.f));
 		body = sphere->GetComponent<RigidBody>();
 		body->SetIsKinematic(true);
 
 		sphere = Scene::Instance()->addPhysicObject("sphere", plane->node->GetLocalPosition() + Vector3(150.f, 10.f, 0.f));
-		sphere->mat->SetSpecularIntensity(1.f);
 		sphere->node->SetScale(Vector3(10.f, 10.f, 10.f));
 		body = sphere->GetComponent<RigidBody>();
 		body->SetIsKinematic(true);
 
 		sphere = Scene::Instance()->addPhysicObject("sphere", plane->node->GetLocalPosition() + Vector3(200.f, 10.f, 0.f));
-		sphere->mat->SetSpecularIntensity(1.f);
 		sphere->node->SetScale(Vector3(10.f, 10.f, 10.f));
 		body = sphere->GetComponent<RigidBody>();
 		body->SetIsKinematic(true);
@@ -638,7 +628,6 @@ namespace Picking
 			double len = pos.vectLengt();
 			Object* sphere = Scene::Instance()->addObject("icosphere", pos);
 			sphere->mat->SetShininess(20.f);
-			sphere->mat->SetSpecularIntensity(3.f);
 
 			for (int j = 0; j < 3; j++)
 			{
@@ -646,14 +635,12 @@ namespace Picking
 				double childLen = childPos.vectLengt();
 				Object* child = Scene::Instance()->addObjectTo(sphere, "icosphere", childPos);
 				child->mat->SetShininess(20.f);
-				child->mat->SetSpecularIntensity(3.f);
 
 				for (int k = 0; k < 5; k++)
 				{
 					Vector3 childOfChildPos = Scene::Instance()->generateRandomIntervallVectorCubic((int)-childLen, (int)childLen) / 2.f;
 					Object* childOfChild = Scene::Instance()->addObjectTo(child, "sphere", childOfChildPos);
 					childOfChild->mat->SetShininess(20.f);
-					childOfChild->mat->SetSpecularIntensity(3.f);
 				}
 			}
 		}
@@ -752,7 +739,7 @@ namespace Picking
 	void
 	PickingApp::DrawMaps(int width, int height)
 	{
-		ShaderManager::Instance()->SetCurrentShader(GraphicsStorage::shaderIDs["depthPanel"]);
+		GLuint depthPanelShader = GraphicsStorage::shaderIDs["depthPanel"];
 
 		float fHeight = (float)height;
 		float fWidth = (float)width;
@@ -760,7 +747,7 @@ namespace Picking
 		int glWidth = (int)(fWidth *0.1f);
 		int glHeight = (int)(fHeight*0.1f);
 
-		if (blurShadowMap) Render::Instance()->drawRegion(0, 0, glWidth, glHeight, blurredShadowTexture);
-		else Render::Instance()->drawRegion(0, 0, glWidth, glHeight, shadowTexture);
+		if (blurShadowMap) Render::Instance()->drawRegion(depthPanelShader,0, 0, glWidth, glHeight, blurredShadowTexture);
+		else Render::Instance()->drawRegion(depthPanelShader, 0, 0, glWidth, glHeight, shadowTexture);
 	}
 } // namespace Example
