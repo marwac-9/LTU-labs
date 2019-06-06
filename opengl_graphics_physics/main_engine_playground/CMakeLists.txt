@@ -1,13 +1,13 @@
 #--------------------------------------------------------------------------
-# physics project
+# main_engine_playground project
 #--------------------------------------------------------------------------
 
-PROJECT(physics)
-INCLUDE_DIRECTORIES("code/Managers") #helps access files without any ..\ when including files
+PROJECT(main_engine_playground)
+#INCLUDE_DIRECTORIES("code/Managers") #helps access files without any ..\ when including files
 INCLUDE_DIRECTORIES("code/")
 
 FILE(GLOB SRC "code/*.h")
-FILE(GLOB HEAD "code/*.cpp")	
+FILE(GLOB HEAD "code/*.cpp")
 LIST(APPEND SRCSBASE ${SRC} ${HEAD})
 SOURCE_GROUP("code" FILES ${SRCSBASE})
 
@@ -19,6 +19,7 @@ SOURCE_GROUP("${PROJECT_NAME}\\Managers" FILES ${SRCSMANAGERS})
 FILE(GLOB SRCVS "resources/shaders/*.vs")
 FILE(GLOB SRCFS "resources/shaders/*.fs")
 FILE(GLOB SRCGS "resources/shaders/*.gs")
+FILE(GLOB SRCGS "resources/shaders/*.ubo")
 LIST(APPEND SRCSSHADERS ${SRCVS} ${SRCFS} ${SRCGS} )
 SOURCE_GROUP("shaders" FILES ${SRCSSHADERS})
 
@@ -28,7 +29,7 @@ ADD_EXECUTABLE(${PROJECT_NAME} ${ALLSRCS})
 
 SET_TARGET_PROPERTIES(${PROJECT_NAME} PROPERTIES FOLDER "LABS")
 SET_TARGET_PROPERTIES(${PROJECT_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-TARGET_LINK_LIBRARIES(${PROJECT_NAME} camera frustum shader_manager graphics_manager scene gl_window app camera_manager imgui_wrapper)
+TARGET_LINK_LIBRARIES(${PROJECT_NAME} camera frustum graphics_manager scene gl_windowd app particle camera_manager luajit lua_tools imgui_wrapper)
 
 if(MSVC)
     SET_TARGET_PROPERTIES(${PROJECT_NAME} PROPERTIES DEBUG_POSTFIX "_debug" RUNTIME_OUTPUT_DIRECTORY_DEBUG ${CMAKE_CURRENT_SOURCE_DIR})

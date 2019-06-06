@@ -182,7 +182,7 @@ namespace Picking
 	void
 		PickingApp::Run()
 	{
-		window->SetTitle("Deferred HDR Bloom Particles Scenegraph Uniform-Buffers");
+		window->SetTitle("Main Engine Playground");
 		stbi_flip_vertically_on_write(true);
 		InitGL();
 

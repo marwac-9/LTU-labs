@@ -1,35 +1,26 @@
 #--------------------------------------------------------------------------
-# deferred_hdr_bloom_particles_scenegraph project
+# luajit_playground project
 #--------------------------------------------------------------------------
 
-PROJECT(deferred_hdr_bloom_particles_scenegraph)
-#INCLUDE_DIRECTORIES("code/Managers") #helps access files without any ..\ when including files
+PROJECT(luajit_playground)
 INCLUDE_DIRECTORIES("code/")
 
 FILE(GLOB SRC "code/*.h")
-FILE(GLOB HEAD "code/*.cpp")
+FILE(GLOB HEAD "code/*.cpp")	
 LIST(APPEND SRCSBASE ${SRC} ${HEAD})
-SOURCE_GROUP("DeferredHDRBloomParticlesSceneGraph" FILES ${SRCSBASE})
+SOURCE_GROUP("code" FILES ${SRCSBASE})
 
-FILE(GLOB SRC "code/Managers/*.cpp")
-FILE(GLOB HEAD "code/Managers/*.h")
-LIST(APPEND SRCSMANAGERS ${SRC} ${HEAD})
-SOURCE_GROUP("DeferredHDRBloomParticlesSceneGraph\\Managers" FILES ${SRCSMANAGERS})
+FILE(GLOB SRC "resources/lua/*.lua")
+LIST(APPEND SRCSLUA ${SRC} )
+SOURCE_GROUP("lua" FILES ${SRCSLUA})
 
-FILE(GLOB SRCVS "resources/shaders/*.vs")
-FILE(GLOB SRCFS "resources/shaders/*.fs")
-FILE(GLOB SRCGS "resources/shaders/*.gs")
-FILE(GLOB SRCGS "resources/shaders/*.ubo")
-LIST(APPEND SRCSSHADERS ${SRCVS} ${SRCFS} ${SRCGS} )
-SOURCE_GROUP("DeferredHDRBloomParticlesSceneGraph\\shaders" FILES ${SRCSSHADERS})
-
-LIST(APPEND ALLSRCS ${SRCSBASE} ${SRCSMANAGERS} ${SRCSSHADERS})
+LIST(APPEND ALLSRCS ${SRCSBASE} ${SRCSLUA})
 
 ADD_EXECUTABLE(${PROJECT_NAME} ${ALLSRCS})
 
 SET_TARGET_PROPERTIES(${PROJECT_NAME} PROPERTIES FOLDER "LABS")
 SET_TARGET_PROPERTIES(${PROJECT_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-TARGET_LINK_LIBRARIES(${PROJECT_NAME} camera frustum graphics_manager scene gl_windowd app particle camera_manager luajit lua_tools imgui_wrapper)
+TARGET_LINK_LIBRARIES(${PROJECT_NAME} app luajit lua_tools)
 
 if(MSVC)
     SET_TARGET_PROPERTIES(${PROJECT_NAME} PROPERTIES DEBUG_POSTFIX "_debug" RUNTIME_OUTPUT_DIRECTORY_DEBUG ${CMAKE_CURRENT_SOURCE_DIR})
