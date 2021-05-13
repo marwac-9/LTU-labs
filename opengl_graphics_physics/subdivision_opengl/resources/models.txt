@@ -1,9 +1,0 @@
-Resources/models/pyramid.obj 0
-Resources/models/cube.obj 0
-Resources/models/sphere.obj 2
-Resources/models/icosahedron.obj 0
-Resources/models/octahedron.obj 0
-Resources/models/pentagonal_bipyramid.obj 0
-Resources/models/tetrahedron.obj 0
-Resources/models/triangular_bipyramid.obj 0
-Resources/models/tri_sphere1.obj 0

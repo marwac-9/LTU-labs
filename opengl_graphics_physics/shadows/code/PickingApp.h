@@ -33,7 +33,7 @@ namespace Picking
 		void Draw();
 		void DrawPicking();
 		void DrawDebug();
-		void DrawDepth(const mwm::Matrix4& ViewProjectionMatrix);
+		void DrawDepth(const Matrix4& ViewProjectionMatrix);
         void PickingTest();
 
 		void GenerateGUI();
@@ -76,7 +76,7 @@ namespace Picking
 		unsigned int pickedID = 0;
 
 		bool scene4loaded = false;
-		mwm::Vector3F lightInvDir = mwm::Vector3F(-1.f, 1.f, 1.f);
+		Vector3F lightInvDir = Vector3F(-1.f, 1.f, 1.f);
 		float xAngle = 108.f;
 		float yAngle = 168.f;
 		float orthoSize = 150.f;
@@ -91,9 +91,9 @@ namespace Picking
 
 		Object* directionalLightObject;
 
-		mwm::Matrix4F biasedDirLightViewProjection;
+		Matrix4F biasedDirLightViewProjection;
 		Texture* blurredShadowTexture;
-		mwm::Matrix4 lightViewMatrixTest;
+		Matrix4 lightViewMatrixTest;
 		FrameBuffer* frameBuffer;
 		Texture* pickingTexture;
 		Texture* worldPosTexture;

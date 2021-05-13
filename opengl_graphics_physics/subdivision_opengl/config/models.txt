@@ -1,0 +1,9 @@
+models/pyramid.obj
+models/cube.obj
+models/sphere.obj
+models/icosahedron.obj
+models/octahedron.obj
+models/pentagonal_bipyramid.obj
+models/tetrahedron.obj
+models/triangular_bipyramid.obj
+models/tri_sphere1.obj

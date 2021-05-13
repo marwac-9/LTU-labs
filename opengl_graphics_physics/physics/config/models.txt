@@ -1,0 +1,11 @@
+models/tetra.obj
+models/pyramid.obj
+models/cube.obj
+models/cube2.obj
+models/sphere.obj
+models/icosphere.obj
+models/unitCube.obj
+models/spaceship.obj
+models/room.obj
+models/fatplane.obj
+models/plank.obj

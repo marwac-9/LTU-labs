@@ -1,6 +1,0 @@
-Resources/cubemaps/c2/right.tga
-Resources/cubemaps/c2/left.tga
-Resources/cubemaps/c2/top.tga
-Resources/cubemaps/c2/bottom.tga
-Resources/cubemaps/c2/back.tga
-Resources/cubemaps/c2/front.tga

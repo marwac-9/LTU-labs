@@ -1,6 +1,0 @@
-Resources/cubemaps/c1/right.jpg
-Resources/cubemaps/c1/left.jpg
-Resources/cubemaps/c1/top.jpg
-Resources/cubemaps/c1/bottom.jpg
-Resources/cubemaps/c1/back.jpg
-Resources/cubemaps/c1/front.jpg

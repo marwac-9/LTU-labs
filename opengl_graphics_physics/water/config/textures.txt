@@ -1,0 +1,7 @@
+textures/default_diffuse.dds
+textures/default_normal_dtx5.dds
+textures/default_aometrough.dds
+textures/uvmap_2.dds
+textures/waternormal2.dds
+textures/waterdudv2.dds
+textures/beachsand.dds

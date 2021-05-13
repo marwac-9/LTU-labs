@@ -1,8 +1,0 @@
-/materialName, diffuse, normal, spec, emissive, height //-1 if unused
-/order of materials is important for level.txt when loading level
-defaultMaterial 0 -1 -1 -1 -1
-/sunMat 1 -1 -1 -1 -1
-/mercuryMat 2 -1 -1 -1 -1
-/venusMat 3 -1 -1 -1 -1
-/earthMat 4 -1 -1 -1 -1
-/moonMat 5 -1 -1 -1 -1

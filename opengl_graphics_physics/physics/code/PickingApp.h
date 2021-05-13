@@ -86,14 +86,14 @@ namespace Picking
 		float xAngled = 108.f;
 		float yAngled = 168.f;
 
-		mwm::Vector3F lightInvDir = mwm::Vector3F(-1.f, 1.f, 1.f);
+		Vector3F lightInvDir = Vector3F(-1.f, 1.f, 1.f);
 
-		mwm::Vector3F pointLightPos = mwm::Vector3F(5.f, 0.f, 0.f);
+		Vector3F pointLightPos = Vector3F(5.f, 0.f, 0.f);
 		float pointLightRadius = 10.0f;
 		Attenuation pointLightAttenuation;
 		
-		mwm::Vector3F spotLightPos = mwm::Vector3F(0.f, 10.f, 0.f);
-		mwm::Vector3F spotLightInvDir = mwm::Vector3F(-1.f, 1.f, 1.f);
+		Vector3F spotLightPos = Vector3F(0.f, 10.f, 0.f);
+		Vector3F spotLightInvDir = Vector3F(-1.f, 1.f, 1.f);
 		float spotLightCutOff = 12.5f;
 		float spotLightOuterCutOff = 17.5f;
 		float spotLightRadius = 30.f;

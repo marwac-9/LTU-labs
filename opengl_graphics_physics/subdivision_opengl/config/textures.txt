@@ -1,0 +1,6 @@
+textures/uvmap_2.dds
+textures/sun.dds
+textures/mercury.dds
+textures/venus.dds
+textures/earth.dds
+textures/moon.dds

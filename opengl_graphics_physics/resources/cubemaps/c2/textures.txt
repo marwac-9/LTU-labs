@@ -1,0 +1,6 @@
+cubemaps/c2/right.tga
+cubemaps/c2/left.tga
+cubemaps/c2/top.tga
+cubemaps/c2/bottom.tga
+cubemaps/c2/back.tga
+cubemaps/c2/front.tga

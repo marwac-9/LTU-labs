@@ -1,9 +1,0 @@
-Resources/models/tetra.obj 0
-Resources/models/pyramid.obj 0
-Resources/models/cube.obj 0
-Resources/models/cube2.obj 0
-Resources/models/sphere.obj 2
-Resources/models/icosphere.obj 0
-Resources/models/plane.obj 0
-Resources/models/pond.obj 0
-Resources/models/skybox.obj 0

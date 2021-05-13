@@ -1,0 +1,1 @@
+cubemaps/c2/textures.txt

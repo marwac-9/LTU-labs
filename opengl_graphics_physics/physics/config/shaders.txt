@@ -1,0 +1,5 @@
+color shaders/Forward
+picking shaders/PickingWorldPos
+wireframe shaders/BB
+dftext shaders/DFText
+fastBB shaders/FastBB

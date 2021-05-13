@@ -21,7 +21,7 @@
 #include "OBJ.h"
 #include "HalfEdgeMesh.h"
 #include <fstream>
-#include "Scene.h"
+#include "SceneGraph.h"
 #include "ShaderManager.h"
 #include <string>
 #include "PhysicsManager.h"
@@ -33,7 +33,7 @@
 #include "Times.h"
 #include "Vao.h"
 
-using namespace mwm;
+
 using namespace Display;
 
 namespace Subdivision
@@ -106,7 +106,7 @@ namespace Subdivision
 			}
 			else if (button == GLFW_MOUSE_BUTTON_MIDDLE && action == GLFW_PRESS)
 			{
-				Scene::Instance()->InitializeSceneTree();
+				SceneGraph::Instance()->InitializeSceneTree();
 				GraphicsManager::ReloadShaders();
 			}
 			else if (button == GLFW_MOUSE_BUTTON_MIDDLE && action == GLFW_RELEASE)
@@ -148,7 +148,7 @@ namespace Subdivision
 
 		SetUpCamera();
 
-		Scene::Instance()->Update();
+		SceneGraph::Instance()->Update();
 
 		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 		wireframe = true;
@@ -167,7 +167,7 @@ namespace Subdivision
 			CameraManager::Instance()->Update(Times::Instance()->deltaTime);
 			FrustumManager::Instance()->ExtractPlanes(CameraManager::Instance()->ViewProjection);
 			
-			Scene::Instance()->Update();
+			SceneGraph::Instance()->Update();
 
 			Draw();
 
@@ -246,7 +246,7 @@ namespace Subdivision
 
 			else if (key == GLFW_KEY_E)
 			{
-				Object* cube = Scene::Instance()->addPhysicObject("cube", Vector3(0.0, 8.0, 0.0));
+				Object* cube = SceneGraph::Instance()->addPhysicObject("cube", Vector3(0.0, 8.0, 0.0));
 				cube->node->SetPosition(Vector3(0.0, (double)Object::Count() * 2.0 - 10.0 + 0.001, 0.0));
 			}
 		}
@@ -301,13 +301,13 @@ namespace Subdivision
 		Vector3F camPos = currentCamera->GetPosition2().toFloat();
 		glUniform3fv(cameraPos, 1, &camPos.x);
 
-		objectsRendered = Render::Instance()->draw(currentShaderID, Scene::Instance()->renderList, CameraManager::Instance()->ViewProjection);
+		objectsRendered = Render::Instance()->draw(currentShaderID, SceneGraph::Instance()->renderList, CameraManager::Instance()->ViewProjection);
 	}
 
 	void
 	SubdivisionApp::Clear()
 	{
-		Scene::Instance()->Clear();
+		SceneGraph::Instance()->Clear();
 		PhysicsManager::Instance()->Clear();
 		GraphicsStorage::ClearMaterials();
 		ClearSubdivisionData();
@@ -408,7 +408,7 @@ namespace Subdivision
 	void
 	SubdivisionApp::Subdivide(OBJ* objToSubdivide)
 	{
-		Object* ObjectHalfMesh = Scene::Instance()->addObject(); //Object added to scene for rendering
+		Object* ObjectHalfMesh = SceneGraph::Instance()->addObject(); //Object added to scene for rendering
 		
 		printf("\nConstructing half edge mesh\n");
 		HalfEdgeMesh* newHMesh = new HalfEdgeMesh();
@@ -469,9 +469,9 @@ namespace Subdivision
 		dynamicHEMeshes.push_back(newHMesh);
 		dynamicVaos.push_back(halfEdgeMeshVao);
 		
-		ObjectHalfMesh->AssignMesh(halfEdgeMeshVao); //we assign the subdivided and exported mesh
+		ObjectHalfMesh->vao = halfEdgeMeshVao; //we assign the subdivided and exported mesh
 		Material* newMaterial = new Material();
-		newMaterial->AssignTexture(GraphicsStorage::textures.at(0));
+		newMaterial->AssignTexture(GraphicsStorage::textures["uvmap_2"]);
 		GraphicsStorage::materials.push_back(newMaterial);
 		ObjectHalfMesh->AssignMaterial(newMaterial);
 		ObjectHalfMesh->node->SetScale(Vector3(4.0f, 4.0f, 4.0f));
@@ -479,16 +479,16 @@ namespace Subdivision
 		printf("\nDONE\n");
 
 		printf("\nCreating proxy mesh\n");
-		Object* ObjectHalfMeshProxy = Scene::Instance()->addObjectTo(ObjectHalfMesh); //we create the object for proxy
+		Object* ObjectHalfMeshProxy = SceneGraph::Instance()->addObjectTo(ObjectHalfMesh); //we create the object for proxy
 
 		Vao* proxyMesh = new Vao(); //and a new mesh for proxy
 		GraphicsManager::LoadOBJToVAO(constructedOBJ, proxyMesh); //proxy will use the originally generated OBJ from constructed half edge mesh
 		dynamicVaos.push_back(proxyMesh);
 
-		ObjectHalfMeshProxy->AssignMesh(proxyMesh); //and we assign now generated proxy mesh from constructedOBJ to the proxy Object
+		ObjectHalfMeshProxy->vao = proxyMesh; //and we assign now generated proxy mesh from constructedOBJ to the proxy Object
 		Material* newMaterialProxy = new Material();
 		newMaterialProxy->SetColor(Vector3F(1.f, 0.f, 0.f));
-		newMaterialProxy->AssignTexture(GraphicsStorage::textures.at(0));
+		newMaterialProxy->AssignTexture(GraphicsStorage::textures["uvmap_2"]);
 		GraphicsStorage::materials.push_back(newMaterialProxy);
 		ObjectHalfMeshProxy->AssignMaterial(newMaterialProxy);
 		printf("\nDONE\n");

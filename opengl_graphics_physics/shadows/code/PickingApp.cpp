@@ -14,7 +14,7 @@
 #include "Texture.h"
 #include "OBJ.h"
 #include <fstream>
-#include "Scene.h"
+#include "SceneGraph.h"
 #include "ShaderManager.h"
 #include <string>
 #include "DebugDraw.h"
@@ -29,7 +29,7 @@
 #include "ImGuiWrapper.h"
 #include <imgui.h>
 
-using namespace mwm;
+
 using namespace Display;
 namespace Picking
 {
@@ -103,7 +103,7 @@ namespace Picking
 			}
 			else if (button == GLFW_MOUSE_BUTTON_MIDDLE && action == GLFW_PRESS)
 			{
-				Scene::Instance()->InitializeSceneTree();
+				SceneGraph::Instance()->InitializeSceneTree();
 				GraphicsManager::ReloadShaders();
 			}
 			else if (button == GLFW_MOUSE_BUTTON_MIDDLE && action == GLFW_RELEASE)
@@ -137,7 +137,7 @@ namespace Picking
 		
 		GraphicsManager::LoadAllAssets();
 
-		DebugDraw::Instance()->LoadPrimitives();
+		Render::Instance()->InitializeShderBlockDatas();
 		
 		LoadScene6();
 
@@ -149,7 +149,7 @@ namespace Picking
 
 		SetUpCamera();
 
-		Scene::Instance()->Update();
+		SceneGraph::Instance()->Update();
 
         while (running)
         {
@@ -172,10 +172,10 @@ namespace Picking
 
 			if (scene4loaded) Vortex();
 			
-			Scene::Instance()->Update();
+			SceneGraph::Instance()->Update();
 			PhysicsManager::Instance()->Update(Times::Instance()->dtInv);
 
-			Render::Instance()->UpdateEBOs();
+			Render::Instance()->UpdateShaderBlockDatas();
 			
 			GenerateGUI(); // <-- (generate) to screen
 			
@@ -210,7 +210,7 @@ namespace Picking
 				running = false;
 			}
 			else if (key == GLFW_KEY_R) {
-				//Scene::Instance()->addRandomObject();
+				//SceneGraph::Instance()->addRandomObject();
 			}
 			//this is just used to show hide cursor, mouse steal on/off
 			else if (key == GLFW_KEY_LEFT_ALT) {
@@ -299,8 +299,9 @@ namespace Picking
 			}
 			else if (key == GLFW_KEY_E)
 			{
-				Object* cube = Scene::Instance()->addPhysicObject("cube", Vector3(0.0, 8.0, 0.0));
-				cube->node->SetPosition(Vector3(0.0, (double)Object::Count() * 2.0 - 10.0 + 0.001, 0.0));
+				Object* cube = SceneGraph::Instance()->addPhysicObject("cube", Vector3(0.0, 8.0, 0.0));
+				cube->node->SetPosition(Vector3(0.0, (double)SceneGraph::Instance()->pickingList.size() * 2.0 - 10.0 + 0.001, 0.0));
+				SceneGraph::Instance()->SwitchObjectMovableMode(cube, true);
 			}
 		}
     }
@@ -393,10 +394,9 @@ namespace Picking
 
 		//depth texture
 		GLuint ShadowMapHandle = glGetUniformLocation(colorShader, "shadowMapSampler");
-		glActiveTexture(GL_TEXTURE1);
+		glActiveTexture(GL_TEXTURE10);
 		if (blurShadowMap) glBindTexture(GL_TEXTURE_2D, blurredShadowTexture->handle);
 		else glBindTexture(GL_TEXTURE_2D, shadowTexture->handle);
-		glUniform1i(ShadowMapHandle, 1);
 
 		if (debug)
 		{
@@ -410,7 +410,7 @@ namespace Picking
 			ShaderManager::Instance()->SetCurrentShader(colorShader);
 			Draw();
 		}
-		glActiveTexture(GL_TEXTURE1);
+		glActiveTexture(GL_TEXTURE10);
 		glBindTexture(GL_TEXTURE_2D, 0);
     }
 
@@ -432,12 +432,12 @@ namespace Picking
 			//std::cout << pickedID << std::endl;
 			if (lastPickedObject != nullptr) //reset previously picked object color
 			{
-				lastPickedObject->mat->color = Vector3F(0.f, 0.f, 0.f);
+				lastPickedObject->materials[0]->color = Vector3F(0.f, 0.f, 0.f);
 			}
-			if (Scene::Instance()->pickingList.find(pickedID) != Scene::Instance()->pickingList.end())
+			if (SceneGraph::Instance()->pickingList.find(pickedID) != SceneGraph::Instance()->pickingList.end())
 			{
-				lastPickedObject = Scene::Instance()->pickingList[pickedID];
-				lastPickedObject->mat->color = Vector3F(2.f, 1.f, 0.f);
+				lastPickedObject = SceneGraph::Instance()->pickingList[pickedID];
+				lastPickedObject->materials[0]->color = Vector3F(2.f, 1.f, 0.f);
 
 				Vector3F world_position;
 				frameBuffer->ReadPixelData((unsigned int)leftMouseX, this->windowHeight - (unsigned int)leftMouseY, 1, 1, GL_FLOAT, world_position.vect, worldPosTexture);
@@ -471,19 +471,19 @@ namespace Picking
     void
 	PickingApp::Draw()
     {
-		objectsRendered = Render::Instance()->draw(ShaderManager::Instance()->GetCurrentShaderID(), Scene::Instance()->renderList, CameraManager::Instance()->ViewProjection);
+		objectsRendered = Render::Instance()->draw(ShaderManager::Instance()->GetCurrentShaderID(), SceneGraph::Instance()->renderList, CameraManager::Instance()->ViewProjection);
     }
 
 	void
 	PickingApp::DrawPicking()
 	{
-		Render::Instance()->drawPicking(GraphicsStorage::shaderIDs["picking"], Scene::Instance()->pickingList, frameBuffer);
+		Render::Instance()->drawPicking(GraphicsStorage::shaderIDs["picking"], SceneGraph::Instance()->pickingList, frameBuffer);
 	}
 
 	void
 	PickingApp::DrawDepth(const Matrix4& ViewProjection)
 	{
-		Render::Instance()->drawDepth(GraphicsStorage::shaderIDs["depth"], Scene::Instance()->renderList, ViewProjection);
+		Render::Instance()->drawDepth(GraphicsStorage::shaderIDs["depth"], SceneGraph::Instance()->renderList, ViewProjection.toFloat());
 	}
 
 	void
@@ -497,42 +497,47 @@ namespace Picking
 	{
 		//A plank suspended on a static box.	
 		Clear();
-		DebugDraw::Instance()->Init(Scene::Instance()->addChild());
-		Object* plane = Scene::Instance()->addPhysicObject("cube");
+		DebugDraw::Instance()->Init(SceneGraph::Instance()->addChild());
+		directionalLightObject = SceneGraph::Instance()->addDirectionalLight(true);
+
+		Object* plane = SceneGraph::Instance()->addPhysicObject("cube");
 		RigidBody* body = plane->GetComponent<RigidBody>();
 		plane->node->SetScale(Vector3(200.f, 1.f, 200.f));
 		body->SetIsKinematic(true);
 
-		Object* plank = Scene::Instance()->addPhysicObject("cube", plane->node->GetLocalPosition() + Vector3(0.f, 10.f, 0.f));
+		Object* plank = SceneGraph::Instance()->addPhysicObject("cube", plane->node->GetLocalPosition() + Vector3(0.f, 10.f, 0.f));
 		plank->node->SetScale(Vector3(3.f, 0.5f, 1.f));
-		Object* cube = Scene::Instance()->addPhysicObject("cube", plane->node->GetLocalPosition() + Vector3(0.f, 2.f, 0.f));
+
+		Object* cube = SceneGraph::Instance()->addPhysicObject("cube", plane->node->GetLocalPosition() + Vector3(0.f, 2.f, 0.f));
 		body = cube->GetComponent<RigidBody>();
 		body->SetIsKinematic(true);
 
-		Object* sphere = Scene::Instance()->addPhysicObject("sphere", plane->node->GetLocalPosition() + Vector3(0.f, 10.f, 30.f));
+		Object* sphere = SceneGraph::Instance()->addPhysicObject("sphere", plane->node->GetLocalPosition() + Vector3(0.f, 10.f, 30.f));
 		sphere->node->SetScale(Vector3(10.f, 10.f, 10.f));
 		body = sphere->GetComponent<RigidBody>();
 		body->SetIsKinematic(true);
 
-		sphere = Scene::Instance()->addPhysicObject("sphere", plane->node->GetLocalPosition() + Vector3(60.f, 10.f, 60.f));
+		sphere = SceneGraph::Instance()->addPhysicObject("sphere", plane->node->GetLocalPosition() + Vector3(60.f, 10.f, 60.f));
 		sphere->node->SetScale(Vector3(10.f, 10.f, 10.f));
 		body = sphere->GetComponent<RigidBody>();
 		body->SetIsKinematic(true);
 
-		sphere = Scene::Instance()->addPhysicObject("sphere", plane->node->GetLocalPosition() + Vector3(100.f, 10.f, 0.f));
+		sphere = SceneGraph::Instance()->addPhysicObject("sphere", plane->node->GetLocalPosition() + Vector3(100.f, 10.f, 0.f));
 		sphere->node->SetScale(Vector3(10.f, 10.f, 10.f));
 		body = sphere->GetComponent<RigidBody>();
 		body->SetIsKinematic(true);
 
-		sphere = Scene::Instance()->addPhysicObject("sphere", plane->node->GetLocalPosition() + Vector3(150.f, 10.f, 0.f));
+		sphere = SceneGraph::Instance()->addPhysicObject("sphere", plane->node->GetLocalPosition() + Vector3(150.f, 10.f, 0.f));
 		sphere->node->SetScale(Vector3(10.f, 10.f, 10.f));
 		body = sphere->GetComponent<RigidBody>();
 		body->SetIsKinematic(true);
 
-		sphere = Scene::Instance()->addPhysicObject("sphere", plane->node->GetLocalPosition() + Vector3(200.f, 10.f, 0.f));
+		sphere = SceneGraph::Instance()->addPhysicObject("sphere", plane->node->GetLocalPosition() + Vector3(200.f, 10.f, 0.f));
 		sphere->node->SetScale(Vector3(10.f, 10.f, 10.f));
 		body = sphere->GetComponent<RigidBody>();
 		body->SetIsKinematic(true);
+		SceneGraph::Instance()->SceneObject->node->SetMovable(true);
+		SceneGraph::Instance()->InitializeSceneTree();
 	}
 
 	void 
@@ -540,17 +545,21 @@ namespace Picking
 	{
 		//A stack of boxes.
 		Clear();
-		DebugDraw::Instance()->Init(Scene::Instance()->addChild());
-		Object* plane = Scene::Instance()->addPhysicObject("cube", Vector3(0.f, -10.f, 0.f));
+		DebugDraw::Instance()->Init(SceneGraph::Instance()->addChild());
+		directionalLightObject = SceneGraph::Instance()->addDirectionalLight(true);
+		
+		Object* plane = SceneGraph::Instance()->addPhysicObject("cube", Vector3(0.f, -10.f, 0.f));
 		RigidBody* body = plane->GetComponent<RigidBody>();
 		plane->node->SetScale(Vector3(25.f, 2.f, 25.f));
 		body->SetIsKinematic(true);
 
 		for (int i = 0; i < 10; i++)
 		{
-			Object* cube = Scene::Instance()->addPhysicObject("cube");
+			Object* cube = SceneGraph::Instance()->addPhysicObject("cube");
 			cube->node->SetPosition(Vector3(0, i * 2 + plane->node->GetLocalPosition().y, 0));
 		}
+		SceneGraph::Instance()->SceneObject->node->SetMovable(true);
+		SceneGraph::Instance()->InitializeSceneTree();
 	}
 
 	void 
@@ -558,98 +567,112 @@ namespace Picking
 	{
 		//Boxes sliding of a static plane oriented at an angle.
 		Clear();
-		DebugDraw::Instance()->Init(Scene::Instance()->addChild());
-		Object* plane = Scene::Instance()->addPhysicObject("cube", Vector3(0.f, -20.f, 0.f));
+		DebugDraw::Instance()->Init(SceneGraph::Instance()->addChild());
+		directionalLightObject = SceneGraph::Instance()->addDirectionalLight(true);
+
+		Object* plane = SceneGraph::Instance()->addPhysicObject("fatplane", Vector3(0.f, -10.f, 0.f));
+		plane->node->SetScale(Vector3(0.5, 1.0, 0.5));
 		RigidBody* body = plane->GetComponent<RigidBody>();
-		plane->node->SetScale(Vector3(25.f, 2.f, 25.f));
 		body->SetIsKinematic(true);
-		//plane->SetOrientation(Quaternion(0.7f, Vector3(0.f, 0.f, 1.f)));
-		
-		Scene::Instance()->addRandomlyPhysicObjects("cube", 50);
+
+		//Object* cone = SceneGraph::Instance()->addObjectTo(directionalLightObject, "cone");
+		//cone->node->SetScale(Vector3(3, 3, 10));
+
+		SceneGraph::Instance()->addRandomlyPhysicObjects("cube", 50);
+		SceneGraph::Instance()->SceneObject->node->SetMovable(true);
+		SceneGraph::Instance()->InitializeSceneTree();
 	}
 
 	void 
 	PickingApp::LoadScene4()
 	{
 		Clear();
-		DebugDraw::Instance()->Init(Scene::Instance()->addChild());
+		DebugDraw::Instance()->Init(SceneGraph::Instance()->addChild());
+		directionalLightObject = SceneGraph::Instance()->addDirectionalLight(true);
+
 		scene4loaded = true;
-		Scene::Instance()->addRandomlyPhysicObjects("cube", 50);
+		SceneGraph::Instance()->addRandomlyPhysicObjects("cube", 50);
+		SceneGraph::Instance()->SceneObject->node->SetMovable(true);
+		SceneGraph::Instance()->InitializeSceneTree();
 	}
 
 	void
 	PickingApp::LoadScene5()
 	{
 		Clear();
-		DebugDraw::Instance()->Init(Scene::Instance()->addChild());
+		DebugDraw::Instance()->Init(SceneGraph::Instance()->addChild());
+		directionalLightObject = SceneGraph::Instance()->addDirectionalLight(true);
+
 		for (int i = 0; i < 700; i++)
 		{
-			Object* sphere = Scene::Instance()->addObject("sphere", Scene::Instance()->generateRandomIntervallVectorCubic(-20,20));
+			Object* sphere = SceneGraph::Instance()->addObject("sphere", SceneGraph::Instance()->generateRandomIntervallVectorCubic(-20,20));
 		}
+		SceneGraph::Instance()->SceneObject->node->SetMovable(true);
+		SceneGraph::Instance()->InitializeSceneTree();
 	}
 
 	void
 	PickingApp::LoadScene6()
 	{
 		Clear();
-		DebugDraw::Instance()->Init(Scene::Instance()->addChild());
-		//Object* cube1 = Scene::Instance()->addObject("cube");
-		directionalLightObject = Scene::Instance()->addDirectionalLight();
-		
+		DebugDraw::Instance()->Init(SceneGraph::Instance()->addChild());
+		//Object* cube1 = SceneGraph::Instance()->addObject("cube");
+		directionalLightObject = SceneGraph::Instance()->addDirectionalLight(true);
 
-		Object* plane = Scene::Instance()->addObject("fatplane", Vector3(0.f, -10.f, 0.f));
-		//Object* sphere1 = Scene::Instance()->addObject("sphere");
+		Object* plane = SceneGraph::Instance()->addObject("fatplane", Vector3(0.f, -10.f, 0.f));
+		//Object* sphere1 = SceneGraph::Instance()->addObject("sphere");
 		//sphere1->mat->SetShininess(20.f);
 		//sphere1->mat->SetSpecularIntensity(3.f);
 		//sphere1->SetScale(Vector3(30.0, 30.0, 30.0));
 
 		Material* newMaterial = new Material();
-		newMaterial->AssignTexture(GraphicsStorage::textures.at(5));
+		newMaterial->AssignTexture(GraphicsStorage::textures["venus"]);
 		newMaterial->tileX = 50;
 		newMaterial->tileY = 50;
 		GraphicsStorage::materials.push_back(newMaterial);
 		plane->AssignMaterial(newMaterial);
 		plane->node->SetScale(Vector3(100.0, 1.0, 100.0));
 
-		Object* cone = Scene::Instance()->addObjectTo(directionalLightObject, "cone");
+		Object* cone = SceneGraph::Instance()->addObjectTo(directionalLightObject, "cone");
 		//cone->mat->SetColor(0.f, 100.f, 0.f);
 		//cone->mat->SetDiffuseIntensity(1.f);
 		cone->node->SetScale(Vector3(3, 3, 10));
 
 		float rS = 1.f;
 
-
 		for (int i = 0; i < 70; i++)
 		{
 
-			Vector3 pos = Scene::Instance()->generateRandomIntervallVectorSpherical(10, 122);
+			Vector3 pos = SceneGraph::Instance()->generateRandomIntervallVectorSpherical(10, 122);
 
 
 			double len = pos.vectLengt();
-			Object* sphere = Scene::Instance()->addObject("icosphere", pos);
-			sphere->mat->SetShininess(20.f);
+			Object* sphere = SceneGraph::Instance()->addObject("icosphere", pos);
+			sphere->materials[0]->SetShininess(20.f);
 
 			for (int j = 0; j < 3; j++)
 			{
-				Vector3 childPos = Scene::Instance()->generateRandomIntervallVectorCubic((int)-len, (int)len) / 4.f;
+				Vector3 childPos = SceneGraph::Instance()->generateRandomIntervallVectorCubic((int)-len, (int)len) / 4.f;
 				double childLen = childPos.vectLengt();
-				Object* child = Scene::Instance()->addObjectTo(sphere, "icosphere", childPos);
-				child->mat->SetShininess(20.f);
+				Object* child = SceneGraph::Instance()->addObjectTo(sphere, "icosphere", childPos);
+				child->materials[0]->SetShininess(20.f);
 
 				for (int k = 0; k < 5; k++)
 				{
-					Vector3 childOfChildPos = Scene::Instance()->generateRandomIntervallVectorCubic((int)-childLen, (int)childLen) / 2.f;
-					Object* childOfChild = Scene::Instance()->addObjectTo(child, "sphere", childOfChildPos);
-					childOfChild->mat->SetShininess(20.f);
+					Vector3 childOfChildPos = SceneGraph::Instance()->generateRandomIntervallVectorCubic((int)-childLen, (int)childLen) / 2.f;
+					Object* childOfChild = SceneGraph::Instance()->addObjectTo(child, "sphere", childOfChildPos);
+					childOfChild->materials[0]->SetShininess(20.f);
 				}
 			}
 		}
+		SceneGraph::Instance()->SceneObject->node->SetMovable(true);
+		SceneGraph::Instance()->InitializeSceneTree();
 	}
 
 	void 
 	PickingApp::Clear()
 	{
-		Scene::Instance()->Clear();
+		SceneGraph::Instance()->Clear();
 		PhysicsManager::Instance()->Clear();
 		GraphicsStorage::ClearMaterials();
 		DebugDraw::Instance()->Clear();
@@ -660,7 +683,7 @@ namespace Picking
 	void
 	PickingApp::Vortex()
 	{
-		for (auto& obj : Scene::Instance()->renderList)
+		for (auto& obj : SceneGraph::Instance()->renderList)
 		{
 			if (RigidBody* body = obj->GetComponent<RigidBody>())
 			{
@@ -719,21 +742,28 @@ namespace Picking
 	PickingApp::SetUpBuffers(int windowWidth, int windowHeight)
 	{
 		frameBuffer = FBOManager::Instance()->GenerateFBO();
-		pickingTexture = frameBuffer->RegisterTexture(new Texture(GL_TEXTURE_2D, 0, GL_R32UI, windowWidth, windowHeight, GL_RED_INTEGER, GL_UNSIGNED_INT, NULL, GL_COLOR_ATTACHMENT0)); //picking
-		pickingTexture->AddDefaultTextureParameters();
-		worldPosTexture = frameBuffer->RegisterTexture(new Texture(GL_TEXTURE_2D, 0, GL_RGB32F, windowWidth, windowHeight, GL_RGB, GL_FLOAT, NULL, GL_COLOR_ATTACHMENT1)); //position
-		worldPosTexture->AddDefaultTextureParameters();
-		Texture* depthTexture = frameBuffer->RegisterTexture(new Texture(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, windowWidth, windowHeight, GL_DEPTH_COMPONENT, GL_FLOAT, NULL, GL_DEPTH_ATTACHMENT)); //depth
-		depthTexture->AddDefaultTextureParameters();
-		frameBuffer->GenerateAndAddTextures();
+		pickingTexture = new Texture(GL_TEXTURE_2D, 0, GL_R32UI, windowWidth, windowHeight, GL_RED_INTEGER, GL_UNSIGNED_INT, NULL, GL_COLOR_ATTACHMENT0);
+		pickingTexture->GenerateBindSpecify();
+		pickingTexture->SetClampingToEdge();
+		pickingTexture->SetLinear();
+		worldPosTexture = new Texture(GL_TEXTURE_2D, 0, GL_RGB32F, windowWidth, windowHeight, GL_RGB, GL_FLOAT, NULL, GL_COLOR_ATTACHMENT1);
+		worldPosTexture->GenerateBindSpecify();
+		worldPosTexture->SetClampingToEdge();
+		worldPosTexture->SetLinear();
+		Texture* depthTexture = new Texture(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, windowWidth, windowHeight, GL_DEPTH_COMPONENT, GL_FLOAT, NULL, GL_DEPTH_ATTACHMENT);
+		depthTexture->GenerateBindSpecify();
+		depthTexture->SetClampingToEdge();
+		depthTexture->SetLinear();
+		frameBuffer->RegisterTexture(pickingTexture);
+		frameBuffer->RegisterTexture(worldPosTexture);
+		frameBuffer->RegisterTexture(depthTexture);
+		frameBuffer->SpecifyTextures();
 		frameBuffer->CheckAndCleanup();
 
 		FrameBuffer* shadowBuffer = Render::Instance()->AddDirectionalShadowMapBuffer(4096, 4096);
 		Render::Instance()->AddMultiBlurBuffer(this->windowWidth, this->windowHeight);
 		Render::Instance()->AddPingPongBuffer(4096, 4096);
 		shadowTexture = shadowBuffer->textures[0];
-
-		Render::Instance()->GenerateEBOs();
 	}
 
 	void

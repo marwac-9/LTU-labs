@@ -1,0 +1,12 @@
+textures/default_diffuse.dds
+textures/default_normal_dtx5.dds
+textures/default_aometrough.dds
+textures/uvmap_2.dds
+textures/sun.dds
+textures/mercury.dds
+textures/venus.dds
+textures/earth.dds
+textures/moon.dds
+textures/particle.dds
+textures/particle2.dds
+textures/particle3.dds

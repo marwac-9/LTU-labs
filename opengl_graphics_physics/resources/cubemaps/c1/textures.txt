@@ -1,0 +1,6 @@
+cubemaps/c1/right.jpg
+cubemaps/c1/left.jpg
+cubemaps/c1/top.jpg
+cubemaps/c1/bottom.jpg
+cubemaps/c1/back.jpg
+cubemaps/c1/front.jpg

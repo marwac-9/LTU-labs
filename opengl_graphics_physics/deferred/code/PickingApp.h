@@ -92,7 +92,7 @@ namespace Picking
 
 
 		loadedScene currentScene = none;
-		mwm::Vector3F lightInvDir = mwm::Vector3F(-1.f, 1.f, 1.f);
+		Vector3F lightInvDir = Vector3F(-1.f, 1.f, 1.f);
 		float planeDir = -1;
 		float near = 0.1f;
 		float far = 2000.f;

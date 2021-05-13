@@ -1,0 +1,9 @@
+color shaders/ForwardShadows
+picking shaders/PickingWorldPos
+wireframe shaders/BB
+dftext shaders/DFText
+depth shaders/Depth
+depthPanel shaders/FullScreenQuad
+blur shaders/Blur
+fastBlurShadow shaders/FastBlurShadow
+fastBB shaders/FastBB

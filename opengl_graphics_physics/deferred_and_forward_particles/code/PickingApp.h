@@ -89,7 +89,7 @@ namespace Picking
 		unsigned int pickedID = 0;
 
 		loadedScene currentScene = none;
-		mwm::Vector3F lightInvDir = mwm::Vector3F(-1.f, 1.f, 1.f);
+		Vector3F lightInvDir = Vector3F(-1.f, 1.f, 1.f);
 		float planeDir = -1;
 		std::vector<ParticleSystem*> particleSystems;
 

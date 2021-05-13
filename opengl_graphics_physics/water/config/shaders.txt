@@ -1,0 +1,7 @@
+forward shaders/ForwardClipPlaneHDR
+forwardRefRaf shaders/ForwardRefRaf
+water shaders/Water
+quadToScreen shaders/FullScreenQuad
+skyboxWithClipPlane shaders/SkyboxWithClipPlane
+fastBlur shaders/FastBlur
+hdrBloom shaders/HDRBloom

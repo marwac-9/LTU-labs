@@ -1,0 +1,12 @@
+picking shaders/Picking
+wireframe shaders/BB
+dftext shaders/DFText
+depth shaders/Depth
+depthPanel shaders/FullScreenQuad
+blur shaders/Blur
+geometry shaders/Geometry
+pointLight shaders/PointLight
+directionalLight shaders/DirectionalLight
+stencil shaders/Stencil
+particle shaders/Particle
+fastBB shaders/FastBB
