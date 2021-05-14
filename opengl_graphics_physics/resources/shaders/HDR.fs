@@ -3,16 +3,24 @@
 in vec2 UV;
 
 layout(binding = 0) uniform sampler2D hdrBuffer;
-uniform bool hdr;
-uniform float exposure;
-uniform float gamma;
+
+layout(std140, binding = 3) uniform PBVars
+{
+	float gamma;
+	float exposure;
+	float brightness;
+	float contrast;
+	float bloomIntensity;
+	bool hdrEnabled;
+	bool bloomEnabled;
+};
 
 out vec4 color;
 
 void main()
 {
 	vec3 hdrColor = texture(hdrBuffer, UV).rgb;
-	if (hdr)
+	if (hdrEnabled)
 	{
 		// reinhard
 		// vec3 result = hdrColor / (hdrColor + vec3(1.0));

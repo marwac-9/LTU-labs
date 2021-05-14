@@ -8,25 +8,6 @@ layout(binding = 4) uniform samplerCube irradianceMap;
 layout(binding = 5) uniform samplerCube prefilterMap;
 layout(binding = 6) uniform sampler2D   brdfLUT;
 
-layout(std140, binding = 1) uniform LBVars
-{
-	mat4 depthBiasMVP;
-	vec3 lightInvDir;
-	float shadowTransitionSize;
-	float outerCutOff;
-	float innerCutOff;
-	float lightRadius;
-	float lightPower;
-	vec3 lightColor;
-	float ambient;
-	float diffuse;
-	float specular;
-	vec3 lightPosition;
-	float constant;
-	float linear;
-	float exponential;
-};
-
 layout(std140, binding = 2) uniform CBVars
 {
 	mat4 VP;

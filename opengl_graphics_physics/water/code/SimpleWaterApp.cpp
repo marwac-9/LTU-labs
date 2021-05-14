@@ -411,13 +411,13 @@ namespace SimpleWater
 
 		ImGui::NewLine();
 		ImGui::Checkbox("Post Effects:", &post);
-		ImGui::Checkbox("HDR", &Render::Instance()->pb.hdrEnabled);
-		ImGui::Checkbox("Bloom", &Render::Instance()->pb.bloomEnabled);
-		ImGui::SliderFloat("Bloom Intensity", &Render::Instance()->pb.bloomIntensity, 0.0f, 5.f);
-		ImGui::SliderFloat("Exposure", &Render::Instance()->pb.exposure, 0.0f, 5.0f);
-		ImGui::SliderFloat("Gamma", &Render::Instance()->pb.gamma, 0.0f, 5.0f);
-		ImGui::SliderFloat("Contrast", &Render::Instance()->pb.contrast, -5.0f, 5.0f);
-		ImGui::SliderFloat("Brightness", &Render::Instance()->pb.brightness, -5.0f, 5.0f);
+		ImGui::Checkbox("HDR", &Render::Instance()->hdrEnabled);
+		ImGui::Checkbox("Bloom", &Render::Instance()->bloomEnabled);
+		ImGui::SliderFloat("Bloom Intensity", &Render::Instance()->bloomIntensity, 0.0f, 5.f);
+		ImGui::SliderFloat("Exposure", &Render::Instance()->exposure, 0.0f, 5.0f);
+		ImGui::SliderFloat("Gamma", &Render::Instance()->gamma, 0.0f, 5.0f);
+		ImGui::SliderFloat("Contrast", &Render::Instance()->contrast, -5.0f, 5.0f);
+		ImGui::SliderFloat("Brightness", &Render::Instance()->brightness, -5.0f, 5.0f);
 		ImGui::SliderFloat("Blur Size", &blurSize, 0.0f, 10.0f);
 		ImGui::SliderInt("Blur Level", &blurLevel, 0, 3);
 

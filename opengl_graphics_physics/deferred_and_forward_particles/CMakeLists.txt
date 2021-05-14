@@ -16,9 +16,9 @@ FILE(GLOB HEAD "code/Managers/*.h")
 LIST(APPEND SRCSMANAGERS ${SRC} ${HEAD})
 SOURCE_GROUP("${PROJECT_NAME}\\Managers" FILES ${SRCSMANAGERS})
 
-FILE(GLOB SRCVS "resources/shaders/*.vs")
-FILE(GLOB SRCFS "resources/shaders/*.fs")
-FILE(GLOB SRCGS "resources/shaders/*.gs")
+FILE(GLOB SRCVS "../resources/shaders/*.vs")
+FILE(GLOB SRCFS "../resources/shaders/*.fs")
+FILE(GLOB SRCGS "../resources/shaders/*.gs")
 LIST(APPEND SRCSSHADERS ${SRCVS} ${SRCFS} ${SRCGS} )
 SOURCE_GROUP("shaders" FILES ${SRCSSHADERS})
 
